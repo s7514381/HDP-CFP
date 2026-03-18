@@ -1,0 +1,19 @@
+{
+  "name": "frontend-ui-root",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint"
+  },
+  "devDependencies": {
+    "turbo": "latest",
+    "typescript": "^5",
+    "eslint": "^9",
+    "sass": "^1.94.0"
+  }
+}

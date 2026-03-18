@@ -1,0 +1,275 @@
+$darkBlue: #2b333e;
+$white: #ffffff;
+$ahopOrigin: #ff7f50;
+$badgeInfoBg: #429898ad;
+// 擴充BS樣式
+.fs-7{
+  font-size: .875rem !important;
+}
+.z-index-9999{
+  z-index: 9999 !important;
+}
+// 寬度250px
+.w-250{
+  width: 250px !important;
+}
+// 修改BS5預設的 Toast 寬度
+.toast{
+  width: unset !important;
+  min-width: 350px;
+}
+.text-warning-ahop{
+  color: $ahopOrigin !important;
+}
+.badge-info-ahop{
+  background-color: $badgeInfoBg !important;
+  color: $white !important;
+}
+// td 適應內容寬度
+.td-fit{
+  width: 1%;
+  white-space: nowrap;
+  padding-left: .5rem;
+  padding-right: .5rem;
+}
+// 提供多個btn是用內容寬度的class
+.td-btn-fit{
+  width: auto;
+  white-space: nowrap;
+  gap: 0.5rem;
+  padding: 0px;
+  margin: 0px;
+}
+// 把所有table下的td都做垂直居中
+.table{
+  td, th{
+    vertical-align: middle !important;
+  }
+}
+/** 過濾下拉選單的樣式 */
+.input-dropdown{
+  position: absolute;
+  z-index: 300;
+  top: 100%;
+  width: 100%;
+  max-height: 300px;
+  overflow-y: auto;
+}
+// qrcode圖片大小
+.qrcode-sm{
+  width: 50px;
+  height: 50px;
+}
+.qrcode-lg{
+  width: 75px;
+  height: 75px;
+}
+// 全域性的scss樣式檔案
+html,
+body {
+  height: 100vh;
+}
+.wrap {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  & > .navbar {
+    flex: 0 0 76px;
+    box-shadow: 1px 2px 3px rgba(0, 0, 0, 0.1);
+    z-index: 999;
+    img{
+      width: auto;
+      max-height: 55px;
+    }
+  }
+  & .wrap-main {
+    height: calc(100% - 75px);
+    display: flex;
+    margin-top: -1px;
+  }
+  & .wrap-aside {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    flex: 0 0 0px;
+    height: 100%;
+    background-color: $darkBlue;
+    color: $white;
+    padding: 0px;
+    transition: all .2s ease-in-out;
+    & > .list-group {
+      position: absolute;
+      top: 0px;
+      bottom: 0px;
+      left: -220px;
+      width: 100%;
+      margin: 0px;
+      background-color: $darkBlue;
+      color: $white;
+    }
+    &.show{
+      flex: 0 0 220px;
+      .list-group{
+        left: 0px;
+      }
+    }
+    & .side-btn{
+      position: absolute;
+      top: 1px;
+      right: -43px;
+      z-index: 9999;
+      width: 43px;
+      height: 57px;
+      line-height: 57px;
+      font-size: 2.5rem;
+      background-color: $darkBlue;
+      padding: 0px;
+      color: $white;
+      border: 1px solid #212121cc !important;
+      border-radius: 0px;
+      border-color: $darkBlue;
+      &:active, &:focus{
+        box-shadow: none;
+      }
+    }
+    & .btn{
+      &:focus, &:active{
+        box-shadow: none;
+      }
+    }
+    & .list-group {
+      & .list-group-item {
+        width: 100%;
+        padding: 0px;
+        background-color: $darkBlue;
+        border-color: #212121cc;
+      }
+      & .aside-item{
+        display: block;
+        width: 100%;
+        text-align: left;
+        text-decoration: none;
+        color: #aeb7c2;
+        background-color: $darkBlue;
+        padding: .9rem 1rem .9rem 1.2rem;
+        &.active,&:hover{
+          color: $white;
+        }
+      }
+      & .list-group{
+        & > .list-group-item{
+          border: unset;
+          & .aside-item {
+            padding: .9rem 1rem .9rem 2.5rem;
+          }
+        }
+      }
+    }
+  }
+  & .wrap-content {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #f8f9fa;
+  }
+}
+.action-bar{
+  display: flex;
+  padding-left: calc(43px + 15px);
+  align-items: center;
+  min-height: 58px;
+  box-shadow: 1px 2px 3px rgba(0, 0, 0, 0.1);
+  background-color: #fafafa;
+  .action-bar-title{
+    color:#333333;
+    font-size: 1.25rem;
+    font-weight: 800;
+    margin: 0px;
+    letter-spacing: 3px;
+  }
+}
+.table-dark{
+  --bs-table-bg: #2b333e !important;
+  font-size: 14px;
+}
+// 漂浮側邊欄的Layout與側邊欄樣式
+.sidebar-wrap{
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  // 佔據剩餘空間
+  flex-grow: 1;
+  .sidebar{
+    position: absolute;
+    top: 0px;
+    bottom: 0px;
+    right: -50%;
+    width: 50%;
+    background-color: #ffffff;
+    border: 1px solid #dddddd;
+    box-shadow: 2px 0px 6px rgba(0,0,0,0.2);
+    transition: all .3s ease-in-out;
+    z-index: 10;
+    &.open{
+      right: 0px;
+    }
+    // 內容區塊
+    .sidebar-content{
+      padding: 1rem 1.5rem;
+      height: 100%;
+      overflow: auto;
+    }
+    .side-btn-close{
+      position: absolute;
+      top: 5px;
+      right: 5px;
+    }
+  }
+}
+.h-3000{
+  height: 3000px;
+}
+.loading{
+  position: relative;
+  height: 100%;
+  width: 100%;
+  &::after{
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.3);
+    z-index: 10;
+  }
+  &::before{
+    content: "";
+    position: absolute;
+    top: calc(50% - 1rem);
+    left: calc(50% - 1rem);
+    display: inline-block;
+    width: 2rem;
+    height: 2rem;
+    vertical-align: -.125em;
+    background-color: #0d6efd;
+    border-radius: 50%;
+    opacity: 0;
+    -webkit-animation: .75s linear infinite spinner-grow;
+    animation: .75s linear infinite spinner-grow;
+    z-index: 20;
+  }
+}
+/* 只有在列印時才會生效的樣式 */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}

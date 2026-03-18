@@ -2,4 +2,6 @@
 node_modules/
 out/
 certificates/
-/.DS_Store
+.DS_Store
+**/.DS_Store
+.vs/
