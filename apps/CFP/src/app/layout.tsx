@@ -7,7 +7,7 @@ import "@/styles/globals.scss";
 import { ApiProvider } from "@packages/contexts/ApiContext";
 import { HeadProvider, useHead } from "@packages/contexts/HeadContext";
 import { ToastProvider } from "@packages/contexts/ToastContext";
-import { API_MAP } from "@/lib/apiRoutes";
+import { UserProvider } from "@/contexts/UserContext";
 
 /**
  * 接收全域Head Context，並更新head內容
@@ -40,9 +40,11 @@ export default function RootLayout({
         <UpdateHead />
         <body>
           <ToastProvider>
-            <ApiProvider>
+            <UserProvider user={null}>
+              <ApiProvider>
                 {children}
-            </ApiProvider>
+              </ApiProvider>
+            </UserProvider>
           </ToastProvider>
         </body>
       </HeadProvider>

@@ -1,10 +1,13 @@
 'use client';
 
-export default function IAS() {
-  
+import ActionBar from "@/components/layouts/ActionBar";
+
+export default function SupplierPage() {
+
   return (
-    <div>
-      <h1>Hello</h1>
-    </div>
+    <>
+       <ActionBar title="首頁">
+            </ActionBar>
+    </>
   );
 }

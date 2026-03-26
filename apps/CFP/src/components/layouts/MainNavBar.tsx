@@ -46,7 +46,7 @@ const LogoutBtn = () => {
     route.push(`${url}/site/logout`);
   }
     return (
-       <Btn color="secondary" clasName="p-2" rounded onClick={handleLogout} className="ms-2">
+       <Btn color="secondary" className="p-2 ms-2" rounded onClick={handleLogout}>
         <FontAwesome icon="fa-solid fa-right-from-bracket" className="me-2" />登出
        </Btn>
     );

@@ -62,6 +62,41 @@ export const API_MAP: Record<string, string> = {
   FDA_TRACE: `${API_URL}/${API_PATH}/FDA-TRACE/VND-USER`,
   // 來源流向追蹤 供應商使用者 匯出下載 GET DOWNLOAD
   FDA_TRACE_DOWNLOAD: `${API_URL}/${API_PATH}/FDA-TRACE/VND-USER/DOWNLOAD`,
+  // 供應商管理
+  SUPPLIER_CREATE: `${API_URL}/Supplier/Create`,
+  SUPPLIER_EDIT: `${API_URL}/Supplier/Edit`,
+  SUPPLIER_GET_MODEL: `${API_URL}/Supplier/GetModel`,
+  SUPPLIER_GET_LIST: `${API_URL}/Supplier/GetList`,
+  SUPPLIER_GET_SELECT_LIST: `${API_URL}/Supplier/GetSelectListItems`,
+  SUPPLIER_MST: `${API_URL}/Supplier`,
+
+  // 功能管理
+  ADMIN_FUNCTION_CREATE: `${API_URL}/AdminFunction/Create`,
+  ADMIN_FUNCTION_EDIT: `${API_URL}/AdminFunction/Edit`,
+  ADMIN_FUNCTION_GET_MODEL: `${API_URL}/AdminFunction/GetModel`,
+  ADMIN_FUNCTION_GET_LIST: `${API_URL}/AdminFunction/GetList`,
+  ADMIN_FUNCTION_MST: `${API_URL}/AdminFunction`,
+
+  // 管理員管理
+  MANAGER_CREATE: `${API_URL}/Manager/Create`,
+  MANAGER_EDIT: `${API_URL}/Manager/Edit`,
+  MANAGER_GET_MODEL: `${API_URL}/Manager/GetModel`,
+  MANAGER_GET_LIST: `${API_URL}/Manager/GetList`,
+  MANAGER_MST: `${API_URL}/Manager`,
+  MANAGER_LOGIN: `${API_URL}/Manager/Login`,
+
+  // 料號管理
+  MATERIAL_CREATE: `${API_URL}/Material/Create`,
+  MATERIAL_EDIT: `${API_URL}/Material/Edit`,
+  MATERIAL_GET_MODEL: `${API_URL}/Material/GetModel`,
+  MATERIAL_GET_LIST: `${API_URL}/Material/GetList`,
+  MATERIAL_MST: `${API_URL}/Material`,
+
+  // 群組管理
+  MATERIAL_GROUP_CREATE: `${API_URL}/MaterialGroup/Create`,
+  MATERIAL_GROUP_EDIT: `${API_URL}/MaterialGroup/Edit`,
+  MATERIAL_GROUP_GET_MODEL: `${API_URL}/MaterialGroup/GetModel`,
+  MATERIAL_GROUP_GET_LIST: `${API_URL}/MaterialGroup/GetList`,
+  MATERIAL_GROUP_MST: `${API_URL}/MaterialGroup`,
 
 };
-

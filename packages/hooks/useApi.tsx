@@ -138,11 +138,17 @@ export const useApi = (): UseApiResult => {
   const del = useCallback(
     (<TRes, TReq = unknown>(
       url: string,
-      options?: Omit<UseApiRequest<TReq, TReq>, "method">
+      options?: Omit<UseApiRequest<TRes, TReq>, "method">
     ) => request<TRes, TReq>(url, { ...options, method: "DELETE" })),
     [request]
   );
-  
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const formPost = useCallback(<TRes = any>(_url: string, _data: Record<string, any>) => {
+    // This is a placeholder - actual implementation is in useAppApi
+    return Promise.resolve({ success: false, status: 0, message: 'Not implemented', data: null } as ApiResponse<TRes>);
+  }, []);
+
   return {
     loading,
     error,
@@ -152,5 +158,6 @@ export const useApi = (): UseApiResult => {
     post,
     put,
     delete: del,
+    formPost,
   };
 }

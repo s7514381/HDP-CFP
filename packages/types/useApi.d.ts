@@ -64,6 +64,12 @@ export interface UseApiResult {
     url: string,
     options?: Omit<UseApiRequest<TRes, TReq>, "method">
   ) => Promise<ApiResponse<TRes> | ApiResponseList<TRes[]>>;
+
+  // 將物件轉為 FormData 並發送 POST 請求
+  formPost: <TRes>(
+    url: string,
+    data: Record<string, any>
+  ) => Promise<ApiResponse<TRes> | ApiResponseList<TRes[]>>;
 };
 
 

@@ -22,7 +22,8 @@ export type BtnProps = {
     disabled?: boolean;
     type?: 'button' | 'submit' | 'reset';
     className?: string;
-    apiStatus?: string;
+    apiStatus?: string | null;
+    loading?: string | boolean | null;
     onClick?: React.MouseEventHandler<HTMLButtonElement>;
     [key: string]: unknown;
 };
@@ -58,11 +59,12 @@ export const Btn: React.FC<BtnProps> = ({
     size,
     disabled = false,
     type = 'button',
-    className = null,
-    apiStatus = null,
+    className,
+    apiStatus,
     onClick,
+    loading, // 這裡將傳入的 loading 取得
     ...props
-}) => {
+}: BtnProps) => {
     const btnClass = [
         'btn',
         outline ? `btn-outline-${color}` : `btn-${color}`,
@@ -73,15 +75,18 @@ export const Btn: React.FC<BtnProps> = ({
     .filter(Boolean)
     .join(' ');
 
+    const _apiStatus = (apiStatus || (loading === 'loading' ? 'loading' : (loading === true ? 'loading' : null))) as string | null;
+
     return (
         <button
             type={type}
             className={btnClass}
-            disabled={apiStatus === 'loading' || disabled}
+            disabled={_apiStatus === 'loading' || disabled}
             onClick={onClick}
-            {...props}
+            {...(props as any)}
         >
-            {icon && <Icon name={icon} className={iconClassName} />} {children}
+            {_apiStatus === 'loading' && <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>}
+            {icon && _apiStatus !== 'loading' && <Icon name={icon} className={iconClassName} />} {children}
         </button>
     );
 };

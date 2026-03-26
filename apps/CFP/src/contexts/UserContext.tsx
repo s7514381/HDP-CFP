@@ -1,10 +1,11 @@
 'use client';
 
-import { createContext, useContext, useMemo } from "react";
+import { createContext, useContext, useMemo, useState } from "react";
 
 
 type UserContextType = {
   user: User | null;
+  setUser: (user: User | null) => void;
 };
 
 const UserContext = createContext<UserContextType | null>(null);
@@ -13,8 +14,9 @@ const UserContext = createContext<UserContextType | null>(null);
  * @param param0 
  * @returns 
  */
-export function UserProvider({ user, children }: Readonly<{ user: User | null, children: React.ReactNode }>) {
-  const value = useMemo(() => ({ user }), [user]);
+export function UserProvider({ user: initialUser, children }: Readonly<{ user: User | null, children: React.ReactNode }>) {
+  const [user, setUser] = useState<User | null>(initialUser);
+  const value = useMemo(() => ({ user, setUser }), [user]);
 
   return (
     <UserContext.Provider value={value}>

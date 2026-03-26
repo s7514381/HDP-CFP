@@ -1,7 +1,6 @@
 "use client";
 import { useState } from "react";
-import { usePathname } from "next/navigation";
-import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { menus } from "@/config/menus";
 import { ListGroup, ListGroupItem } from "@packages/components/bootstrap5/ListGroup";
 import FontAwesome from "@packages/components/FontAwsome";
@@ -13,6 +12,8 @@ import { Btn } from "@packages/components/bootstrap5/Btn";
  * @returns
  */
 export default function Aside() {
+  /** 路由導向 */
+  const router = useRouter();
   /** 當前網頁路徑 */
   const pathname = usePathname();
   /** 開啟關閉整個側邊欄 */
@@ -47,11 +48,11 @@ export default function Aside() {
             {
               /** 判斷使用連結還是按鈕 */
               menu.href ? (
-                // 如果是next js app使用linl元件，反之使用a標籤讓功能可以導回傳統頁面
+                // 如果是next js app使用router.push元件，反之使用a標籤讓功能可以導回傳統頁面
                 menu.isNextJsApp ? (
-                <Link href={menu.href} className={`${pathname === menu.href ? "active" : ""} aside-item`}>
+                <Btn color="link" onClick={() => router.push(menu.href as string)} className={`${pathname === menu.href ? "active" : ""} aside-item`}>
                   <FontAwesome icon={menu.icon} className="me-2" /> {menu.label}
-                </Link>) : (
+                </Btn>) : (
                 <a href={menu.href} className={`${pathname === menu.href ? "active" : ""} aside-item`}>
                   <FontAwesome icon={menu.icon} className="me-2" /> {menu.label}
                 </a>
@@ -67,12 +68,12 @@ export default function Aside() {
               <ListGroup flush={true} className={`collapse ${collapse.includes(menu.key) ? "show" : ""}`}>
                 {menu.children.map((item) => (
                   <ListGroupItem key={item.key} href={item.href}>
-                    {/* 如果是next js app使用linl元件，反之使用a標籤讓功能可以導回傳統頁面 */}
-                    {menu.isNextJsApp ? (
-                    <Link href={item.href as string} className={`${isActive(item.href as string, menu.key) ? "active aside-item" : "aside-item"}`}>
+                    {/* 如果是next js app使用router.push，反之使用a標籤讓功能可以導回傳統頁面 */}
+                    {item.isNextJsApp ? (
+                    <Btn color="link" onClick={() => router.push(item.href as string)} className={`${isActive(item.href as string, menu.key) ? "active aside-item" : "aside-item"}`}>
                       <FontAwesome icon={item.icon} className="me-2" />{" "}
                       {item.label}
-                    </Link>
+                    </Btn>
                     ) : (
                     <a href={item.href} className={`${isActive(item.href as string, menu.key) ? "active aside-item" : "aside-item"}`}>
                       <FontAwesome icon={item.icon} className="me-2" />{" "}

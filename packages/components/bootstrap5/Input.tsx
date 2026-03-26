@@ -305,7 +305,8 @@ export function DropdownInput({
       setIsSelected(false);
       return;
     }
-    if (fetchItems && inputValue !== "" && !isComposing) {
+    // 當 inputValue 為空字串時也呼叫 API（用於清除關鍵字後重新取得完整列表）
+    if (fetchItems && !isComposing) {
       if (timerRef.current) {
         clearTimeout(timerRef.current);
       }

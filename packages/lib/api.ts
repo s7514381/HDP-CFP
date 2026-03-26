@@ -73,7 +73,7 @@ export async function apiRequest<TResponse, TRequest = unknown>(
         method: options.method,
         headers,
         body: hasBody ? prepareRequestBody(options.body) : undefined,
-        credentials: "include",
+        // credentials: "include", // 暫時註解掉以排除 CORS 相關的問題
     };
 
     // 統一回傳格式

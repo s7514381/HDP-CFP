@@ -1,8 +1,9 @@
 type FontAwesomeProps = {
     icon?: string;
     className?: string;
+    onClick?: React.MouseEventHandler<HTMLElement>;
 }
-const FontAwesome = ({ icon, className }: FontAwesomeProps) => {
+const FontAwesome = ({ icon, className, onClick }: FontAwesomeProps) => {
     if (!icon) {
         return null;
     }
@@ -12,7 +13,7 @@ const FontAwesome = ({ icon, className }: FontAwesomeProps) => {
     }
     const classNameStr = classes.join(" ");
     return (
-        <i className={classNameStr}></i>
+        <i className={classNameStr} onClick={onClick}></i>
     );
 }
 

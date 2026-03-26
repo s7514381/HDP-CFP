@@ -5,8 +5,11 @@ export default function AuthLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <>
-    {children}
-    </>
+    <div className="auth-bg">
+      <div className="auth-card">
+        <img src="/images/logo-vert.png" alt="aHOP Logo" className="auth-logo" />
+        {children}
+      </div>
+    </div>
   );
 }
