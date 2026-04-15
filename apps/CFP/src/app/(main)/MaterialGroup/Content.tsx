@@ -50,25 +50,24 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
   const [selectedMaterials, setSelectedMaterials] = useState<MaterialSelectItem[]>([]);
 
   // 當 formData.materialList 有資料時（編輯模式載入），轉換並設定到 selectedMaterials 和 formData
-  React.useEffect(() => {
+  useEffect(() => {
     if (formData.materialList && formData.materialList.length > 0) {
-      const mapped = formData.materialList.map((m: MaterialData) => {
-        let labelText = String(m.id);
-        if (m.materialNumber && m.productName) {
-          labelText = `${m.materialNumber} - ${m.productName}`;
-        } else if (m.materialNumber) {
-          labelText = m.materialNumber;
-        } else if (m.productName) {
-          labelText = m.productName;
+      const mapped = formData.materialList.map((m: MaterialData | any) => {
+        // Handle case where materialList items might already be in label/value format
+        if (m.label && m.value && !m.materialNumber && !m.productName) {
+          return {
+            id: m.value,
+            value: m.value,
+            label: m.label,
+          };
         }
-
+        
         return {
           id: m.id ?? '',
           value: m.id ?? '',
-          label: labelText,
-          materialNumber: m.materialNumber,
-          productModel: m.productModel,
-          productName: m.productName,
+          label: m.materialNumber && m.productName 
+            ? `${m.materialNumber} - ${m.productName}` 
+            : (m.label || m.name || m.productName || m.materialNumber || '未命名項目'),
         };
       });
       setSelectedMaterials(mapped);
@@ -89,6 +88,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
     if (selectedMaterials.some(sm => String(sm.value) === item.value)) {
       return;
     }
+    
     const newItem: MaterialSelectItem = {
       id: item.value,
       value: item.value,
@@ -171,7 +171,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                           });
                           if (res.success && res.data) {
                             return res.data.map((m: any) => ({
-                              label: m.text || m.label || String(m.value),
+                              label: m.text,
                               value: m.value
                             }));
                           }

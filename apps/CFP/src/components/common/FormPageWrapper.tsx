@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@packages/contexts/ToastContext';
 
@@ -16,10 +16,20 @@ interface FormPageWrapperProps<T> {
   idParamName?: string;
 }
 
-// Native HTML form onSubmit type
-type NativeFormSubmit = (e: React.FormEvent<HTMLFormElement>) => void;
+// Loading fallback component
+function FormPageLoading() {
+  return (
+    <div className="p-5 text-center">
+      <div className="spinner-border text-primary" role="status">
+        <span className="visually-hidden">載入中...</span>
+      </div>
+      <div className="mt-2 text-muted">正在載入...</div>
+    </div>
+  );
+}
 
-export default function FormPageWrapper<T extends Record<string, any>>({
+// Inner component that uses useSearchParams
+function FormPageWrapperInner<T extends Record<string, any>>({
   title,
   content: Content,
   initialData,
@@ -48,9 +58,21 @@ export default function FormPageWrapper<T extends Record<string, any>>({
       const data = res?.data || res;
 
       if (data && typeof data === 'object') {
-        // 合併初始資料與 API 回傳資料，過濾掉 null 值並將數值轉為字串（符合 Input 元件需求）
+        // 合併初始資料與 API 回傳資料
+        // - 過濾掉 null 值
+        // - 保留物件和陣列不做轉換
+        // - 保留 Status 欄位為數值不做字串轉換（後端可能為 enum 或特定數值驗證）
         const processedData = Object.fromEntries(
-          Object.entries(data).map(([k, v]) => [k, v === null ? '' : String(v)])
+          Object.entries(data).map(([k, v]) => {
+            if (v === null) return [k, ''];
+            if (typeof v === 'object') return [k, v];
+            // Status 欄位：200 轉換為 1（啟用），保留為數值
+            if (k === 'Status' || k === 'status') {
+              const statusValue = v === 200 ? 1 : v;
+              return [k, statusValue];
+            }
+            return [k, String(v)];
+          })
         );
         
         setFormData(prev => {
@@ -73,9 +95,11 @@ export default function FormPageWrapper<T extends Record<string, any>>({
     fetchModel();
   }, [fetchModel]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement> | { target: { name: string; value: any } }) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    // 如果 value 是物件或陣列（来自 Content.tsx 的自定義 onChange），直接使用
+    // 否則使用原值（可能已被 HTML 元素轉換為字串）
+    setFormData(prev => ({ ...prev, [name]: (typeof value === 'object' && value !== null) ? value : value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -116,5 +140,14 @@ export default function FormPageWrapper<T extends Record<string, any>>({
       loading={loading}
       submitLabel={submitLabel}
     />
+  );
+}
+
+// Wrapper component with Suspense boundary
+export default function FormPageWrapper<T extends Record<string, any>>(props: FormPageWrapperProps<T>) {
+  return (
+    <Suspense fallback={<FormPageLoading />}>
+      <FormPageWrapperInner {...props} />
+    </Suspense>
   );
 }

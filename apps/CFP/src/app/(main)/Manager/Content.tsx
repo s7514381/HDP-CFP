@@ -16,7 +16,7 @@ export const DEFAULT_MANAGER_FORM = {
   name: '',
   email: '',
   phone: '',
-  role: 'Admin',
+  taxID: '',
   status: '1' as string | number,
   note: ''
 };
@@ -95,7 +95,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                 />
               </Grid.Col>
 
-              <Grid.Col md={6}>
+              {/* <Grid.Col md={6}>
                 <Input
                   label="聯絡電話"
                   name="phone"
@@ -103,8 +103,19 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                   onChange={onChange}
                   placeholder="例：0912345678"
                 />
-              </Grid.Col>
+              </Grid.Col> */}
+
               <Grid.Col md={6}>
+                <Input
+                  label="統一編號"
+                  name="taxID"
+                  value={formData.taxID || ''}
+                  onChange={onChange}
+                  placeholder="請輸入統編"
+                />
+              </Grid.Col>
+
+              {/* <Grid.Col md={6}>
                 <Select
                   label="角色"
                   name="role"
@@ -115,9 +126,9 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                     { label: '一般管理員', value: 'User' }
                   ]}
                 />
-              </Grid.Col>
+              </Grid.Col> */}
 
-              <Grid.Col md={6}>
+              {/* <Grid.Col md={6}>
                 <Select
                   label="狀態"
                   name="status"
@@ -128,9 +139,9 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                     { label: '停用', value: '0' }
                   ]}
                 />
-              </Grid.Col>
+              </Grid.Col> */}
 
-              <Grid.Col md={12}>
+              {/* <Grid.Col md={12}>
                 <div className="mb-3">
                   <label className="form-label">備註</label>
                   <textarea
@@ -142,7 +153,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                     placeholder="其他補充說明"
                   />
                 </div>
-              </Grid.Col>
+              </Grid.Col> */}
 
               <Grid.Col md={12} className="d-flex justify-content-end gap-2 mt-4">
                 <Btn type="button" color="secondary" outline onClick={() => router.push('/Manager')}>

@@ -25,18 +25,18 @@ export default function MaterialPage() {
 
   const tableRef = React.useRef<CommonTableHandle>(null);
   const [searchMaterialNumber, setSearchMaterialNumber] = useState('');
-  const [searchProductName, setSearchProductName] = useState('');
+  const [searchSupplierName, setSearchSupplierName] = useState('');
 
   const handleSearch = () => {
     tableRef.current?.search({
       MaterialNumber: searchMaterialNumber,
-      ProductName: searchProductName
+      SupplierName: searchSupplierName
     });
   };
 
   const handleClear = () => {
     setSearchMaterialNumber('');
-    setSearchProductName('');
+    setSearchSupplierName('');
     tableRef.current?.search({});
   };
 
@@ -63,10 +63,6 @@ export default function MaterialPage() {
       render: (_, index) => index + 1
     },
     { 
-      header: "供應商", 
-      key: "supplierName" 
-    },
-    { 
       header: "料號", 
       key: "materialNumber" 
     },
@@ -77,6 +73,10 @@ export default function MaterialPage() {
     { 
       header: "產品名稱", 
       key: "productName" 
+    },
+    { 
+      header: "供應商", 
+      key: "supplierName" 
     },
     {
       header: "",
@@ -111,7 +111,7 @@ export default function MaterialPage() {
               <Input label="料號" placeholder="料號" value={searchMaterialNumber} onChange={(e) => setSearchMaterialNumber(e.target.value)} />
             </Col>
             <Col md={4}>
-              <Input label="產品名稱" placeholder="產品名稱" value={searchProductName} onChange={(e) => setSearchProductName(e.target.value)} />
+              <Input label="供應商名稱" placeholder="供應商名稱" value={searchSupplierName} onChange={(e) => setSearchSupplierName(e.target.value)} />
             </Col>
             <Col md={4} className="d-flex justify-content-end gap-2 align-items-end">
               <Btn color="success" outline className="bg-success-light text-success border-success" style={{ backgroundColor: '#d1e7dd' }} icon="search" onClick={handleSearch}>

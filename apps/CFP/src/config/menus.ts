@@ -1,7 +1,7 @@
 /**
  * 所有功能的路由菜单配置
  */
-type MenuItem = {
+export type MenuItem = {
     key: string;
     icon?: string;
     label: string;
@@ -69,23 +69,23 @@ export const menus: MenuItem[] = [
         ]
     },
     {
-        key: "Correspond",
+        key: "Compare",
         icon: `fa-solid fa-user-group`,
         label: "對照狀態",
         href: undefined,
         children:[
             {
-                key: "BuyerCorrespond",
+                key: "BuyerCompare",
                 icon: `fa-solid fa-list-ul`,
                 label: "買方料號對照",
-                href: "/BuyerCorrespond",
+                href: "/BuyerCompare",
                 isNextJsApp: true,
             },
             {
-                key: "SellerCorrespond",
+                key: "SellerCompare",
                 icon: `fa-solid fa-list-ul`,
                 label: "賣方料號對照",
-                href: "/SellerCorrespond",
+                href: "/SellerCompare",
                 isNextJsApp: true,
             },
         ]
@@ -97,10 +97,10 @@ export const menus: MenuItem[] = [
         href: undefined,
         children:[
             {
-                key: "BuildNotification",
+                key: "MaterialNotify",
                 icon: `fa-solid fa-list-ul`,
                 label: "建置通知",
-                href: "/BuildNotification",
+                href: "/MaterialNotify",
                 isNextJsApp: true,
             },
             {

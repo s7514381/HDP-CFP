@@ -1,9 +1,10 @@
 'use client';
 
 import { useApi } from "@packages/hooks/useApi";
-import { getLocalStorage } from "@packages/lib/localstorage";
+import { getLocalStorage, removeLocalStorage } from "@packages/lib/localstorage";
 import { UseApiRequest, UseApiResult } from "@packages/types/useApi";
 import { useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
 
 /**
  * 繼承自 @packages/hooks/useApi 的 Hook
@@ -11,6 +12,7 @@ import { useCallback, useMemo } from "react";
  */
 export const useAppApi = (): UseApiResult => {
   const api = useApi();
+  const router = useRouter();
 
   const { request: originalRequest } = api;
 
@@ -32,9 +34,18 @@ export const useAppApi = (): UseApiResult => {
         };
       }
 
-      return originalRequest<TRes, TReq>(url, reqOptions);
+      const result = await originalRequest<TRes, TReq>(url, reqOptions);
+
+      // 如果收到 401，表示未登入或 token 過期，跳轉到首頁
+      if (result.status === 401) {
+        removeLocalStorage("token");
+        removeLocalStorage("userInfo");
+        router.push("/login");
+      }
+
+      return result;
     },
-    [originalRequest] // 僅依賴於穩定的 originalRequest
+    [originalRequest, router] // 僅依賴於穩定的 originalRequest
   );
 
   const get = useCallback(

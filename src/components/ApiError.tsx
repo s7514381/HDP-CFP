@@ -32,7 +32,7 @@ export const ApiError = ({ apiEvent, onClose}: {apiEvent?: ApiEvent | null, onCl
   const router = useRouter();
   const api = useApi();
   const httpCode = apiEvent?.status?.toString() || '0';
-  const message = `${apiEvent?.status} - ${apiEvent?.message || '網路發生異常。'}`;
+  const message = `${apiEvent?.status} - ${apiEvent?.message || '請重新登入'}`;
 
   /** 呼叫API登出用戶．避免傳統登入的cookie還在，但 api token生命週期已經結束 */
   const logoutUser = async () => {

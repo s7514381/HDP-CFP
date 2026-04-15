@@ -13,38 +13,43 @@ import Grid from "@packages/components/bootstrap5/Grid";
 import FontAwesome from "@packages/components/FontAwsome";
 import { useToast } from '@packages/contexts/ToastContext';
 import { useConfirm } from '@packages/hooks/useConfirm';
-import { API_MAP } from '@/lib/apiRoutes';
+import { useAppApi } from '@/hooks/useAppApi';
+import { API_URL, API_MAP } from '@/lib/apiRoutes';
 
-export default function ManagerPage() {
+export default function MaterialPage() {
   const router = useRouter();
+  const api = useAppApi();
   const { success, danger } = useToast();
   const { confirm } = useConfirm();
   const { Row, Col } = Grid;
 
   const tableRef = React.useRef<CommonTableHandle>(null);
-  const [searchName, setSearchName] = useState('');
-  const [searchAccount, setSearchAccount] = useState('');
+  const [searchMaterialNumber, setSearchMaterialNumber] = useState('');
+  const [searchSupplierName, setSearchSupplierName] = useState('');
 
   const handleSearch = () => {
     tableRef.current?.search({
-      Name: searchName,
-      Account: searchAccount
+      MaterialNumber: searchMaterialNumber,
+      SupplierName: searchSupplierName
     });
   };
 
   const handleClear = () => {
-    setSearchName('');
-    setSearchAccount('');
+    setSearchMaterialNumber('');
+    setSearchSupplierName('');
     tableRef.current?.search({});
   };
 
   const handleDelete = async (id: number | string) => {
-    if (await confirm('確定要刪除此管理員嗎？')) {
-      try {
-        await fetch(`${API_MAP.MANAGER_MST}/Delete?id=${id}`, { method: 'POST' });
+    if (await confirm('確定要刪除此料號嗎？')) {
+      // 統一使用 FormData 避免 415
+      const fd = new FormData();
+      fd.append('id', String(id));
+      const result = await api.post(`${API_URL}/Material/Delete`, { body: fd });
+      if (result.success) {
         success({ message: <span>刪除成功！</span> });
         tableRef.current?.reload();
-      } catch (err) {
+      } else {
         danger({ message: <span>刪除失敗。</span> });
       }
     }
@@ -58,23 +63,23 @@ export default function ManagerPage() {
       render: (_, index) => index + 1
     },
     { 
-      header: "姓名", 
-      key: "name" 
+      header: "料號", 
+      key: "materialNumber" 
     },
     { 
-      header: "帳號", 
-      key: "account" 
+      header: "產品型號", 
+      key: "productModel" 
     },
     { 
-      header: "角色", 
-      key: "role" 
+      header: "產品名稱", 
+      key: "productName" 
     },
     { 
-      header: "電話", 
-      key: "phone" 
+      header: "供應商", 
+      key: "supplierName" 
     },
     {
-      header: "操作",
+      header: "",
       className: "text-center",
       style: { width: '120px' },
       render: (item) => (
@@ -82,13 +87,13 @@ export default function ManagerPage() {
           <FontAwesome 
             icon="fa-regular fa-pen-to-square" 
             className="text-warning cursor-pointer" 
-            onClick={() => router.push(`/Manager/Edit/?id=${item.id}`)}
+            onClick={() => router.push(`/SellerCompare/Edit/?id=${item.id}`)}
           />
-          <FontAwesome 
+          {/* <FontAwesome 
             icon="fa-regular fa-trash-can" 
             className="text-danger cursor-pointer" 
             onClick={() => handleDelete(item.id)}
-          />
+          /> */}
         </div>
       )
     }
@@ -96,17 +101,16 @@ export default function ManagerPage() {
 
   return (
     <>
-      <ActionBar title="管理員管理">
-      </ActionBar>
+      <ActionBar></ActionBar>
 
       <WrapContent className="p-3">
         <SearchBlock title="" icon="" className="mb-3">
           <Row align="center" gutter={3}>
             <Col md={4}>
-              <Input label="姓名" placeholder="管理員姓名" value={searchName} onChange={(e) => setSearchName(e.target.value)} />
+              <Input label="料號" placeholder="料號" value={searchMaterialNumber} onChange={(e) => setSearchMaterialNumber(e.target.value)} />
             </Col>
             <Col md={4}>
-              <Input label="帳號" placeholder="登入帳號" value={searchAccount} onChange={(e) => setSearchAccount(e.target.value)} />
+              <Input label="供應商名稱" placeholder="供應商名稱" value={searchSupplierName} onChange={(e) => setSearchSupplierName(e.target.value)} />
             </Col>
             <Col md={4} className="d-flex justify-content-end gap-2 align-items-end">
               <Btn color="success" outline className="bg-success-light text-success border-success" style={{ backgroundColor: '#d1e7dd' }} icon="search" onClick={handleSearch}>
@@ -116,11 +120,12 @@ export default function ManagerPage() {
             </Col>
           </Row>
         </SearchBlock>
+
         <Container fluid>
             <CommonTable 
               ref={tableRef}
               columns={columns}
-              apiUrl={API_MAP.MANAGER_GET_LIST}
+              apiUrl={API_MAP.MATERIAL_GET_LIST}
               pageSize={10}
             />
         </Container>

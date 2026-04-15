@@ -11,9 +11,10 @@ export interface Column<T> {
   style?: React.CSSProperties;
 }
 
-export interface CommonTableHandle {
+export interface CommonTableHandle<T = unknown> {
   reload: () => void;
   search: (params: Record<string, string>) => void;
+  getData: () => Promise<T[]>;
 }
 
 interface CommonTableProps<T> {
@@ -30,7 +31,7 @@ interface CommonTableProps<T> {
   onPageChange?: (page: number) => void;
 }
 
-export const CommonTable = forwardRef(<T extends any>(
+export const CommonTable = forwardRef(<T extends any,>(
   {
     columns,
     apiUrl,
@@ -43,7 +44,7 @@ export const CommonTable = forwardRef(<T extends any>(
     isLoading: manualIsLoading,
     onPageChange: manualOnPageChange,
   }: CommonTableProps<T>,
-  ref: React.Ref<CommonTableHandle>
+  ref: React.Ref<CommonTableHandle<T>>
 ) => {
   const { post, loading } = useAppApi();
   const [data, setData] = useState<T[]>(manualData || []);
@@ -104,8 +105,9 @@ export const CommonTable = forwardRef(<T extends any>(
     search: (params: Record<string, string>) => {
       setSearchParams(params);
       fetchList(1, params);
-    }
-  }));
+    },
+    getData: () => Promise.resolve(data)
+  }), [data]);
 
   const handlePageChange = (page: number) => {
     if (apiUrl) {
