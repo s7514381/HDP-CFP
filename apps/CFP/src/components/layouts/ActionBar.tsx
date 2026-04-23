@@ -1,7 +1,8 @@
 "use client";
 import Container from "@packages/components/bootstrap5/Container";
 import { usePathname } from "next/navigation";
-import { menus, MenuItem } from "@/config/menus";
+import { MenuItem } from "@/config/menus";
+import { useMenu } from "@/contexts/MenuContext";
 
 type ActionBarProps = {
     readonly title?: string;
@@ -36,6 +37,7 @@ const findMenuTitle = (pathname: string, items: MenuItem[]): string | undefined 
  */
 export default function ActionBar({title, children}: ActionBarProps) {
   const pathname = usePathname();
+  const { menus } = useMenu();
   
   // 如果有傳入 title，優先使用；否則從路由獲取
   const displayTitle = title ?? findMenuTitle(pathname, menus);

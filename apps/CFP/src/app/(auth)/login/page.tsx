@@ -11,12 +11,128 @@ import { useUser } from "@/contexts/UserContext";
 import { ApiError } from "@packages/components/ApiError";
 import { setLocalStorage } from "@packages/lib/localstorage";
 import { useToast } from '@packages/contexts/ToastContext';
+import { useMenu } from "@/contexts/MenuContext";
+import { MenuItem } from "@/config/menus";
+
+// 假資料：模擬未來 API 回傳的選單結構
+const mockApiMenus: MenuItem[] = [
+  {
+      key: "Admin",
+      icon: `fa-solid fa-user-group`,
+      label: "系統管理",
+      href: undefined,
+      children:[
+          {
+              key: "AdminFunction",
+              icon: `fa-solid fa-list-ul`,
+              label: "系統功能管理",
+              href: "/AdminFunction",
+              isNextJsApp: true,
+          },
+          {
+              key: "AdminMenu",
+              icon: `fa-solid fa-list-ul`,
+              label: "選單管理",
+              href: "/AdminMenu",
+              isNextJsApp: true,
+          },
+      ]
+  },
+  {
+      key: "Manager",
+      icon: `fa-solid fa-user-group`,
+      label: "帳號管理",
+      href: '/Manager',
+      isNextJsApp: true,
+  },
+  {
+      key: "BaseData",
+      icon: `fa-solid fa-user-group`,
+      label: "基本資料",
+      href: undefined,
+      children:[
+          {
+              key: "Supplier",
+              icon: `fa-solid fa-list-ul`,
+              label: "供應商管理",
+              href: "/Supplier",
+              isNextJsApp: true,
+          },
+          {
+              key: "Material",
+              icon: `fa-solid fa-list-ul`,
+              label: "料號維護",
+              href: "/Material",
+              isNextJsApp: true,
+          },
+          {
+              key: "MaterialGroup",
+              icon: `fa-solid fa-list-ul`,
+              label: "群組維護",
+              href: "/MaterialGroup",
+              isNextJsApp: true,
+          }
+      ]
+  },
+  {
+      key: "Compare",
+      icon: `fa-solid fa-user-group`,
+      label: "對照狀態",
+      href: undefined,
+      children:[
+          {
+              key: "BuyerCompare",
+              icon: `fa-solid fa-list-ul`,
+              label: "買方料號對照",
+              href: "/BuyerCompare",
+              isNextJsApp: true,
+          },
+          {
+              key: "SellerCompare",
+              icon: `fa-solid fa-list-ul`,
+              label: "賣方料號對照",
+              href: "/SellerCompare",
+              isNextJsApp: true,
+          },
+      ]
+  },
+  {
+      key: "Notification",
+      icon: `fa-solid fa-bullhorn`,
+      label: "通知狀態",
+      href: undefined,
+      children:[
+          {
+              key: "MaterialNotify",
+              icon: `fa-solid fa-list-ul`,
+              label: "建置通知",
+              href: "/MaterialNotify",
+              isNextJsApp: true,
+          },
+          {
+              key: "StatusQuery",
+              icon: `fa-solid fa-list-ul`,
+              label: "狀態查詢",
+              href: "/StatusQuery",
+              isNextJsApp: true,
+          },
+          {
+              key: "NotifyStatusReport",
+              icon: `fa-solid fa-list-ul`,
+              label: "狀態報表",
+              href: "/NotifyStatusReport",
+              isNextJsApp: true,
+          },
+      ]
+  },
+];
 
 export default function Login() {
   const router = useRouter();
   const { post, loading } = useApi();
   const { setUser } = useUser();
-   const { success, danger } = useToast();
+  const { setMenus } = useMenu();
+  const { success, danger } = useToast();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -32,7 +148,11 @@ export default function Login() {
     if (res.status === 200 && res.data) {
       // 根據範例，data 欄位即為 GUID Token
       setLocalStorage("token", res.data);
-      
+
+      // 模擬從 API 取得選單：這裡先寫入靜態的假資料
+      // TODO: 等後端 API 加上選單結構後，改為 setMenus(res.data.menus) 或類似的結構
+      setMenus(mockApiMenus);
+
       // 登入成功後導向首頁 (main)
       router.push("/");
     }else{
