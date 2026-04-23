@@ -8,6 +8,7 @@ import { ApiProvider } from "@packages/contexts/ApiContext";
 import { HeadProvider, useHead } from "@packages/contexts/HeadContext";
 import { ToastProvider } from "@packages/contexts/ToastContext";
 import { UserProvider } from "@/contexts/UserContext";
+import { MenuProvider } from "@/contexts/MenuContext";
 
 /**
  * 接收全域Head Context，並更新head內容
@@ -41,9 +42,11 @@ export default function RootLayout({
         <body>
           <ToastProvider>
             <UserProvider user={null}>
-              <ApiProvider>
-                {children}
-              </ApiProvider>
+              <MenuProvider>
+                <ApiProvider>
+                  {children}
+                </ApiProvider>
+              </MenuProvider>
             </UserProvider>
           </ToastProvider>
         </body>

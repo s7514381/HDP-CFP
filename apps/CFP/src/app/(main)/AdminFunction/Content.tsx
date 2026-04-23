@@ -120,7 +120,6 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                     value={formData?.action || ''}
                     onChange={onChange}
                     placeholder="例如: Index"
-                    required
                   />
                 </Grid.Col>
 

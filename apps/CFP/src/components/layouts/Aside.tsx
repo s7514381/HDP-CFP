@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { menus } from "@/config/menus";
+import { useMenu } from "@/contexts/MenuContext";
 import { ListGroup, ListGroupItem } from "@packages/components/bootstrap5/ListGroup";
 import FontAwesome from "@packages/components/FontAwsome";
 import { Btn } from "@packages/components/bootstrap5/Btn";
@@ -12,6 +12,7 @@ import { Btn } from "@packages/components/bootstrap5/Btn";
  * @returns
  */
 export default function Aside() {
+  const { menus } = useMenu();
   /** 路由導向 */
   const router = useRouter();
   /** 當前網頁路徑 */
