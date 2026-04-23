@@ -2,14 +2,14 @@
 
 import React from 'react';
 import Content from '../Content';
-import { API_MAP } from '@/lib/apiRoutes';
+import { API_MAP, API_URL } from '@/lib/apiRoutes';
 import FormPageWrapper from '@/components/common/FormPageWrapper';
 import { useAppApi } from '@/hooks/useAppApi';
 
 export default function MaterialEditPage() {
   const { formPost } = useAppApi();
   const handleFetchModel = React.useCallback(async (id: string) => {
-    return formPost(API_MAP.BUYER_GET_MODEL, { id });
+    return formPost(`${API_URL}/BuyerCompare/GetModel`, { id });
   }, [formPost]);
 
   return (
@@ -17,7 +17,7 @@ export default function MaterialEditPage() {
       title="編輯"
       content={Content}
       onFetchModel={handleFetchModel}
-      onSubmit={(data) => formPost(API_MAP.BUYER_EDIT, data)}
+      onSubmit={(data) => formPost(`${API_URL}/BuyerCompare/Edit`, data)}
       redirectPath="/BuyerCompare"
     />
   );

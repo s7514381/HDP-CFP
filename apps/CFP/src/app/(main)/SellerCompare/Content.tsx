@@ -10,15 +10,15 @@ import Grid from '@packages/components/bootstrap5/Grid';
 import { Container } from '@packages/components/bootstrap5/Container';
 import ActionBar from '@/components/layouts/ActionBar';
 import { useAppApi } from '@/hooks/useAppApi';
-import { API_MAP } from '@/lib/apiRoutes';
+import { API_MAP,API_URL } from '@/lib/apiRoutes';
 
 
 interface MaterialCompare {
   materialId: string,
-  supplierId: string,
-  materialNumber: string,
   supplierName: string,
   supplierTaxID: string,
+  buyerMaterialId: string,
+  buyerMaterialNumber?: string,
 };
 
 export const DEFAULT_BuyerCompare = {
@@ -31,7 +31,6 @@ export interface SupplierSelectItem {
   id: string;
   label: string;
   value: string | number;
-  materialNumber: string;
 }
 
 interface ContentProps {
@@ -58,10 +57,9 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
     // 只有當 selectedSuppliers 為空且有資料時才初始化（首次載入）
     if (selectedSuppliers.length === 0 && formData.materialCompareList && formData.materialCompareList.length > 0) {
       const mapped = formData.materialCompareList.map((item: MaterialCompare) => ({
-        id: item.supplierId,
-        value: item.supplierId,
-        label: `${item.supplierTaxID} - ${item.supplierName}`, // 標籤可根據需求從其他地方取得，或透過 API 取得供應商名稱
-        materialNumber: item.materialNumber,
+        id: item.buyerMaterialId,
+        value: item.buyerMaterialId,
+        label: `${item.supplierName}(${item.supplierTaxID}) - ${item.buyerMaterialNumber}`, 
       }));
       setSelectedSuppliers(mapped);
       isInitialized.current = true;
@@ -72,8 +70,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
   const syncMaterialCompareList = (suppliers: SupplierSelectItem[]) => {
     const materialCompareList: MaterialCompare[] = suppliers.map(sm => ({
       materialId: String(parentId),
-      supplierId: String(sm.id),
-      materialNumber: sm.materialNumber,
+      buyerMaterialId: String(sm.id),
       supplierName: '',
       supplierTaxID: '',
     }));
@@ -82,14 +79,6 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
 
   const handleRemoveSupplier = (id: string | number) => {
     const updated = selectedSuppliers.filter(sm => String(sm.id) !== String(id));
-    setSelectedSuppliers(updated);
-    syncMaterialCompareList(updated);
-  };
-
-  const handleMaterialNumberChange = (id: string | number, value: string) => {
-    const updated = selectedSuppliers.map(sm => 
-      String(sm.id) === String(id) ? { ...sm, materialNumber: value } : sm
-    );
     setSelectedSuppliers(updated);
     syncMaterialCompareList(updated);
   };
@@ -104,7 +93,6 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
       id: item.value,
       value: item.value,
       label: item.label,
-      materialNumber: "", // 預設空料號
     };
     const updated = [...selectedSuppliers, newItem];
     setSelectedSuppliers(updated);
@@ -132,13 +120,12 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                     <Card.Body>
                       <div className="mb-3">
                         <DropdownInput
-                          autoFocus
-                          label="選擇供應商"
-                          placeholder="輸入統編或名稱關鍵字搜尋..."
+                          label="選擇供應商/料號"
+                          placeholder="輸入統編、料號或名稱關鍵字搜尋..."
                           fetchItems={async (input: string) => {
                             // 根據輸入關鍵字搜尋料號，使用 params 傳遞 keyword
                             // 當 input 為空字串時，也呼叫 API 取得完整列表
-                            const res = await api.post(`${API_MAP.SUPPLIER_GET_SELECT_LIST}`, {
+                            const res = await api.post(`${API_URL}/Material/GetKeywordSelectListItems`, {
                               params: { keyword: input || "" }
                             });
                             if (res.success && res.data) {
@@ -156,7 +143,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
 
                       {selectedSuppliers.length > 0 && (
                         <div className="mt-3">
-                          <label className="form-label fw-bold">已選取供應商 ({selectedSuppliers.length})</label>
+                          <label className="form-label fw-bold">已選取料號 ({selectedSuppliers.length})</label>
                           <div className="border rounded p-3 bg-white">
                             {selectedSuppliers.map((supplier, index) => (
                               <div
@@ -164,16 +151,10 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                                 className="d-flex align-items-center justify-content-between py-2 px-2 mb-2 bg-light rounded"
                               >
                                 <div className="d-flex align-items-center flex-grow-1 me-3 gap-2">
-                                  <span className="text-truncate" style={{ minWidth: '150px', maxWidth: '300px' }}>
+                                  <span >
                                     {supplier.label}
                                   </span>
-                                  <Input
-                                    type="text"
-                                    placeholder="料號"
-                                    value={supplier.materialNumber}
-                                    onChange={(e) => handleMaterialNumberChange(supplier.id, e.target.value)}
-                                    style={{ minWidth: '120px', maxWidth: '180px' }}
-                                  />
+                                  
                                 </div>
                                 <Btn
                                   type="button"

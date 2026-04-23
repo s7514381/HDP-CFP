@@ -23,11 +23,11 @@ export default function MaterialNotifyPage() {
   
   // 搜尋表單狀態
   const [searchForm, setSearchForm] = useState({
-    startDate: '',
-    endDate: '',
-    group: '',
+    updateDateFrom: '',
+    updateDateTo: '',
+    materialGroupName: '',
     productModel: '',
-    supplier: ''
+    supplierName: ''
   });
 
   // 選取的項目狀態
@@ -46,11 +46,11 @@ export default function MaterialNotifyPage() {
 
   const handleClear = () => {
     setSearchForm({
-      startDate: '',
-      endDate: '',
-      group: '',
+      updateDateFrom: '',
+      updateDateTo: '',
+      materialGroupName: '',
       productModel: '',
-      supplier: ''
+      supplierName: ''
     });
     tableRef.current?.search({});
   };
@@ -136,8 +136,8 @@ export default function MaterialNotifyPage() {
               <Input 
                 type="date"
                 label="異動紀錄開始日期" 
-                name="startDate"
-                value={searchForm.startDate} 
+                name="updateDateFrom"
+                value={searchForm.updateDateFrom} 
                 onChange={handleSearchChange} 
               />
             </Col>
@@ -145,17 +145,17 @@ export default function MaterialNotifyPage() {
               <Input 
                 type="date"
                 label="異動紀錄結束日期" 
-                name="endDate"
-                value={searchForm.endDate} 
+                name="updateDateTo"
+                value={searchForm.updateDateTo} 
                 onChange={handleSearchChange} 
               />
             </Col>
             <Col md={1}>
               <Input 
                 label="群組" 
-                name="group"
-                placeholder="CPU" 
-                value={searchForm.group} 
+                name="materialGroupName"
+                placeholder="" 
+                value={searchForm.materialGroupName} 
                 onChange={handleSearchChange} 
               />
             </Col>
@@ -163,7 +163,7 @@ export default function MaterialNotifyPage() {
               <Input 
                 label="產品型號" 
                 name="productModel"
-                placeholder="2815-1041" 
+                placeholder="" 
                 value={searchForm.productModel} 
                 onChange={handleSearchChange} 
               />
@@ -171,9 +171,9 @@ export default function MaterialNotifyPage() {
             <Col md={1}>
               <Input 
                 label="供應商" 
-                name="supplier"
-                placeholder="QCOM" 
-                value={searchForm.supplier} 
+                name="supplierName"
+                placeholder="" 
+                value={searchForm.supplierName} 
                 onChange={handleSearchChange} 
               />
             </Col>

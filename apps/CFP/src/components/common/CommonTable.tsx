@@ -13,14 +13,14 @@ export interface Column<T> {
 
 export interface CommonTableHandle<T = unknown> {
   reload: () => void;
-  search: (params: Record<string, string>) => void;
+  search: (params: Record<string, any>) => void;
   getData: () => Promise<T[]>;
 }
 
 interface CommonTableProps<T> {
   columns: Column<T>[];
   apiUrl?: string;
-  searchParams?: Record<string, string>;
+  searchParams?: Record<string, any>;
   pageSize?: number;
   rowKey?: (item: T) => string | number;
   // 以下為相容舊版或手動傳入資料的情況
@@ -37,7 +37,7 @@ export const CommonTable = forwardRef(<T extends any,>(
     apiUrl,
     searchParams: externalSearchParams = {},
     pageSize = 10,
-    rowKey = (item: any) => item.id || item.uuid,
+    rowKey,
     data: manualData,
     totalRecords: manualTotalRecords,
     currentPage: manualCurrentPage,
@@ -50,11 +50,11 @@ export const CommonTable = forwardRef(<T extends any,>(
   const [data, setData] = useState<T[]>(manualData || []);
   const [totalRecords, setTotalRecords] = useState(manualTotalRecords || 0);
   const [currentPage, setCurrentPage] = useState(manualCurrentPage || 1);
-  const [searchParams, setSearchParams] = useState<Record<string, string>>(externalSearchParams);
+  const [searchParams, setSearchParams] = useState<Record<string, any>>(externalSearchParams);
 
   const isLoading = apiUrl ? loading === 'loading' : manualIsLoading;
 
-  const fetchList = useCallback(async (page: number, currentSearchParams: Record<string, string>) => {
+  const fetchList = useCallback(async (page: number, currentSearchParams: Record<string, any>) => {
     if (!apiUrl) return;
 
     const startNum = (page - 1) * pageSize;
@@ -63,8 +63,13 @@ export const CommonTable = forwardRef(<T extends any,>(
       start: startNum.toString(),
       length: pageSize.toString(),
       draw: '1',
-      Status: '1',
-      ...currentSearchParams
+      Status: '1'
+    });
+
+    Object.keys(currentSearchParams).forEach(key => {
+      if (currentSearchParams[key] !== undefined && currentSearchParams[key] !== null) {
+        params.append(key, currentSearchParams[key].toString());
+      }
     });
 
     try {
@@ -102,7 +107,7 @@ export const CommonTable = forwardRef(<T extends any,>(
     reload: () => {
       fetchList(currentPage, searchParams);
     },
-    search: (params: Record<string, string>) => {
+    search: (params: Record<string, any>) => {
       setSearchParams(params);
       fetchList(1, params);
     },
@@ -137,15 +142,18 @@ export const CommonTable = forwardRef(<T extends any,>(
         </THead>
         <TBody>
           {data.length > 0 ? (
-            data.map((item, index) => (
-              <Tr key={rowKey(item)}>
-                {columns.map((col, colIndex) => (
+            data.map((item, index) => {
+              const key = rowKey ? (rowKey(item) || index) : index;
+              return (
+                <Tr key={key}>
+                  {columns.map((col, colIndex) => (
                   <Td key={colIndex} className={col.className} style={col.style}>
                     {col.render ? col.render(item, (currentPage - 1) * pageSize + index) : (col.key ? (item as any)[col.key] : '-')}
                   </Td>
                 ))}
               </Tr>
-            ))
+              );
+            })
           ) : (
             <Tr>
               <Td colSpan={columns.length} className="text-center py-4">

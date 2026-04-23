@@ -1,12 +1,15 @@
 import type { NextConfig } from "next";
 
+const isProduction = process.env.NODE_ENV === "production";
+
 const nextConfig: NextConfig = {
   reactStrictMode: true, // 嚴格模式
   trailingSlash: true, // 將所有路由結尾添加斜線
-  basePath: process.env.NODE_ENV === "production" ? "/" : "", // 設定應用程序的基礎路徑為 /hospital（正式環境）
-  assetPrefix: process.env.NODE_ENV === "production" ? "/" : "", // 設定靜態資源的路徑前綴為 /hospital（正式環境）
-  output: "export", // 靜態導出
-  distDir: "../../out/cfp",
+  // 開發模式不要使用 output: export，會導致熱更新失效
+  ...(isProduction ? {
+    output: "export", // 靜態導出（只在正式環境啟用）
+    distDir: "../../out/cfp",
+  } : {}),
   images: {
     unoptimized: true, //禁用圖片優化
   },

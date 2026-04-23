@@ -66,12 +66,12 @@ export default function ManagerPage() {
       key: "account" 
     },
     { 
-      header: "角色", 
-      key: "role" 
+      header: "統一編號", 
+      key: "taxID" 
     },
     { 
-      header: "電話", 
-      key: "phone" 
+      header: "Email", 
+      key: "email" 
     },
     {
       header: "操作",
@@ -96,14 +96,14 @@ export default function ManagerPage() {
 
   return (
     <>
-      <ActionBar title="管理員管理">
+      <ActionBar title="帳號管理">
       </ActionBar>
 
       <WrapContent className="p-3">
-        <SearchBlock title="" icon="" className="mb-3">
+        {/* <SearchBlock title="" icon="" className="mb-3">
           <Row align="center" gutter={3}>
             <Col md={4}>
-              <Input label="姓名" placeholder="管理員姓名" value={searchName} onChange={(e) => setSearchName(e.target.value)} />
+              <Input label="姓名" placeholder="姓名" value={searchName} onChange={(e) => setSearchName(e.target.value)} />
             </Col>
             <Col md={4}>
               <Input label="帳號" placeholder="登入帳號" value={searchAccount} onChange={(e) => setSearchAccount(e.target.value)} />
@@ -115,7 +115,7 @@ export default function ManagerPage() {
               <Btn color="light" className="text-primary border" onClick={handleClear}>清除</Btn>
             </Col>
           </Row>
-        </SearchBlock>
+        </SearchBlock> */}
         <Container fluid>
             <CommonTable 
               ref={tableRef}

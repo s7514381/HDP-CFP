@@ -54,7 +54,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
             <Grid.Row className="g-3">
               <Grid.Col md={6}>
                 <Input
-                  label="管理員姓名"
+                  label="姓名"
                   name="name"
                   value={formData.name || ''}
                   onChange={onChange}
@@ -64,7 +64,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
               </Grid.Col>
               <Grid.Col md={6}>
                 <Input
-                  label="登入帳號"
+                  label="帳號"
                   name="account"
                   value={formData.account || ''}
                   onChange={onChange}

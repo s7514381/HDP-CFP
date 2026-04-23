@@ -104,17 +104,17 @@ export const menus: MenuItem[] = [
                 isNextJsApp: true,
             },
             {
-                key: "QueryNotification",
+                key: "StatusQuery",
                 icon: `fa-solid fa-list-ul`,
                 label: "狀態查詢",
-                href: "/QueryNotification",
+                href: "/StatusQuery",
                 isNextJsApp: true,
             },
             {
-                key: "NotificationReport",
+                key: "NotifyStatusReport",
                 icon: `fa-solid fa-list-ul`,
                 label: "狀態報表",
-                href: "/NotificationReport",
+                href: "/NotifyStatusReport",
                 isNextJsApp: true,
             },
         ]

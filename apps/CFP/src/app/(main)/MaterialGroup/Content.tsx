@@ -141,20 +141,6 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                 />
               </Grid.Col>
 
-              <Grid.Col md={12}>
-                <div className="mb-3">
-                  <label className="form-label">備註</label>
-                  <textarea
-                    className="form-control"
-                    name="note"
-                    rows={3}
-                    value={formData.note || ''}
-                    onChange={onChange}
-                    placeholder="其他補充說明"
-                  />
-                </div>
-              </Grid.Col>
-
               {/* 料號選擇區塊 */}
               <Grid.Col md={12}>
                 <Card className="bg-light">

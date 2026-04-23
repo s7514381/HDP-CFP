@@ -41,9 +41,9 @@ const NoticeBtn = () => {
  */
 const LogoutBtn = () => {
   const route = useRouter();
-  const url = process.env.NEXT_PUBLIC_VENDOR_URL;
+  const url = process.env.NEXT_PUBLIC_API_URL;
   const handleLogout = () => {
-    route.push(`${url}/site/logout`);
+    route.push(`/login`);
   }
     return (
        <Btn color="secondary" className="p-2 ms-2" rounded onClick={handleLogout}>
@@ -65,8 +65,8 @@ export default function MainNavBar() {
       <img className="d-none d-md-block" src={`/images/logo.jpg`} alt="aHOP 供應商平台" />
     }>
       <NavBarNav className="align-items-center ms-auto flex-row">
-        <UserBtn />
-        <NoticeBtn />
+        {/* <UserBtn /> */}
+        {/* <NoticeBtn /> */}
         <LogoutBtn />
       </NavBarNav>
     </NavBar>

@@ -9,8 +9,9 @@ import { Container } from '@packages/components/bootstrap5/Container';
 import ActionBar from '@/components/layouts/ActionBar';
 import Badge from '@packages/components/bootstrap5/Badges';
 import { SpinnerBorder } from '@packages/components/bootstrap5/Spinner';
+import FontAwesome from '@packages/components/FontAwsome';
 import { useAppApi } from '@/hooks/useAppApi';
-import { API_MAP } from '@/lib/apiRoutes';
+import { API_MAP, API_URL } from '@/lib/apiRoutes';
 
 // 買方料號狀態 (與 API 一致：0=停用, 1=啟用)
 type BuyerStatus = 0 | 1;
@@ -18,13 +19,14 @@ type BuyerStatus = 0 | 1;
 // 規格碼介面 (左側) - 對應後端 MaterialSpec
 interface MaterialSpec {
   id: string;
-  materialCompareId: string;  
-  materialId: string;  
+  materialCompareId: string;
+  materialId: string;
   name: string;          // 對應後端 Name = sellerProductName
   specNumber: string;   // 對應後端 SpecNumber = materialNumber + 流水號
   productModel: string; // 供顯示用的產品型號
   status: BuyerStatus;
   selected: boolean;
+  sequence: number | null;
 }
 
 // 買方料號介面 (右側) - 來自 API 回應
@@ -90,7 +92,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
 
     try {
       // BUYER_MATERIAL_LIST 是完整路徑，直接使用
-      const url = `${API_MAP.BUYER_MATERIAL_LIST}?id=${materialId}`;
+      const url = `${API_URL}/BuyerCompare/GetBuyerMaterialList?id=${materialId}`;
       const res = await api.post(url);
 
       if (res.success && res.data) {
@@ -120,7 +122,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
       // 更新 ref 避免初始化後觸發同步
       lastSyncedRef.current = JSON.stringify(initialSpecs.map(({ selected: _s, ...rest }) => rest));
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // 只在 mount 時執行一次
 
   useEffect(() => {
@@ -144,14 +146,22 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
   // 產生規格碼 - 對應後端 MaterialSpec
   // Name = sellerProductName, SpecNumber = materialNumber + 流水號
   const handleGenerateSpec = useCallback((item: BuyerMaterialItem) => {
+    console.log(item)
     // 檢查是否已存在相同 specNumber 的規格碼
     if (specs.some((s) => s.materialCompareId === item.id)) {
       alert('此料號已產生規格碼，請勿重複產生');
       return;
     }
 
-    const sequenceNum = String(specs.length + 1).padStart(3, '0');
-    const newSpecNumber = `${item.materialNumber}-${sequenceNum}`;
+    // 找出目前 specs 中最大的 sequence
+    const maxSequence = specs.reduce((max, spec) => {
+      const seq = spec.sequence ?? 0;
+      return seq > max ? seq : max;
+    }, 0);
+    const newSequence = maxSequence + 1;
+
+    const sequenceNum = String(newSequence).padStart(4, '0');
+    const newSpecNumber = `${sequenceNum}`;
 
     // ✅ 產生新的 GUID 作為 id
     const newSpec: MaterialSpec = {
@@ -163,6 +173,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
       productModel: item.productModel, // 顯示用產品型號
       status: 1 as BuyerStatus,
       selected: false,
+      sequence: newSequence, // 使用計算出的最大值 + 1
     };
 
     // ✅ 直接更新 local state，useEffect 會自動同步到 formData
@@ -225,247 +236,272 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
           </div>
 
           <Grid.Row gutter={3}>
-          {/* 左側：規格碼區塊 */}
-          <Grid.Col md={6}>
-            <Card className="h-100">
-              <div className="p-3">
-                <div className="d-flex gap-1 mb-3 flex-wrap">
-                  <Btn
-                    size="sm"
-                    color="warning"
-                    onClick={() => toggleAll('left', true)}
-                  >
-                    全選
-                  </Btn>
-                  <Btn
-                    size="sm"
-                    color="secondary"
-                    onClick={() => toggleAll('left', false)}
-                  >
-                    取消選取
-                  </Btn>
-                  <Btn
-                    size="sm"
-                    color="danger"
-                    onClick={() => changeStatus('left', 0 as BuyerStatus)}
-                  >
-                    停用
-                  </Btn>
-                  <Btn
-                    size="sm"
-                    color="success"
-                    onClick={() => changeStatus('left', 1 as BuyerStatus)}
-                  >
-                    啟用
-                  </Btn>
-                  <Btn
-                    size="sm"
-                    color="danger"
-                    outline
-                    disabled={!specs.some((s) => s.selected)}
-                    onClick={handleDeleteSelectedSpecs}
-                  >
-                    刪除選中
-                  </Btn>
-                </div>
-
-                <div className="list-group">
-                  {specs.map((spec) => (
-                    <div
-                      key={spec.id}
-                      className={`list-group-item border rounded mb-2 p-3 cursor-pointer ${
-                        spec.status === 0
-                          ? 'bg-light text-muted'
-                          : ''
-                      }`}
+            {/* 左側：規格碼區塊 */}
+            <Grid.Col md={6}>
+              <Card className="h-100">
+                <div className="p-3">
+                  <div className="d-flex gap-1 mb-3 flex-wrap">
+                    <Btn
+                      size="sm"
+                      color="warning"
+                      onClick={() => toggleAll('left', true)}
                     >
-                      <div className="d-flex justify-content-between align-items-start">
-                        <div style={{ width: '70%' }}>
-                          <div className="fw-bold d-flex align-items-center">
-                            <i className="bi bi-caret-right-fill me-1"></i>
-                            {formData?.productModel}
-                          </div>
-                          <input
-                            type="text"
-                            className={`form-control form-control-sm my-1 ${
-                              spec.status === 0 ? '' : 'text-primary'
-                            }`}
-                            value={spec.name}
-                            onChange={(e) =>
-                              setSpecs((prev) =>
-                                prev.map((s) =>
-                                  s.id === spec.id
-                                    ? { ...s, name: e.target.value }
-                                    : s
-                                )
-                              )
-                            }
-                          />
-                          <div className="text-muted small">
-                            {spec.specNumber}
-                          </div>
-                        </div>
-                        <div className="d-flex flex-column align-items-end">
-                          <input
-                            type="checkbox"
-                            className="form-check-input mb-3"
-                            checked={spec.selected}
-                            onChange={(e) =>
-                              setSpecs((prev) =>
-                                prev.map((s) =>
-                                  s.id === spec.id
-                                    ? { ...s, selected: e.target.checked }
-                                    : s
-                                )
-                              )
-                            }
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  {specs.length === 0 && (
-                    <div className="text-center text-muted py-5">
-                      尚無規格碼，請由右側產生
-                    </div>
-                  )}
-                </div>
-              </div>
-            </Card>
-          </Grid.Col>
+                      全選
+                    </Btn>
+                    <Btn
+                      size="sm"
+                      color="secondary"
+                      onClick={() => toggleAll('left', false)}
+                    >
+                      取消選取
+                    </Btn>
+                    <Btn
+                      size="sm"
+                      color="danger"
+                      onClick={() => changeStatus('left', 0 as BuyerStatus)}
+                    >
+                      停用
+                    </Btn>
+                    <Btn
+                      size="sm"
+                      color="success"
+                      onClick={() => changeStatus('left', 1 as BuyerStatus)}
+                    >
+                      啟用
+                    </Btn>
+                    <Btn
+                      size="sm"
+                      color="danger"
+                      outline
+                      disabled={!specs.some((s) => s.selected)}
+                      onClick={handleDeleteSelectedSpecs}
+                    >
+                      刪除選中
+                    </Btn>
+                  </div>
 
-          {/* 右側：料號區塊 */}
-          <Grid.Col md={6}>
-            <Card className="h-100">
-              <div className="p-3">
-                <div className="d-flex gap-1 mb-3 flex-wrap">
-                  <Btn
-                    size="sm"
-                    color="warning"
-                    onClick={() => toggleAll('right', true)}
-                  >
-                    全選
-                  </Btn>
-                  <Btn
-                    size="sm"
-                    color="secondary"
-                    onClick={() => toggleAll('right', false)}
-                  >
-                    取消選取
-                  </Btn>
-                  <Btn
-                    size="sm"
-                    color="danger"
-                    onClick={() => changeStatus('right', 0 as BuyerStatus)}
-                  >
-                    停用
-                  </Btn>
-                  <Btn
-                    size="sm"
-                    color="success"
-                    onClick={() => changeStatus('right', 1 as BuyerStatus)}
-                  >
-                    啟用
-                  </Btn>
-                </div>
-
-                <div className="list-group">
-                  {materialsLoading && (
-                    <div className="text-center py-5">
-                      <SpinnerBorder full={false} />
-                      <div className="mt-2 text-muted small">載入料號資料...</div>
-                    </div>
-                  )}
-
-                  {materialsError && (
-                    <div className="text-center py-5">
-                      <div className="text-danger small">{materialsError}</div>
-                      <Btn
-                        size="sm"
-                        color="primary"
-                        outline
-                        className="mt-2"
-                        onClick={fetchBuyerMaterials}
-                      >
-                        重新載入
-                      </Btn>
-                    </div>
-                  )}
-
-                  {!materialsLoading && !materialsError && materials.length === 0 && (
-                    <div className="text-center text-muted py-5">
-                      尚無料號資料
-                    </div>
-                  )}
-
-                  {!materialsLoading &&
-                    !materialsError &&
-                    materials.map((item) => (
+                  <div className="list-group">
+                    {specs.map((spec) => (
                       <div
-                        key={item.id}
-                        className={`list-group-item border rounded mb-2 p-3 ${
-                          item.status === 0
-                            ? 'bg-light text-muted opacity-75'
+                        key={spec.id}
+                        className={`list-group-item border rounded mb-2 p-3 cursor-pointer position-relative ${spec.status === 0
+                            ? 'bg-light text-muted'
                             : ''
-                        }`}
+                          }`}
                       >
                         <div className="d-flex justify-content-between align-items-start">
-                          <div className="flex-grow-1">
-                            <div className="d-flex justify-content-between">
-                              <span className="fw-bold">
-                                {item.productModel}
-                              </span>
-                              <span className="text-muted small">
-                                {item.productName}
-                              </span>
+                          <div style={{ width: '70%' }}>
+                            <div className="fw-bold d-flex align-items-center">
+                              <i className="bi bi-caret-right-fill me-1"></i>
+                              {formData?.productModel}
+                              {spec.status === 0 && (
+                                <span className="ms-2 text-danger" title="已停用">
+                                  <FontAwesome icon="fas fa-ban" />
+                                </span>
+                              )}
                             </div>
-                            <div
-                              className={`small my-1 ${
-                                item.status === 0 ? '' : 'text-primary'
-                              }`}
-                            >
-                              {item.sellerProductName}
-                            </div>
-                            <div className="d-flex justify-content-between align-items-center">
-                              <span className="text-muted small">{formData?.materialNumber}</span>
-                              <span className="small">
-                                供 {item.sellerMaterialNumber}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="d-flex flex-column align-items-end ms-3">
                             <input
-                              type="checkbox"
-                              className="form-check-input mb-3"
-                              checked={item.selected}
+                              type="text"
+                              className={`form-control form-control-sm my-1 ${spec.status === 0 ? '' : 'text-primary'
+                                }`}
+                              value={spec.name}
                               onChange={(e) =>
-                                setMaterials((prev) =>
-                                  prev.map((m) =>
-                                    m.id === item.id
-                                      ? { ...m, selected: e.target.checked }
-                                      : m
+                                setSpecs((prev) =>
+                                  prev.map((s) =>
+                                    s.id === spec.id
+                                      ? { ...s, name: e.target.value }
+                                      : s
                                   )
                                 )
                               }
                             />
-                            <Btn
-                              size="sm"
-                              color={item.status === 0 ? 'secondary' : 'success'}
-                              className="py-0 px-1"
-                              style={{ fontSize: '0.75rem' }}
-                              disabled={item.status === 0}
-                              onClick={() => handleGenerateSpec(item)}
-                            >
-                              + 產生規格碼
-                            </Btn>
+                            <div className="text-muted small">
+                              {spec.specNumber}
+                            </div>
+                          </div>
+                          <div className="d-flex flex-column align-items-end">
+                            <input
+                              type="checkbox"
+                              className="form-check-input mb-3"
+                              checked={spec.selected}
+                              onChange={(e) =>
+                                setSpecs((prev) =>
+                                  prev.map((s) =>
+                                    s.id === spec.id
+                                      ? { ...s, selected: e.target.checked }
+                                      : s
+                                  )
+                                )
+                              }
+                            />
                           </div>
                         </div>
                       </div>
                     ))}
+                    {specs.length === 0 && (
+                      <div className="text-center text-muted py-5">
+                        尚無規格碼，請由右側產生
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </Card>
-          </Grid.Col>
+              </Card>
+            </Grid.Col>
+
+            {/* 右側：料號區塊 */}
+            <Grid.Col md={6}>
+              <Card className="h-100">
+                <div className="p-3">
+                  <div className="d-flex gap-1 mb-3 flex-wrap">
+                    <Btn
+                      size="sm"
+                      color="warning"
+                      onClick={() => toggleAll('right', true)}
+                    >
+                      全選
+                    </Btn>
+                    <Btn
+                      size="sm"
+                      color="secondary"
+                      onClick={() => toggleAll('right', false)}
+                    >
+                      取消選取
+                    </Btn>
+                    <Btn
+                      size="sm"
+                      color="danger"
+                      onClick={() => changeStatus('right', 0 as BuyerStatus)}
+                    >
+                      停用
+                    </Btn>
+                    <Btn
+                      size="sm"
+                      color="success"
+                      onClick={() => changeStatus('right', 1 as BuyerStatus)}
+                    >
+                      啟用
+                    </Btn>
+                  </div>
+
+                  <div className="list-group">
+                    {materialsLoading && (
+                      <div className="text-center py-5">
+                        <SpinnerBorder full={false} />
+                        <div className="mt-2 text-muted small">載入料號資料...</div>
+                      </div>
+                    )}
+
+                    {materialsError && (
+                      <div className="text-center py-5">
+                        <div className="text-danger small">{materialsError}</div>
+                        <Btn
+                          size="sm"
+                          color="primary"
+                          outline
+                          className="mt-2"
+                          onClick={fetchBuyerMaterials}
+                        >
+                          重新載入
+                        </Btn>
+                      </div>
+                    )}
+
+                    {!materialsLoading && !materialsError && materials.length === 0 && (
+                      <div className="text-center text-muted py-5">
+                        尚無料號資料
+                      </div>
+                    )}
+
+                    {!materialsLoading &&
+                      !materialsError &&
+                      materials.map((item) => (
+                        <div
+                          key={item.id}
+                          className={`list-group-item border rounded mb-2 p-3 position-relative ${item.status === 0
+                              ? 'bg-light text-muted opacity-75'
+                              : ''
+                            }`}
+                        >
+                          <div className="d-flex justify-content-between align-items-start">
+                            <div className="flex-grow-1">
+                              <div className="d-flex justify-content-between align-items-center">
+                                <span className="fw-bold">
+                                  {item.productModel}
+                                  {item.status === 0 && (
+                                    <span className="ms-2 text-danger" title="已停用">
+                                      <FontAwesome icon="fas fa-ban" />
+                                    </span>
+                                  )}
+                                </span>
+                                <span className="text-muted small">
+                                  {item.productName}
+                                </span>
+                              </div>
+                              <div
+                                className={`small my-1 ${item.status === 0 ? '' : 'text-primary'
+                                  }`}
+                              >
+                                {item.sellerProductName}
+                              </div>
+                              <div className="d-flex justify-content-between align-items-center">
+                                {/* 對照狀態顯示 */}
+                                {(() => {
+                                  const mappedSpec = specs.find(s => s.materialCompareId === item.id);
+                                  if (mappedSpec) {
+                                    return (
+                                      <div className="mt-1 small text-success">
+                                        <i className="bi bi-check-circle me-1"></i>
+                                        已對照 {mappedSpec.specNumber}
+                                      </div>
+                                    );
+                                  }
+                                  return (
+                                    <div className="mt-1 small text-muted">
+                                      <i className="bi bi-question-circle me-1"></i>
+                                      未對照
+                                    </div>
+                                  );
+                                })()}
+
+                                <span className="small">
+                                  供 {item.sellerMaterialNumber}
+                                </span>
+                              </div>
+
+                            </div>
+                            <div className="d-flex flex-column align-items-end ms-3">
+                              <input
+                                type="checkbox"
+                                className="form-check-input mb-3"
+                                checked={item.selected}
+                                onChange={(e) =>
+                                  setMaterials((prev) =>
+                                    prev.map((m) =>
+                                      m.id === item.id
+                                        ? { ...m, selected: e.target.checked }
+                                        : m
+                                    )
+                                  )
+                                }
+                              />
+                              <Btn
+                                size="sm"
+                                color={item.status === 0 ? 'secondary' : 'success'}
+                                className="py-0 px-1"
+                                style={{ fontSize: '0.75rem' }}
+                                disabled={item.status === 0}
+                                onClick={() => handleGenerateSpec(item)}
+                              >
+                                + 產生規格碼
+                              </Btn>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              </Card>
+            </Grid.Col>
           </Grid.Row>
 
           {/* 提交按鈕 */}

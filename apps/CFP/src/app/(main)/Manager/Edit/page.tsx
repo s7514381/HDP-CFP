@@ -14,7 +14,7 @@ export default function ManagerEditPage() {
 
   return (
     <FormPageWrapper
-      title="編輯管理員"
+      title="編輯"
       content={Content}
       onFetchModel={handleFetchModel}
       onSubmit={(data) => formPost(API_MAP.MANAGER_EDIT, data)}

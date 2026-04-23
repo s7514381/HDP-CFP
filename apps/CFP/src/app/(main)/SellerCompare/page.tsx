@@ -40,21 +40,6 @@ export default function MaterialPage() {
     tableRef.current?.search({});
   };
 
-  const handleDelete = async (id: number | string) => {
-    if (await confirm('確定要刪除此料號嗎？')) {
-      // 統一使用 FormData 避免 415
-      const fd = new FormData();
-      fd.append('id', String(id));
-      const result = await api.post(`${API_URL}/Material/Delete`, { body: fd });
-      if (result.success) {
-        success({ message: <span>刪除成功！</span> });
-        tableRef.current?.reload();
-      } else {
-        danger({ message: <span>刪除失敗。</span> });
-      }
-    }
-  };
-
   const columns: Column<any>[] = [
     {
       header: "項次",
@@ -78,6 +63,10 @@ export default function MaterialPage() {
       header: "供應商", 
       key: "supplierName" 
     },
+    { 
+      header: "買方", 
+      key: "buyerName" 
+    },
     {
       header: "",
       className: "text-center",
@@ -89,11 +78,6 @@ export default function MaterialPage() {
             className="text-warning cursor-pointer" 
             onClick={() => router.push(`/SellerCompare/Edit/?id=${item.id}`)}
           />
-          {/* <FontAwesome 
-            icon="fa-regular fa-trash-can" 
-            className="text-danger cursor-pointer" 
-            onClick={() => handleDelete(item.id)}
-          /> */}
         </div>
       )
     }
@@ -125,7 +109,7 @@ export default function MaterialPage() {
             <CommonTable 
               ref={tableRef}
               columns={columns}
-              apiUrl={API_MAP.MATERIAL_GET_LIST}
+              apiUrl={`${API_URL}/SellerCompare/GetList`}
               pageSize={10}
             />
         </Container>

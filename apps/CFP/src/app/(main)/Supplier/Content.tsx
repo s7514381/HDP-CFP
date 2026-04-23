@@ -116,7 +116,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                 />
               </Grid.Col>
 
-              <Grid.Col md={12}>
+              {/* <Grid.Col md={12}>
                 <Input
                   label="通訊地址"
                   name="address"
@@ -138,7 +138,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                     placeholder="其他補充說明"
                   />
                 </div>
-              </Grid.Col>
+              </Grid.Col> */}
 
               <Grid.Col md={12} className="d-flex justify-content-end gap-2 mt-4">
                 <Btn type="button" color="secondary" outline onClick={() => router.push('/Supplier')}>

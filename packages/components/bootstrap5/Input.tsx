@@ -185,6 +185,49 @@ export function Checkbox({
 }
 
 /**
+ * Radio組件的屬性
+ */
+export interface RadioProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "type"> {
+  label?: string;
+  error?: string[];
+  className?: string;
+  inline?: boolean;
+}
+
+/**
+ * BS5的Radio組件
+ */
+export function Radio({
+  name,
+  label,
+  error,
+  className = "",
+  inline = false,
+  ...props
+}: Readonly<RadioProps>) {
+  const isInvalid = !!(error && error.length > 0);
+  const _className = ["form-check-input", className, isInvalid ? "is-invalid" : ""].filter(Boolean).join(" ");
+  const _containerClassName = ["form-check", inline ? "form-check-inline" : ""].filter(Boolean).join(" ");
+
+  return (
+    <div className={_containerClassName}>
+      <input
+        type="radio"
+        name={name}
+        className={_className}
+        id={props.id || `${name}_${props.value}`}
+        {...props}
+      />
+      {label && (
+        <label className="form-check-label" htmlFor={props.id || `${name}_${props.value}`}>
+          {label}
+        </label>
+      )}
+    </div>
+  );
+}
+
+/**
  * 過濾下拉選單的項目物件
  */
 export interface DropdownItem {
@@ -313,7 +356,7 @@ export function DropdownInput({
       timerRef.current = setTimeout(async () => {
         const result = await fetchItems(inputValue);
         setDropdownItems(result);
-        setShowDropdown(true);
+        //setShowDropdown(true);
       }, debounce);
       return () => {
         if (timerRef.current) {

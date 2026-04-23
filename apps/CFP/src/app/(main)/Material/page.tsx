@@ -63,6 +63,10 @@ export default function MaterialPage() {
       render: (_, index) => index + 1
     },
     { 
+      header: "群組", 
+      key: "materialGroupName" 
+    },
+    { 
       header: "料號", 
       key: "materialNumber" 
     },

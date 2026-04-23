@@ -59,20 +59,11 @@ export default function AdminFunctionPage() {
     },
     { 
       header: "功能名稱", 
-      key: "name" 
+      key: "title" 
     },
     { 
-      header: "功能代碼", 
-      key: "code" 
-    },
-    { 
-      header: "網址", 
-      key: "url" 
-    },
-    { 
-      header: "排序", 
-      key: "sortOrder",
-      className: "text-center"
+      header: "狀態", 
+      key: "status" 
     },
     {
       header: "操作",
