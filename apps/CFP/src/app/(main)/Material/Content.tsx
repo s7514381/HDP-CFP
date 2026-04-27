@@ -43,7 +43,6 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
         setSuppliers(res.data);
       }
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

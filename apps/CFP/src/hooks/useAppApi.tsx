@@ -87,8 +87,6 @@ export const useAppApi = (): UseApiResult => {
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const formPost = useCallback(<TRes = any>(url: string, data?: Record<string, any> | null) => {
-
-    console.log("formPost called with data:", data);
       // 防禦性檢查：確保 data 存在
       if (!data) {
         console.warn('formPost: data is undefined or null');

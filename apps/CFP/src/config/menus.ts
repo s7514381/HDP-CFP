@@ -8,5 +8,6 @@ export type MenuItem = {
     href?:  string;
     isNextJsApp?: boolean;
     children?: MenuItem[];
+    permissions?: string[];
 }
 export const menus: MenuItem[] = [];

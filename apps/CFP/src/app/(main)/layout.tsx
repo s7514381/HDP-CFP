@@ -18,8 +18,10 @@ export default function MainLayout({
     <Wrap>
       <MainNavBar />
       <WrapMain>
-        <div className="flex-grow-1 overflow-hidden d-flex flex-column order-1">
-          {children}
+        <div className="wrap-content order-1">
+          <div className="content-scroll">
+            {children}
+          </div>
         </div>
         <Aside />
       </WrapMain>

@@ -38,6 +38,13 @@ export const API_MAP: Record<string, string> = {
   ADMIN_FUNCTION_GET_LIST: `${API_URL}/AdminFunction/GetList`,
   ADMIN_FUNCTION_MST: `${API_URL}/AdminFunction`,
 
+  // ===== 選單管理 =====
+  ADMIN_MENU_CREATE: `${API_URL}/AdminMenu/Create`,
+  ADMIN_MENU_EDIT: `${API_URL}/AdminMenu/Edit`,
+  ADMIN_MENU_GET_MODEL: `${API_URL}/AdminMenu/GetModel`,
+  ADMIN_MENU_GET_LIST: `${API_URL}/AdminMenu/GetList`,
+  ADMIN_MENU_MST: `${API_URL}/AdminMenu`,
+
   // ===== 管理員管理 =====
   MANAGER_CREATE: `${API_URL}/Manager/Create`,
   MANAGER_EDIT: `${API_URL}/Manager/Edit`,

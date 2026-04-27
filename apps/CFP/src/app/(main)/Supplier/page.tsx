@@ -15,12 +15,14 @@ import { useAppApi } from '@/hooks/useAppApi';
 import { useToast } from '@packages/contexts/ToastContext';
 import { useConfirm } from '@packages/hooks/useConfirm';
 import { API_URL, API_MAP } from '@/lib/apiRoutes';
+import { usePagePermissions } from '@/hooks/usePagePermissions';
 
 export default function SupplierPage() {
   const router = useRouter();
   const api = useAppApi();
   const { success, danger } = useToast();
   const { confirm } = useConfirm();
+  const { hasPermission } = usePagePermissions();
   const { Row, Col } = Grid;
 
   const tableRef = React.useRef<CommonTableHandle>(null);
@@ -30,7 +32,7 @@ export default function SupplierPage() {
   const handleSearch = () => {
     tableRef.current?.search({
       Name: searchName,
-      TaxID: searchTaxID
+      MaterialTaxID: searchTaxID
     });
   };
 
@@ -77,16 +79,20 @@ export default function SupplierPage() {
       style: { width: '120px' },
       render: (item) => (
         <div className="d-flex justify-content-center gap-2">
-          <FontAwesome 
-            icon="fa-regular fa-pen-to-square" 
-            className="text-warning cursor-pointer" 
-            onClick={() => router.push(`/Supplier/Edit/?id=${item.id}`)}
-          />
-          <FontAwesome 
-            icon="fa-regular fa-trash-can" 
-            className="text-danger cursor-pointer" 
-            onClick={() => handleDelete(item.id)}
-          />
+          {hasPermission('Edit') && (
+            <FontAwesome 
+              icon="fa-regular fa-pen-to-square" 
+              className="text-warning cursor-pointer" 
+              onClick={() => router.push(`/Supplier/Edit/?id=${item.id}`)}
+            />
+          )}
+          {hasPermission('Delete') && (
+            <FontAwesome 
+              icon="fa-regular fa-trash-can" 
+              className="text-danger cursor-pointer" 
+              onClick={() => handleDelete(item.id)}
+            />
+          )}
         </div>
       )
     }

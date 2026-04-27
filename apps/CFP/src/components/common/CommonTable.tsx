@@ -62,8 +62,7 @@ export const CommonTable = forwardRef(<T extends any,>(
       order: JSON.stringify({ column: 0, dir: 'asc' }),
       start: startNum.toString(),
       length: pageSize.toString(),
-      draw: '1',
-      Status: '1'
+      draw: '1'
     });
 
     Object.keys(currentSearchParams).forEach(key => {
