@@ -98,7 +98,7 @@ export default function AdminFunctionPage() {
       </ActionBar>
 
       <WrapContent className="p-3">
-        <SearchBlock title="" icon="" className="mb-3">
+        {/* <SearchBlock title="" icon="" className="mb-3">
           <Row align="center" gutter={3}>
             <Col md={4}>
               <Input label="功能名稱" placeholder="功能名稱" value={searchName} onChange={(e) => setSearchName(e.target.value)} />
@@ -113,7 +113,7 @@ export default function AdminFunctionPage() {
               <Btn color="light" className="text-primary border" onClick={handleClear}>清除</Btn>
             </Col>
           </Row>
-        </SearchBlock>
+        </SearchBlock> */}
 
         <Container fluid className="mb-3">
             <div className="d-flex justify-content-end gap-2">
