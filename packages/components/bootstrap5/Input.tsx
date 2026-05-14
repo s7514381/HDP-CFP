@@ -96,6 +96,7 @@ export interface FileButtonProps extends Omit<React.InputHTMLAttributes<HTMLInpu
 export const FileBtn = forwardRef<HTMLInputElement, FileButtonProps>(({ label = "選擇檔案", className = "", btnProps = {}, onChange, ...props }, ref) => {
     const inputRef = useRef<HTMLInputElement>(null);
     const _className = ["hidden-file-input", className].filter(Boolean).join(" ");
+  const { style, ...inputProps } = props;
 
     const handleClick = () => {
       inputRef.current?.click();
@@ -115,7 +116,15 @@ export const FileBtn = forwardRef<HTMLInputElement, FileButtonProps>(({ label = 
         <Btn type="button" onClick={handleClick} {...btnProps}>
           {label}
         </Btn>
-        <input className={_className} ref={inputRef} type="file" onChange={handleChange} {...props} />
+        <input
+          className={_className}
+          ref={inputRef}
+          type="file"
+          onChange={handleChange}
+          style={{ display: "none", ...style }}
+          tabIndex={-1}
+          {...inputProps}
+        />
       </>
     );
   }

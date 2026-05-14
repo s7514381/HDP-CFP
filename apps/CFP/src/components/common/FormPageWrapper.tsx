@@ -71,6 +71,9 @@ function FormPageWrapperInner<T extends Record<string, any>>({
               const statusValue = v === 200 ? 1 : v;
               return [k, statusValue];
             }
+            if (k === 'CanSell' || k === 'canSell') {
+              return ['canSell', String(v)];
+            }
             return [k, String(v)];
           })
         );

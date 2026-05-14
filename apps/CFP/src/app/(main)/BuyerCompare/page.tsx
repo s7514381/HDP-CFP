@@ -14,7 +14,7 @@ import FontAwesome from "@packages/components/FontAwsome";
 import { useToast } from '@packages/contexts/ToastContext';
 import { useConfirm } from '@packages/hooks/useConfirm';
 import { useAppApi } from '@/hooks/useAppApi';
-import { API_URL, API_MAP } from '@/lib/apiRoutes';
+import { API_URL } from '@/lib/apiRoutes';
 import { usePagePermissions } from '@/hooks/usePagePermissions';
 
 export default function MaterialPage() {
@@ -42,6 +42,9 @@ export default function MaterialPage() {
     tableRef.current?.search({});
   };
 
+  const getSpecCount = (item: any) => item.specCount ?? '-';
+  const getNotCompareCount = (item: any) => item.notCompareCount ?? '-';
+
   const columns: Column<any>[] = [
     {
       header: "項次",
@@ -64,6 +67,18 @@ export default function MaterialPage() {
     { 
       header: "供應商", 
       key: "supplierName" 
+    },
+    {
+      header: "規格碼筆數",
+      className: "text-center",
+      style: { width: '120px' },
+      key: "specCount",
+    },
+    {
+      header: "未對照筆數",
+      className: "text-center",
+      style: { width: '120px' },
+      key: "notCompareCount",
     },
     {
       header: "",

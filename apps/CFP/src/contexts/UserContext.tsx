@@ -1,11 +1,12 @@
 'use client';
 
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { getLocalStorage, removeLocalStorage, setLocalStorage } from "@packages/lib/localstorage";
 
 
 type UserContextType = {
-  user: User | null;
-  setUser: (user: User | null) => void;
+  user: Pick<User, "username"> | null;
+  setUser: (user: Pick<User, "username"> | null) => void;
 };
 
 const UserContext = createContext<UserContextType | null>(null);
@@ -14,8 +15,25 @@ const UserContext = createContext<UserContextType | null>(null);
  * @param param0 
  * @returns 
  */
-export function UserProvider({ user: initialUser, children }: Readonly<{ user: User | null, children: React.ReactNode }>) {
-  const [user, setUser] = useState<User | null>(initialUser);
+export function UserProvider({ user: initialUser, children }: Readonly<{ user: Pick<User, "username"> | null, children: React.ReactNode }>) {
+  const [user, setUserState] = useState<Pick<User, "username"> | null>(initialUser);
+
+  useEffect(() => {
+    const cachedUser = getLocalStorage<Pick<User, "username">>("userInfo");
+    if (cachedUser?.username) {
+      setUserState(cachedUser);
+    }
+  }, []);
+
+  const setUser = (nextUser: Pick<User, "username"> | null) => {
+    setUserState(nextUser);
+    if (nextUser) {
+      setLocalStorage("userInfo", nextUser);
+      return;
+    }
+    removeLocalStorage("userInfo");
+  };
+
   const value = useMemo(() => ({ user, setUser }), [user]);
 
   return (

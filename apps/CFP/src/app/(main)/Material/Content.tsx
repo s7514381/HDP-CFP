@@ -4,6 +4,7 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { Btn } from '@packages/components/bootstrap5/Btn';
 import { Input } from '@packages/components/bootstrap5/Input';
+import { Checkbox } from '@packages/components/bootstrap5/Input';
 import { Select } from '@packages/components/bootstrap5/Select';
 import Card from '@packages/components/bootstrap5/Card';
 import Grid from '@packages/components/bootstrap5/Grid';
@@ -17,6 +18,7 @@ export const DEFAULT_MATERIAL_FORM = {
   materialNumber: '',
   productModel: '',
   productName: '',
+  canSell: 'false',
 };
 
 export type MaterialData = typeof DEFAULT_MATERIAL_FORM & {
@@ -36,6 +38,9 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
   const router = useRouter();
   const api = useAppApi();
   const [suppliers, setSuppliers] = React.useState<any[]>([]);
+  const canSellValue = formData.canSell ?? (formData as any).CanSell ?? '0';
+  const normalizedCanSellValue = String(canSellValue).trim().toLowerCase();
+  const isCanSell = ['1', 'true', 'yes', 'y', '是', '可'].includes(normalizedCanSellValue);
 
   React.useEffect(() => {
     api.post<any[]>(API_MAP.SUPPLIER_GET_SELECT_LIST, { body: {} }).then(res => {
@@ -44,6 +49,15 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
       }
     });
   }, []);
+
+  const handleCanSellChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    onChange({
+      target: {
+        name: 'canSell',
+        value: event.target.checked ? 'true' : 'false'
+      }
+    } as any);
+  };
 
   return (
     <>
@@ -98,6 +112,15 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                     value={formData.productName || ''}
                     onChange={onChange}
                     placeholder="請輸入產品名稱"
+                  />
+                </Grid.Col>
+
+                <Grid.Col md={6} className="d-flex align-items-end">
+                  <Checkbox
+                    name="canSell"
+                    label="是否可銷售"
+                    checked={isCanSell}
+                    onChange={handleCanSellChange}
                   />
                 </Grid.Col>
 

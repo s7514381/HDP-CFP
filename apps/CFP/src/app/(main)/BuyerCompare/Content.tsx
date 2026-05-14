@@ -51,6 +51,7 @@ export interface BuyerCompareFormData {
   productModel: string;
   supplierName: string;
   materialSpecList: MaterialSpec[];
+  DeleteMaterialCompareIdList: string[];
 }
 
 interface ContentProps {
@@ -79,6 +80,8 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
 
   // 左側規格碼資料
   const [specs, setSpecs] = useState<MaterialSpec[]>(EMPTY_SPECS);
+  const [deletedMaterialCompareIds, setDeletedMaterialCompareIds] = useState<string[]>([]);
+  const visibleMaterials = materials.filter((item) => !deletedMaterialCompareIds.includes(item.id));
 
   // ✅ 用 ref 追蹤上次同步的 specs（用於判斷是否真正改變）
   const lastSyncedRef = useRef<string>('[]');
@@ -143,6 +146,11 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
     }
   }, [specs, onChange]);
 
+  useEffect(() => {
+    onChange({ target: { name: 'DeleteMaterialCompareIdList', value: deletedMaterialCompareIds } });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deletedMaterialCompareIds]);
+
   // 產生規格碼 - 對應後端 MaterialSpec
   // Name = sellerProductName, SpecNumber = materialNumber + 流水號
   const handleGenerateSpec = useCallback((item: BuyerMaterialItem) => {
@@ -185,9 +193,15 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
     if (type === 'left') {
       setSpecs((prev) => prev.map((s) => ({ ...s, selected })));
     } else {
-      setMaterials((prev) => prev.map((m) => ({ ...m, selected })));
+      setMaterials((prev) =>
+        prev.map((m) =>
+          deletedMaterialCompareIds.includes(m.id)
+            ? m
+            : { ...m, selected }
+        )
+      );
     }
-  }, []);
+  }, [deletedMaterialCompareIds]);
 
   // 批次操作：變更狀態
   const changeStatus = useCallback((type: 'left' | 'right', status: BuyerStatus) => {
@@ -196,16 +210,147 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
       setSpecs((prev) => prev.map((s) => (s.selected ? { ...s, status } : s)));
     } else {
       setMaterials((prev) =>
-        prev.map((m) => (m.selected ? { ...m, status } : m))
+        prev.map((m) =>
+          deletedMaterialCompareIds.includes(m.id)
+            ? m
+            : (m.selected ? { ...m, status } : m)
+        )
       );
     }
-  }, []);
+  }, [deletedMaterialCompareIds]);
 
   // 刪除選中的規格碼
   const handleDeleteSelectedSpecs = useCallback(() => {
     // ✅ 直接更新 local state，useEffect 會自動同步到 formData
     setSpecs((prev) => prev.filter((s) => !s.selected));
   }, []);
+
+  const handleCancelSelectedSpecsCompare = useCallback(() => {
+    const selectedCount = specs.filter((spec) => spec.selected).length;
+    if (selectedCount === 0) {
+      alert('請先勾選左邊規格碼再取消對照');
+      return;
+    }
+
+    const deletedIds = specs
+      .filter((spec) => spec.selected && spec.materialCompareId)
+      .map((spec) => spec.materialCompareId);
+
+    if (deletedIds.length > 0) {
+      setDeletedMaterialCompareIds((prev) => Array.from(new Set([...prev, ...deletedIds])));
+    }
+
+    setSpecs((prev) =>
+      prev.map((spec) =>
+        spec.selected && spec.materialCompareId
+          ? { ...spec, materialCompareId: '', selected: false }
+          : spec.selected
+            ? { ...spec, selected: false }
+            : spec
+      )
+    );
+  }, [specs]);
+
+  const handleCancelSelectedMaterialsCompare = useCallback(() => {
+    const selectedMaterials = visibleMaterials.filter((item) => item.selected);
+    if (selectedMaterials.length === 0) {
+      alert('請先勾選右邊料號再取消對照');
+      return;
+    }
+
+    const selectedIds = new Set(selectedMaterials.map((item) => item.id));
+
+    setSpecs((prev) =>
+      prev.map((spec) =>
+        selectedIds.has(spec.materialCompareId)
+          ? { ...spec, materialCompareId: '', selected: false }
+          : spec
+      )
+    );
+
+    setMaterials((prev) =>
+      prev.map((item) =>
+        selectedIds.has(item.id)
+          ? { ...item, selected: false }
+          : item
+      )
+    );
+  }, [visibleMaterials]);
+
+  const handleCompareSelectedItems = useCallback(() => {
+    const selectedSpecs = specs.filter((spec) => spec.selected);
+    const selectedMaterials = visibleMaterials.filter((item) => item.selected);
+
+    if (selectedSpecs.length !== 1 || selectedMaterials.length !== 1) {
+      alert('請左邊與右邊各勾選一項後再進行對照');
+      return;
+    }
+
+    const targetSpecId = selectedSpecs[0].id;
+    const targetMaterialId = selectedMaterials[0].id;
+
+    setDeletedMaterialCompareIds((prev) => prev.filter((id) => id !== targetMaterialId));
+
+    setSpecs((prev) =>
+      prev.map((spec) => {
+        if (spec.id === targetSpecId) {
+          return {
+            ...spec,
+            materialCompareId: targetMaterialId,
+            selected: false,
+          };
+        }
+
+        if (spec.materialCompareId === targetMaterialId) {
+          return {
+            ...spec,
+            materialCompareId: '',
+          };
+        }
+
+        return spec;
+      })
+    );
+
+    setMaterials((prev) =>
+      prev.map((item) =>
+        item.id === targetMaterialId
+          ? { ...item, selected: false }
+          : item
+      )
+    );
+  }, [specs, visibleMaterials]);
+
+  const handleDeleteSelectedMaterialCompare = useCallback(() => {
+    const selectedMaterials = visibleMaterials.filter((item) => item.selected);
+    if (selectedMaterials.length === 0) {
+      alert('請先勾選右邊料號再刪除對照');
+      return;
+    }
+
+    const selectedIds = new Set(selectedMaterials.map((item) => item.id));
+
+    setDeletedMaterialCompareIds((prev) => Array.from(new Set([...prev, ...Array.from(selectedIds)])));
+
+    setSpecs((prev) =>
+      prev.map((spec) =>
+        selectedIds.has(spec.materialCompareId)
+          ? { ...spec, materialCompareId: '' }
+          : spec
+      )
+    );
+
+    setMaterials((prev) =>
+      prev.map((item) =>
+        selectedIds.has(item.id)
+          ? { ...item, selected: false }
+          : item
+      )
+    );
+  }, [visibleMaterials]);
+
+  const mappedSpecCount = specs.length;
+  const unmappedMaterialCount = visibleMaterials.filter((item) => !specs.some((spec) => spec.materialCompareId === item.id)).length;
 
   return (
     <>
@@ -232,6 +377,10 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
             </h4>
             <div className="text-muted small">
               <i className="bi bi-people me-1"></i> {formData?.supplierName}
+            </div>
+            <div className="d-flex gap-2 mt-2 flex-wrap">
+              <span className="badge text-bg-primary">規格碼筆數：{mappedSpecCount}</span>
+              <span className="badge text-bg-warning">未對照筆數：{unmappedMaterialCount}</span>
             </div>
           </div>
 
@@ -268,6 +417,15 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                       onClick={() => changeStatus('left', 1 as BuyerStatus)}
                     >
                       啟用
+                    </Btn>
+                    <Btn
+                      size="sm"
+                      color="secondary"
+                      outline
+                      disabled={!specs.some((s) => s.selected)}
+                      onClick={handleCancelSelectedSpecsCompare}
+                    >
+                      取消對照
                     </Btn>
                     <Btn
                       size="sm"
@@ -381,6 +539,33 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                     >
                       啟用
                     </Btn>
+                    <Btn
+                      size="sm"
+                      color="primary"
+                      outline
+                      disabled={!(specs.some((s) => s.selected) && visibleMaterials.some((m) => m.selected))}
+                      onClick={handleCompareSelectedItems}
+                    >
+                      對照
+                    </Btn>
+                    <Btn
+                      size="sm"
+                      color="secondary"
+                      outline
+                      disabled={!visibleMaterials.some((m) => m.selected)}
+                      onClick={handleCancelSelectedMaterialsCompare}
+                    >
+                      取消對照
+                    </Btn>
+                    <Btn
+                      size="sm"
+                      color="danger"
+                      outline
+                      disabled={!materials.some((m) => m.selected)}
+                      onClick={handleDeleteSelectedMaterialCompare}
+                    >
+                      刪除對照
+                    </Btn>
                   </div>
 
                   <div className="list-group">
@@ -414,7 +599,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
 
                     {!materialsLoading &&
                       !materialsError &&
-                      materials.map((item) => (
+                      visibleMaterials.map((item) => (
                         <div
                           key={item.id}
                           className={`list-group-item border rounded mb-2 p-3 position-relative ${item.status === 0

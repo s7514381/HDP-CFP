@@ -50,11 +50,13 @@ export default function Login() {
     const res = await post<any, any>(url, {});
 
     if (res.status === 200 && res.data) {
-      const { token, adminMenus } = res.data;
+      const { token, name, adminMenus } = res.data;
       
       if (token) {
         setLocalStorage("token", token);
       }
+
+      setUser({ username: name || account });
 
       if (adminMenus && Array.isArray(adminMenus)) {
         const mappedMenus = adminMenus.map(mapAdminMenuToMenuItem);

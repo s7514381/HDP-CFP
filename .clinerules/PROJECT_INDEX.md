@@ -4,8 +4,22 @@
 > **維護規則**：每次變更時同步更新本文件。
 
 大重點!:
-做完功能後請用puppeteer去驗證你的功能
+做完功能後請用playwright去驗證你的功能
 如果打API被登出請用 Account: Tim/Password: !Qaz2wsx做登入
+
+## 啟動與登入流程提示
+
+每次要驗證前端登入流程時，請依序執行：
+
+1. 啟動後端：`dotnet run --project HOP-CFP-Backend.csproj --launch-profile https`
+2. 啟動前端：`npm run dev -w cfp`
+3. 打開 `http://localhost:3001/login/`
+4. 使用帳號 `Tim`、密碼 `!Qaz2wsx` 登入
+5. 成功後應導向登入後首頁，畫面會看到側邊選單與「登出」按鈕
+
+本次驗證結果：後端成功監聽 `https://localhost:7007`，前端登入後可回到首頁並顯示登入後導覽列。
+
+更醒目的固定 prompt 位置：[.clinerules/STARTUP_LOGIN_PROMPT.md](.clinerules/STARTUP_LOGIN_PROMPT.md)
 
 ---
 

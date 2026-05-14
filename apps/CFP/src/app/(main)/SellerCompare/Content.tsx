@@ -10,7 +10,7 @@ import Grid from '@packages/components/bootstrap5/Grid';
 import { Container } from '@packages/components/bootstrap5/Container';
 import ActionBar from '@/components/layouts/ActionBar';
 import { useAppApi } from '@/hooks/useAppApi';
-import { API_MAP,API_URL } from '@/lib/apiRoutes';
+import { API_URL } from '@/lib/apiRoutes';
 
 
 interface MaterialCompare {
@@ -19,6 +19,7 @@ interface MaterialCompare {
   supplierTaxID: string,
   buyerMaterialId: string,
   buyerMaterialNumber?: string,
+  buyerSpecNumber?: string,
 };
 
 export const DEFAULT_BuyerCompare = {
@@ -32,6 +33,38 @@ export interface SupplierSelectItem {
   label: string;
   value: string | number;
 }
+
+const formatSupplierMaterialLabel = (payload: {
+  supplierName?: unknown;
+  supplierTaxID?: unknown;
+  materialNumber?: unknown;
+  fallbackText?: unknown;
+}) => {
+  const supplierName = String(payload.supplierName ?? '').trim();
+  const supplierTaxID = String(payload.supplierTaxID ?? '').trim();
+  const materialNumber = String(payload.materialNumber ?? '').trim();
+  const fallbackText = String(payload.fallbackText ?? '').replace(/\s*-\s*未對照$/, '').trim();
+
+  if (supplierName || supplierTaxID || materialNumber) {
+    const left = `${supplierName}${supplierTaxID ? `(${supplierTaxID})` : ''}`.trim();
+    if (left && materialNumber) {
+      return `${left} - ${materialNumber}`;
+    }
+    if (left) {
+      return left;
+    }
+    return materialNumber;
+  }
+
+  return fallbackText;
+};
+
+const resolveKeywordSelectItemLabel = (item: any) => formatSupplierMaterialLabel({
+  supplierName: item.supplierName ?? item.name ?? item.supplier?.name,
+  supplierTaxID: item.supplierTaxID ?? item.taxID ?? item.supplier?.taxID,
+  materialNumber: item.materialNumber ?? item.buyerMaterialNumber ?? item.materialNo ?? item.number,
+  fallbackText: item.label ?? item.text ?? item.name ?? item.materialNumber ?? item.buyerMaterialNumber,
+});
 
 interface ContentProps {
   title: string;
@@ -59,7 +92,11 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
       const mapped = formData.materialCompareList.map((item: MaterialCompare) => ({
         id: item.buyerMaterialId,
         value: item.buyerMaterialId,
-        label: `${item.supplierName}(${item.supplierTaxID}) - ${item.buyerMaterialNumber}`, 
+        label: formatSupplierMaterialLabel({
+          supplierName: item.supplierName,
+          supplierTaxID: item.supplierTaxID,
+          materialNumber: item.buyerMaterialNumber,
+        }),
       }));
       setSelectedSuppliers(mapped);
       isInitialized.current = true;
@@ -123,15 +160,13 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                           label="選擇供應商/料號"
                           placeholder="輸入統編、料號或名稱關鍵字搜尋..."
                           fetchItems={async (input: string) => {
-                            // 根據輸入關鍵字搜尋料號，使用 params 傳遞 keyword
-                            // 當 input 為空字串時，也呼叫 API 取得完整列表
                             const res = await api.post(`${API_URL}/Material/GetKeywordSelectListItems`, {
                               params: { keyword: input || "" }
                             });
                             if (res.success && res.data) {
-                              return res.data.map((m: any) => ({
-                                label: m.text,
-                                value: m.value
+                              return res.data.map((item: any) => ({
+                                value: item.value ?? item.id ?? item.materialId ?? item.buyerMaterialId,
+                                label: item.text ?? item.Text ?? resolveKeywordSelectItemLabel(item),
                               }));
                             }
                             return [];

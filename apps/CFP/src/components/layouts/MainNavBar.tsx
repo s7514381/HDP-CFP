@@ -1,12 +1,20 @@
 import { useUser } from "@/contexts/UserContext";
-import { Btn } from "@packages/components/bootstrap5/Btn";
 import NavBar, { NavBarNav, NavDropdown, NavLink } from "@packages/components/bootstrap5/NavBar";
 import FontAwesome from "@packages/components/FontAwsome";
 import { useRouter } from "next/navigation";
+import { removeLocalStorage } from "@packages/lib/localstorage";
 
 const UserBtn = () => {
-  
-  const {user} = useUser();
+  const { user, setUser } = useUser();
+  const route = useRouter();
+
+  const handleLogout = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    removeLocalStorage("token");
+    removeLocalStorage("userInfo");
+    setUser(null);
+    route.push("/login");
+  };
 
   return (
     <NavDropdown 
@@ -17,8 +25,15 @@ const UserBtn = () => {
       </>
       }
       labelClassName="p-2"
-      items={[{label: "會員資料", href: "https://www.ahop.com.tw"}]}
-      right={false} />
+      items={[]}
+      right={false}
+    >
+      <li>
+        <button type="button" className="dropdown-item" onMouseDown={handleLogout}>
+          <FontAwesome icon="fa-solid fa-right-from-bracket" className="me-2" />登出
+        </button>
+      </li>
+    </NavDropdown>
   )
 }
 /**
@@ -36,38 +51,19 @@ const NoticeBtn = () => {
 }
 
 /**
- * 登出按鈕
- * @returns 
- */
-const LogoutBtn = () => {
-  const route = useRouter();
-  const url = process.env.NEXT_PUBLIC_API_URL;
-  const handleLogout = () => {
-    route.push(`/login`);
-  }
-    return (
-       <Btn color="secondary" className="p-2 ms-2" rounded onClick={handleLogout}>
-        <FontAwesome icon="fa-solid fa-right-from-bracket" className="me-2" />登出
-       </Btn>
-    );
-  }
-
-/**
  * 需要身份驗證授權的導覽列
  * @param param0 
  * @returns 
  */
 export default function MainNavBar() {
-
   return (
     <NavBar className="no-print navbar-expand"  brand={
       /* eslint-disable-next-line @next/next/no-img-element */
       <img className="d-none d-md-block" src={`/images/logo.jpg`} alt="aHOP 供應商平台" />
     }>
       <NavBarNav className="align-items-center ms-auto flex-row">
-        {/* <UserBtn /> */}
+        <UserBtn />
         {/* <NoticeBtn /> */}
-        <LogoutBtn />
       </NavBarNav>
     </NavBar>
   );

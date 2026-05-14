@@ -59,6 +59,8 @@ export const API_MAP: Record<string, string> = {
   MATERIAL_EDIT: `${API_URL}/Material/Edit`,
   MATERIAL_GET_MODEL: `${API_URL}/Material/GetModel`,
   MATERIAL_GET_LIST: `${API_URL}/Material/GetList`,
+  MATERIAL_IMPORT: `${API_URL}/Material/Import`,
+  MATERIAL_IMPORT_TEMPLATE: `${API_URL}/Material/DownloadImportTemplate`,
   MATERIAL_MST: `${API_URL}/Material`,
 
   // ===== 群組管理 =====
@@ -76,6 +78,8 @@ export const API_MAP: Record<string, string> = {
   // ===== 賣方管理 =====
   SELLER_GET_MODEL: `${API_URL}/Material/GetSellerCompareModel`,
   SELLER_EDIT: `${API_URL}/Material/EditSellerCompareModel`,
+  SELLER_IMPORT: `${API_URL}/SellerCompare/Import`,
+  SELLER_IMPORT_TEMPLATE: `${API_URL}/SellerCompare/DownloadImportTemplate`,
 
   // ===== 建置通知 =====
   MATERIAL_NOTIFY_GET_LIST: `${API_URL}/MaterialNotify/GetList`,
