@@ -15,6 +15,7 @@ import { useToast } from '@packages/contexts/ToastContext';
 import { useConfirm } from '@packages/hooks/useConfirm';
 import { API_URL, API_MAP } from '@/lib/apiRoutes';
 import { usePagePermissions } from '@/hooks/usePagePermissions';
+import { useAppApi } from '@/hooks/useAppApi';
 
 export default function AdminFunctionPage() {
   const router = useRouter();
@@ -22,6 +23,7 @@ export default function AdminFunctionPage() {
   const { confirm } = useConfirm();
   const { hasPermission } = usePagePermissions();
   const { Row, Col } = Grid;
+  const { formPost } = useAppApi();
 
   const tableRef = React.useRef<CommonTableHandle>(null);
   const [searchName, setSearchName] = useState('');
@@ -43,7 +45,7 @@ export default function AdminFunctionPage() {
   const handleDelete = async (id: number | string) => {
     if (await confirm('確定要刪除此功能嗎？')) {
       try {
-        await fetch(`${API_URL}/Role/Delete?id=${id}`, { method: 'POST' });
+        await formPost(`${API_URL}/Role/Delete`, { id });
         success({ message: <span>刪除成功！</span> });
         tableRef.current?.reload();
       } catch (err) {

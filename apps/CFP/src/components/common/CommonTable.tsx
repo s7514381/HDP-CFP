@@ -66,8 +66,9 @@ export const CommonTable = forwardRef(<T extends any,>(
     });
 
     Object.keys(currentSearchParams).forEach(key => {
-      if (currentSearchParams[key] !== undefined && currentSearchParams[key] !== null) {
-        params.append(key, currentSearchParams[key].toString());
+      const val = currentSearchParams[key];
+      if (val !== undefined && val !== null && val !== '') {
+        params.append(key, val.toString());
       }
     });
 

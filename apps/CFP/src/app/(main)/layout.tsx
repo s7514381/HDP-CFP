@@ -42,6 +42,7 @@ export default function MainLayout({
 
     // 檢查當前路徑是否允許
     const cleanPathname = pathname.replace(/^\/|\/$/g, "");
+    if (cleanPathname === "") return;
     if (!allowedHrefs.has(cleanPathname)) {
       // 如果是子路徑（如 /Supplier/Edit），檢查父路徑是否允許
       const pathParts = cleanPathname.split("/");

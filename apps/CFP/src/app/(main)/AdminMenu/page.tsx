@@ -15,6 +15,7 @@ import { useToast } from '@packages/contexts/ToastContext';
 import { useConfirm } from '@packages/hooks/useConfirm';
 import { API_MAP } from '@/lib/apiRoutes';
 import { usePagePermissions } from '@/hooks/usePagePermissions';
+import { useAppApi } from '@/hooks/useAppApi';
 
 export default function AdminMenuPage() {
   const router = useRouter();
@@ -22,6 +23,7 @@ export default function AdminMenuPage() {
   const { confirm } = useConfirm();
   const { hasPermission } = usePagePermissions();
   const { Row, Col } = Grid;
+  const { formPost } = useAppApi();
 
   const tableRef = React.useRef<CommonTableHandle>(null);
   const [searchTitle, setSearchTitle] = useState('');
@@ -40,7 +42,7 @@ export default function AdminMenuPage() {
   const handleDelete = async (id: number | string) => {
     if (await confirm('確定要刪除此選單嗎？')) {
       try {
-        await fetch(`${API_MAP.ADMIN_MENU_MST}/Delete?id=${id}`, { method: 'POST' });
+        await formPost(`${API_MAP.ADMIN_MENU_MST}/Delete`, { id });
         success({ message: <span>刪除成功！</span> });
         tableRef.current?.reload();
       } catch (err) {

@@ -5,3 +5,7 @@ certificates/
 .DS_Store
 **/.DS_Store
 .vs/
+.clinerules
+AGENTS.md
+README.md
+plans/

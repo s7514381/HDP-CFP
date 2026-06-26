@@ -53,6 +53,9 @@ export const API_MAP: Record<string, string> = {
   MANAGER_MST: `${API_URL}/Manager`,
   MANAGER_LOGIN: `${API_URL}/Manager/Login`,
   MANAGER_REGISTER: `${API_URL}/Manager/Register`,
+  MANAGER_FORGOT_PASSWORD: `${API_URL}/Manager/ForgotPassword`,
+  MANAGER_RESET_PASSWORD: `${API_URL}/Manager/ResetPassword`,
+  MANAGER_GET_CAPTCHA: `${API_URL}/Manager/GetCaptcha`,
 
   // ===== 料號管理 =====
   MATERIAL_CREATE: `${API_URL}/Material/Create`,
