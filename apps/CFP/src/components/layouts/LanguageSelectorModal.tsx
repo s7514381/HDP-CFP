@@ -35,17 +35,22 @@ export default function LanguageSelectorModal({ show, onClose }: LanguageSelecto
     if (!show) return;
 
     let isMounted = true;
-    setLoading(true);
-    formPost(API_MAP.LANGUAGE_RESOURCE_GET_ACTIVE_LANGUAGES, {})
-      .then(result => {
+    const loadLanguages = async () => {
+      await Promise.resolve();
+      if (!isMounted) return;
+      setLoading(true);
+      try {
+        const result = await formPost(API_MAP.LANGUAGE_RESOURCE_GET_ACTIVE_LANGUAGES, {});
         if (isMounted && result.success && Array.isArray(result.data) && result.data.length > 0) {
           setLanguages(result.data as LanguageItem[]);
         }
-      })
-      .catch(error => console.error('Failed to load languages', error))
-      .finally(() => {
+      } catch (error) {
+        console.error('Failed to load languages', error);
+      } finally {
         if (isMounted) setLoading(false);
-      });
+      }
+    };
+    void loadLanguages();
 
     return () => {
       isMounted = false;

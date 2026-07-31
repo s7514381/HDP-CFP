@@ -14,6 +14,7 @@ import { useAppApi } from '@/hooks/useAppApi';
 import { API_MAP } from '@/lib/apiRoutes';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
+import { FormUpdate } from '@/components/common/formTypes';
 
 export const DEFAULT_MATERIAL_FORM = {
   supplierId: null as string | null,
@@ -25,41 +26,45 @@ export const DEFAULT_MATERIAL_FORM = {
 
 export type MaterialData = typeof DEFAULT_MATERIAL_FORM & {
   id?: string | number;
+  CanSell?: string | number | boolean;
 };
+
+interface SupplierOption {
+  text?: string;
+  name?: string;
+  value?: string | number;
+  id?: string | number;
+}
 
 interface ContentProps {
   title: string;
   formData: MaterialData;
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
-  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+  updateForm: FormUpdate<MaterialData>;
+  onSubmit: (e: React.FormEvent) => void;
   loading?: boolean;
   submitLabel?: string;
 }
 
-export default function Content({ title, formData, onChange, onSubmit, loading = false, submitLabel = LANGUAGE_KEYS.common.save }: ContentProps) {
+export default function Content({ title, formData, onChange, updateForm, onSubmit, loading = false, submitLabel = LANGUAGE_KEYS.common.save }: ContentProps) {
   const router = useRouter();
-  const api = useAppApi();
+  const { post } = useAppApi();
   const { translate } = useLanguage();
-  const [suppliers, setSuppliers] = React.useState<any[]>([]);
-  const canSellValue = formData.canSell ?? (formData as any).CanSell ?? '0';
+  const [suppliers, setSuppliers] = React.useState<SupplierOption[]>([]);
+  const canSellValue = formData.canSell ?? formData.CanSell ?? '0';
   const normalizedCanSellValue = String(canSellValue).trim().toLowerCase();
   const isCanSell = ['1', 'true', 'yes', 'y', '是', '可'].includes(normalizedCanSellValue);
 
   React.useEffect(() => {
-    api.post<any[]>(API_MAP.SUPPLIER_GET_SELECT_LIST, { body: {} }).then(res => {
-      if (res.success && res.data) {
+    post<SupplierOption[]>(API_MAP.SUPPLIER_GET_SELECT_LIST, { body: {} }).then(res => {
+      if (res.success && Array.isArray(res.data)) {
         setSuppliers(res.data);
       }
     });
-  }, []);
+  }, [post]);
 
   const handleCanSellChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    onChange({
-      target: {
-        name: 'canSell',
-        value: event.target.checked ? 'true' : 'false'
-      }
-    } as any);
+    updateForm({ canSell: event.target.checked ? 'true' : 'false' });
   };
 
   return (
@@ -85,7 +90,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                     onChange={onChange}
                     options={[
                       { label: translate(LANGUAGE_KEYS.material.selectSupplier, '請選擇供應商'), value: '' },
-                      ...(suppliers?.map((s: any) => ({ label: s.text || s.name, value: s.value || s.id })) || [])
+                      ...suppliers.map((supplier) => ({ label: supplier.text || supplier.name || '', value: supplier.value ?? supplier.id ?? '' }))
                     ]}
                   />
                 </Grid.Col>

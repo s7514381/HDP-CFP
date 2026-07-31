@@ -12,6 +12,7 @@ import ActionBar from '@/components/layouts/ActionBar';
 import FontAwesome from '@packages/components/FontAwsome';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
+import { FormUpdate } from '@/components/common/formTypes';
 
 export interface AdminFunctionData {
   id?: string | number;
@@ -29,12 +30,13 @@ interface ContentProps {
   title: string;
   formData: AdminFunctionData;
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
+  updateForm: FormUpdate<AdminFunctionData>;
   onSubmit: (e: React.FormEvent) => void;
   loading?: boolean;
   submitLabel?: string;
 }
 
-export default function Content({ title, formData, onChange, onSubmit, loading = false, submitLabel = LANGUAGE_KEYS.common.save }: ContentProps) {
+export default function Content({ title, formData, onChange, updateForm, onSubmit, loading = false, submitLabel = LANGUAGE_KEYS.common.save }: ContentProps) {
   const router = useRouter();
   const { translate } = useLanguage();
 
@@ -43,19 +45,19 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
       ...(formData.childList || []),
       { title: '', controller: '', action: '', parameter: '', actionFunctionSN: 0, status: '1', childList: [] }
     ];
-    onChange({ target: { name: 'childList', value: newList } } as any);
+    updateForm({ childList: newList });
   };
 
   const handleRemoveSubFunction = (index: number) => {
     const newList = [...(formData.childList || [])];
     newList.splice(index, 1);
-    onChange({ target: { name: 'childList', value: newList } } as any);
+    updateForm({ childList: newList });
   };
 
   const handleSubFunctionChange = (index: number, field: string, value: string) => {
     const newList = [...(formData.childList || [])];
     newList[index] = { ...newList[index], [field]: value };
-    onChange({ target: { name: 'childList', value: newList } } as any);
+    updateForm({ childList: newList });
   };
 
   const handleSetDefaultFunctions = () => {
@@ -65,7 +67,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
       { title: translate(LANGUAGE_KEYS.common.edit, '編輯'), controller: controller, action: 'Edit', parameter: '', actionFunctionSN: 0, status: '1', childList: [] },
       { title: translate(LANGUAGE_KEYS.common.delete, '刪除'), controller: controller, action: 'Delete', parameter: '', actionFunctionSN: 0, status: '1', childList: [] }
     ];
-    onChange({ target: { name: 'childList', value: defaultFunctions } } as any);
+    updateForm({ childList: defaultFunctions });
   };
 
   return (

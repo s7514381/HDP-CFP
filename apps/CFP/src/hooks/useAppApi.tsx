@@ -1,10 +1,11 @@
 'use client';
 
 import { useApi } from "@packages/hooks/useApi";
-import { getLocalStorage, removeLocalStorage } from "@packages/lib/localstorage";
 import { UseApiRequest, UseApiResult } from "@packages/types/useApi";
 import { useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { appStorage, clearSession, sessionStorageKeys } from '@/lib/appStorage';
+import { toFormData } from '@/lib/formData';
 
 /**
  * 繼承自 @packages/hooks/useApi 的 Hook
@@ -26,7 +27,7 @@ export const useAppApi = (): UseApiResult => {
       const reqOptions = { ...options } as UseApiRequest<TRes, TReq>;
 
       // 從 LocalStorage 取得 token 並加入 header
-      const token = getLocalStorage<string>("token");
+      const token = appStorage.get<string>(sessionStorageKeys.token);
       if (token) {
         reqOptions.headers = {
           ...reqOptions.headers,
@@ -34,7 +35,7 @@ export const useAppApi = (): UseApiResult => {
         };
       }
 
-      const languageCode = getLocalStorage<string>("languageCode");
+      const languageCode = appStorage.get<string>(sessionStorageKeys.languageCode);
       if (languageCode) {
         reqOptions.headers = {
           ...reqOptions.headers,
@@ -46,8 +47,7 @@ export const useAppApi = (): UseApiResult => {
 
       // 如果收到 401，表示未登入或 token 過期，跳轉到首頁
       if (result.status === 401) {
-        removeLocalStorage("token");
-        removeLocalStorage("userInfo");
+        clearSession();
         router.push("/login");
       }
 
@@ -60,7 +60,7 @@ export const useAppApi = (): UseApiResult => {
     <TRes, TReq = unknown>(
       url: string,
       options?: Omit<UseApiRequest<TRes, TReq>, "method" | "body">
-    ) => appRequest<TRes, TReq>(url, { ...options, method: "GET" } as any),
+      ) => appRequest<TRes, TReq>(url, { ...options, method: "GET" } as unknown as UseApiRequest<TRes, TReq>),
     [appRequest]
   );
 
@@ -68,7 +68,7 @@ export const useAppApi = (): UseApiResult => {
     <TRes, TReq = unknown>(
       url: string,
       options?: Omit<UseApiRequest<TRes, TReq>, "method">
-    ) => appRequest<TRes, TReq>(url, { ...options, method: "POST" } as any),
+      ) => appRequest<TRes, TReq>(url, { ...options, method: "POST" } as unknown as UseApiRequest<TRes, TReq>),
     [appRequest]
   );
 
@@ -76,7 +76,7 @@ export const useAppApi = (): UseApiResult => {
     <TRes, TReq = unknown>(
       url: string,
       options?: Omit<UseApiRequest<TRes, TReq>, "method">
-    ) => appRequest<TRes, TReq>(url, { ...options, method: "PUT" } as any),
+      ) => appRequest<TRes, TReq>(url, { ...options, method: "PUT" } as unknown as UseApiRequest<TRes, TReq>),
     [appRequest]
   );
 
@@ -84,7 +84,7 @@ export const useAppApi = (): UseApiResult => {
     <TRes, TReq = unknown>(
       url: string,
       options?: Omit<UseApiRequest<TRes, TReq>, "method">
-    ) => appRequest<TRes, TReq>(url, { ...options, method: "DELETE" } as any),
+      ) => appRequest<TRes, TReq>(url, { ...options, method: "DELETE" } as unknown as UseApiRequest<TRes, TReq>),
     [appRequest]
   );
 
@@ -93,43 +93,20 @@ export const useAppApi = (): UseApiResult => {
    * @param url API 路徑
    * @param data 物件資料
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const formPost = useCallback(<TRes = any>(url: string, data?: Record<string, any> | null) => {
+  const formPost = useCallback(async <TRes,>(url: string, data: Parameters<UseApiResult['formPost']>[1]) => {
       // 防禦性檢查：確保 data 存在
       if (!data) {
         console.warn('formPost: data is undefined or null');
-        return Promise.resolve({ success: false, message: 'No data provided' } as any);
+        return Promise.resolve({ success: false, message: 'No data provided' } as Awaited<ReturnType<UseApiResult['formPost']>>);
       }
 
-      const fd = new FormData();
-
-      const appendValue = (key: string, value: any, parentKey?: string) => {
-        if (value == null) return;
-        
-        const fullKey = parentKey ? `${parentKey}[${key}]` : key;
-
-        if (Array.isArray(value)) {
-          value.forEach((item, index) => {
-            appendValue(String(index), item, fullKey);
-          });
-        } else if (typeof value === 'object') {
-          Object.entries(value).forEach(([subKey, subValue]) => {
-            appendValue(subKey, subValue, fullKey);
-          });
-        } else {
-          fd.append(fullKey, String(value));
-        }
-      };
-
-      Object.entries(data).forEach(([key, value]) => {
-        appendValue(key, value);
-      });
+       const fd = toFormData(data);
 
       return appRequest<TRes, FormData>(url, {
         method: "POST",
         body: fd,
       });
-    }, [appRequest]);
+    }, [appRequest]) as UseApiResult['formPost'];
 
   return useMemo(
     () => ({

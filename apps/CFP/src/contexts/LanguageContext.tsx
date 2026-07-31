@@ -4,7 +4,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import { useAppApi } from '@/hooks/useAppApi';
 import { API_MAP } from '@/lib/apiRoutes';
 import { useUser } from '@/contexts/UserContext';
-import { getLocalStorage, setLocalStorage } from '@packages/lib/localstorage';
+import { appStorage, sessionStorageKeys, useStoredValue } from '@/lib/appStorage';
 
 const DEFAULT_LANGUAGE_CODE = 'zh-TW';
 const translationStorageKey = (languageCode: string) => `languageTranslations:${languageCode}`;
@@ -27,41 +27,33 @@ const LanguageContext = createContext<LanguageContextValue | null>(null);
 
 const getCachedTranslations = (languageCode: string): Record<string, string> => {
   if (typeof window === 'undefined') return {};
-  return getLocalStorage<Record<string, string>>(translationStorageKey(languageCode), {}) || {};
+  return appStorage.get<Record<string, string>>(translationStorageKey(languageCode), {}) || {};
 };
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const { formPost } = useAppApi();
   const { user } = useUser();
-  const [languageCode, setLanguageCode] = useState(DEFAULT_LANGUAGE_CODE);
+  const languageCode = useStoredValue(sessionStorageKeys.languageCode, DEFAULT_LANGUAGE_CODE);
   const [translations, setTranslations] = useState<Record<string, string>>({});
   const [translationsById, setTranslationsById] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
-  const [hydrated, setHydrated] = useState(false);
 
   const setLanguage = useCallback((nextLanguageCode: string) => {
     const normalizedCode = nextLanguageCode.trim() || DEFAULT_LANGUAGE_CODE;
-    setLanguageCode(normalizedCode);
     setTranslations(getCachedTranslations(normalizedCode));
     setTranslationsById({});
-    setLocalStorage('languageCode', normalizedCode);
+    appStorage.set(sessionStorageKeys.languageCode, normalizedCode);
   }, []);
 
   useEffect(() => {
-    const storedLanguageCode = getLocalStorage<string>('languageCode', DEFAULT_LANGUAGE_CODE) || DEFAULT_LANGUAGE_CODE;
-    setLanguageCode(storedLanguageCode);
-    setTranslations(getCachedTranslations(storedLanguageCode));
-    setHydrated(true);
-  }, []);
-
-  useEffect(() => {
-    if (!hydrated || !user) return;
+    if (!user) return;
 
     let isMounted = true;
-    setLoading(true);
 
-    formPost(API_MAP.LANGUAGE_RESOURCE_GET_TRANSLATIONS, { languageCode })
-      .then(result => {
+    const loadTranslations = async () => {
+      setLoading(true);
+      try {
+        const result = await formPost(API_MAP.LANGUAGE_RESOURCE_GET_TRANSLATIONS, { languageCode });
         if (!isMounted) return;
 
         if (!result.success || !Array.isArray(result.data)) {
@@ -71,34 +63,29 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
         }
 
         const nextTranslations = (result.data as LanguageResourceText[]).reduce<Record<string, string>>((map, resource) => {
-          if (resource.serialNumber && resource.text?.trim()) {
-            map[resource.serialNumber] = resource.text;
-          }
+          if (resource.serialNumber && resource.text?.trim()) map[resource.serialNumber] = resource.text;
           return map;
         }, {});
         const nextTranslationsById = (result.data as LanguageResourceText[]).reduce<Record<string, string>>((map, resource) => {
-          if (resource.languageResourceId && resource.text?.trim()) {
-            map[resource.languageResourceId] = resource.text;
-          }
+          if (resource.languageResourceId && resource.text?.trim()) map[resource.languageResourceId] = resource.text;
           return map;
         }, {});
         setTranslations(nextTranslations);
         setTranslationsById(nextTranslationsById);
-        setLocalStorage(translationStorageKey(languageCode), nextTranslations);
-      })
-      .catch(error => {
-        if (isMounted) {
-          console.error('Failed to load language translations', error);
-        }
-      })
-      .finally(() => {
+        appStorage.set(translationStorageKey(languageCode), nextTranslations);
+      } catch (error) {
+        if (isMounted) console.error('Failed to load language translations', error);
+      } finally {
         if (isMounted) setLoading(false);
-      });
+      }
+    };
+
+    void loadTranslations();
 
     return () => {
       isMounted = false;
     };
-  }, [formPost, hydrated, languageCode, user]);
+  }, [formPost, languageCode, user]);
 
   const translate = useCallback((serialNumber: string, fallbackText?: string) => {
     return translations[serialNumber] || fallbackText || '';

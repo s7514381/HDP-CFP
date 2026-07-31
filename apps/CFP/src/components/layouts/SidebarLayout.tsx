@@ -1,5 +1,5 @@
 import { useSidebar } from "@packages/contexts/SidebarContext";
-import { PropsWithChildren, useEffect, useMemo } from "react";
+import { HTMLAttributes, PropsWithChildren, useEffect } from "react";
 import { Btn } from "@packages/components/bootstrap5/Btn";
 
 interface SidebarChildProps extends Readonly<PropsWithChildren> {
@@ -43,10 +43,7 @@ export const SidebarChild: React.FC<SidebarChildProps> = ({ id, className, conte
   );
 }
 
-interface SidebarLayoutProps extends Readonly<PropsWithChildren> {
-  children: React.ReactNode;
-  [key: string]: any;
-}
+type SidebarLayoutProps = HTMLAttributes<HTMLDivElement>;
 
 /**
  * 浮動側邊欄的內容佈局需要搭配 SidebarProvider上下文使用。

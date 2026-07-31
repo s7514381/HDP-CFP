@@ -19,6 +19,14 @@ import { useAppApi } from '@/hooks/useAppApi';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
 
+interface ManagerRow {
+  id: string | number;
+  name?: string;
+  account?: string;
+  taxID?: string;
+  email?: string;
+}
+
 export default function ManagerPage() {
   const router = useRouter();
   const { success, danger } = useToast();
@@ -28,7 +36,7 @@ export default function ManagerPage() {
   const { formPost } = useAppApi();
   const { translate } = useLanguage();
 
-  const tableRef = React.useRef<CommonTableHandle>(null);
+  const tableRef = React.useRef<CommonTableHandle<ManagerRow>>(null);
   const [searchName, setSearchName] = useState('');
   const [searchAccount, setSearchAccount] = useState('');
 
@@ -51,13 +59,13 @@ export default function ManagerPage() {
         await formPost(`${API_MAP.MANAGER_MST}/Delete`, { id });
         success({ message: <span>{translate(LANGUAGE_KEYS.common.deleteSuccess, '刪除成功！')}</span> });
         tableRef.current?.reload();
-      } catch (err) {
+      } catch {
         danger({ message: <span>{translate(LANGUAGE_KEYS.common.deleteFailed, '刪除失敗。')}</span> });
       }
     }
   };
 
-  const columns: Column<any>[] = [
+  const columns: Column<ManagerRow>[] = [
     {
       header: translate(LANGUAGE_KEYS.common.rowNumber, '項次'),
       className: "text-center",

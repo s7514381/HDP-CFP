@@ -39,7 +39,7 @@ function ResetPasswordForm() {
     }
 
     const url = `${API_MAP.MANAGER_RESET_PASSWORD}?Token=${encodeURIComponent(token)}&NewPassword=${encodeURIComponent(formData.newPassword)}&ConfirmPassword=${encodeURIComponent(formData.confirmPassword)}`;
-    const res = await post<any, any>(url, {});
+    const res = await post<unknown, Record<string, never>>(url, {});
 
     if (res.success) {
       setDone(true);

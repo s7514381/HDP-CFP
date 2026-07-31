@@ -23,6 +23,10 @@ interface NotifyStatusReportItem {
   updateCount: string | number;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
 function escapeCsvValue(value: unknown) {
   if (value === null || value === undefined) {
     return '""';
@@ -51,14 +55,14 @@ export default function MaterialNotifyPage() {
   const { danger } = useToast();
   const { Row, Col } = Grid;
   const { translate } = useLanguage();
-  const tableColumns = [
+  const tableColumns: Column<NotifyStatusReportItem>[] = [
     { header: translate(LANGUAGE_KEYS.common.sendTime, '寄送時間'), key: 'strDate' },
     { header: translate(LANGUAGE_KEYS.common.supplier, '供應商'), key: 'supplierName' },
     { header: translate(LANGUAGE_KEYS.common.receiveCount, '收到筆數'), key: 'sentCount' },
     { header: translate(LANGUAGE_KEYS.common.updateCount, '更新筆數'), key: 'updateCount' },
   ] as const;
 
-  const tableRef = useRef<CommonTableHandle>(null);
+  const tableRef = useRef<CommonTableHandle<NotifyStatusReportItem>>(null);
 
   // 搜尋表單狀態
   const [searchForm, setSearchForm] = useState({
@@ -69,30 +73,12 @@ export default function MaterialNotifyPage() {
   const [exporting, setExporting] = useState(false);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
-    let finalValue: any = value;
-
-    if (type === 'checkbox') {
-      finalValue = checked;
-    } else if (type === 'radio') {
-      if (value === 'true') finalValue = true;
-      else if (value === 'false') finalValue = false;
-    }
+    const { name, value } = e.target;
 
     setSearchForm(prev => ({
       ...prev,
-      [name]: finalValue
+      [name]: value
     }));
-  };
-
-  const handleRadioClick = (name: string, value: boolean) => {
-    setSearchForm(prev => {
-      const currentValue = (prev as any)[name];
-      return {
-        ...prev,
-        [name]: currentValue === value ? null : value
-      };
-    });
   };
 
   const handleSearch = () => {
@@ -133,17 +119,23 @@ export default function MaterialNotifyPage() {
         return;
       }
 
-      const responseData = (response as any).data || response;
-      const list = Array.isArray(responseData.data)
+      const responseData = response.data;
+      const rawList = isRecord(responseData) && Array.isArray(responseData.data)
         ? responseData.data
-        : (Array.isArray(responseData) ? responseData : []);
+        : Array.isArray(responseData) ? responseData : [];
+      const list: NotifyStatusReportItem[] = rawList.filter(isRecord).map((item) => ({
+        strDate: String(item.strDate ?? ''),
+        supplierName: String(item.supplierName ?? ''),
+        sentCount: String(item.sentCount ?? ''),
+        updateCount: String(item.updateCount ?? ''),
+      }));
 
       if (list.length === 0) {
         danger({ message: <span>{translate(LANGUAGE_KEYS.common.noData, '目前篩選條件沒有可匯出的資料。')}</span> });
         return;
       }
 
-      const csv = toCsv(list as NotifyStatusReportItem[], tableColumns.map(column => column.header));
+      const csv = toCsv(list, tableColumns.map(column => column.header));
       downloadFile({
         blob: new Blob([csv], { type: 'text/csv;charset=utf-8;' }),
         defaultFileName: 'NotifyStatusReport.csv'
@@ -155,10 +147,6 @@ export default function MaterialNotifyPage() {
       setExporting(false);
     }
   };
-
-  const columns: Column<any>[] = [
-    ...tableColumns,
-  ];
 
   return (
     <>
@@ -211,7 +199,7 @@ export default function MaterialNotifyPage() {
         <Container fluid>
           <CommonTable
             ref={tableRef}
-            columns={columns}
+            columns={tableColumns}
             apiUrl={`${API_URL}/NotifyStatusReport/GetList`}
             pageSize={10}
           />

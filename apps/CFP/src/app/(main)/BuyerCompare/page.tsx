@@ -11,24 +11,28 @@ import { CommonTable, Column, CommonTableHandle } from "@/components/common/Comm
 import Container from "@packages/components/bootstrap5/Container";
 import Grid from "@packages/components/bootstrap5/Grid";
 import FontAwesome from "@packages/components/FontAwsome";
-import { useToast } from '@packages/contexts/ToastContext';
-import { useConfirm } from '@packages/hooks/useConfirm';
-import { useAppApi } from '@/hooks/useAppApi';
 import { API_URL } from '@/lib/apiRoutes';
 import { usePagePermissions } from '@/hooks/usePagePermissions';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
 
+interface BuyerCompareRow {
+  id: string | number;
+  materialNumber?: string;
+  productModel?: string;
+  productName?: string;
+  supplierName?: string;
+  specCount?: string | number;
+  notCompareCount?: string | number;
+}
+
 export default function MaterialPage() {
   const router = useRouter();
-  const api = useAppApi();
-  const { success, danger } = useToast();
-  const { confirm } = useConfirm();
   const { hasPermission } = usePagePermissions();
   const { Row, Col } = Grid;
   const { translate } = useLanguage();
 
-  const tableRef = React.useRef<CommonTableHandle>(null);
+  const tableRef = React.useRef<CommonTableHandle<BuyerCompareRow>>(null);
   const [searchMaterialNumber, setSearchMaterialNumber] = useState('');
   const [searchSupplierName, setSearchSupplierName] = useState('');
 
@@ -45,10 +49,7 @@ export default function MaterialPage() {
     tableRef.current?.search({});
   };
 
-  const getSpecCount = (item: any) => item.specCount ?? '-';
-  const getNotCompareCount = (item: any) => item.notCompareCount ?? '-';
-
-  const columns: Column<any>[] = [
+  const columns: Column<BuyerCompareRow>[] = [
     {
       header: translate(LANGUAGE_KEYS.common.rowNumber, '項次'),
       className: "text-center",

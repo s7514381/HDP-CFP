@@ -14,6 +14,7 @@ import { useAppApi } from '@/hooks/useAppApi';
 import { API_MAP, API_URL } from '@/lib/apiRoutes';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
+import { FormUpdate } from '@/components/common/formTypes';
 
 // 買方料號狀態 (與 API 一致：0=停用, 1=啟用)
 type BuyerStatus = 0 | 1;
@@ -27,7 +28,7 @@ interface MaterialSpec {
   specNumber: string;   // 對應後端 SpecNumber = materialNumber + 流水號
   productModel: string; // 供顯示用的產品型號
   status: BuyerStatus;
-  selected: boolean;
+  selected?: boolean;
   sequence: number | null;
 }
 
@@ -59,8 +60,9 @@ export interface BuyerCompareFormData {
 interface ContentProps {
   title: string;
   formData: BuyerCompareFormData;
-  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement> | { target: { name: string; value: any } }) => void;
-  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+  onChange: React.ChangeEventHandler<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>;
+  updateForm: FormUpdate<BuyerCompareFormData>;
+  onSubmit: (e: React.FormEvent) => void;
   loading?: boolean;
   submitLabel?: string;
 }
@@ -69,7 +71,7 @@ interface ContentProps {
 const EMPTY_MATERIALS: BuyerMaterialItem[] = [];
 const EMPTY_SPECS: MaterialSpec[] = [];
 
-export default function Content({ title, formData, onChange, onSubmit, loading = false, submitLabel = LANGUAGE_KEYS.common.save }: ContentProps) {
+export default function Content({ title, formData, onChange, updateForm, onSubmit, loading = false, submitLabel = LANGUAGE_KEYS.common.save }: ContentProps) {
   const router = useRouter();
   const api = useAppApi();
   const searchParams = useSearchParams();
@@ -145,14 +147,13 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
     // 只有當資料真正改變時才同步
     if (currentJson !== lastSyncedRef.current) {
       lastSyncedRef.current = currentJson;
-      onChange({ target: { name: 'materialSpecList', value: specsForSync } });
+      updateForm({ materialSpecList: specsForSync });
     }
-  }, [specs, onChange]);
+  }, [specs, updateForm]);
 
   useEffect(() => {
-    onChange({ target: { name: 'DeleteMaterialCompareIdList', value: deletedMaterialCompareIds } });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deletedMaterialCompareIds]);
+    updateForm({ DeleteMaterialCompareIdList: deletedMaterialCompareIds });
+  }, [deletedMaterialCompareIds, updateForm]);
 
   // 產生規格碼 - 對應後端 MaterialSpec
   // Name = sellerProductName, SpecNumber = materialNumber + 流水號

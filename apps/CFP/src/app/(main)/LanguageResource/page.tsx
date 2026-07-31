@@ -69,8 +69,13 @@ export default function LanguageResourcePage() {
   }, [formPost]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadLanguages().catch(error => console.error('Failed to load languages', error));
+    let cancelled = false;
+    const load = async () => {
+      await Promise.resolve();
+      if (!cancelled) await loadLanguages();
+    };
+    void load().catch(error => console.error('Failed to load languages', error));
+    return () => { cancelled = true; };
   }, [loadLanguages]);
 
   const loadMenus = useCallback(async () => {
@@ -79,7 +84,13 @@ export default function LanguageResourcePage() {
   }, [formPost]);
 
   useEffect(() => {
-    loadMenus().catch(error => console.error('Failed to load menu options', error));
+    let cancelled = false;
+    const load = async () => {
+      await Promise.resolve();
+      if (!cancelled) await loadMenus();
+    };
+    void load().catch(error => console.error('Failed to load menu options', error));
+    return () => { cancelled = true; };
   }, [loadMenus]);
 
   const menuOptions = React.useMemo(() => {

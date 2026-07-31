@@ -24,7 +24,7 @@ export default function MaterialNotifyPage() {
   const { translate } = useLanguage();
   const { hasPermission } = usePagePermissions();
 
-  const tableRef = useRef<CommonTableHandle>(null);
+  const tableRef = useRef<CommonTableHandle<MaterialNotifyItem>>(null);
 
   // 搜尋表單狀態
   const [searchForm, setSearchForm] = useState({
@@ -111,7 +111,7 @@ export default function MaterialNotifyPage() {
     }
   };
 
-  const columns: Column<any>[] = [
+  const columns: Column<MaterialNotifyItem>[] = [
     {
       header: translate(LANGUAGE_KEYS.notify.selectRecord, '勾選'),
       className: "text-center",

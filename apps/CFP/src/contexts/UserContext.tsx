@@ -1,7 +1,7 @@
 'use client';
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { getLocalStorage, removeLocalStorage, setLocalStorage } from "@packages/lib/localstorage";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { appStorage, clearSession, sessionStorageKeys } from '@/lib/appStorage';
 
 
 type UserContextType = {
@@ -16,25 +16,36 @@ const UserContext = createContext<UserContextType | null>(null);
  * @returns 
  */
 export function UserProvider({ user: initialUser, children }: Readonly<{ user: Pick<User, "username"> | null, children: React.ReactNode }>) {
-  const [user, setUserState] = useState<Pick<User, "username"> | null>(initialUser);
+  const [user, setUserState] = useState<Pick<User, "username"> | null>(
+    () => initialUser ?? null
+  );
 
   useEffect(() => {
-    const cachedUser = getLocalStorage<Pick<User, "username">>("userInfo");
-    if (cachedUser?.username) {
-      setUserState(cachedUser);
-    }
-  }, []);
+    if (initialUser) return;
 
-  const setUser = (nextUser: Pick<User, "username"> | null) => {
+    let cancelled = false;
+    const timeoutId = window.setTimeout(() => {
+      if (!cancelled) {
+        setUserState(appStorage.get<Pick<User, "username">>(sessionStorageKeys.userInfo));
+      }
+    }, 0);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [initialUser]);
+
+  const setUser = useCallback((nextUser: Pick<User, "username"> | null) => {
     setUserState(nextUser);
     if (nextUser) {
-      setLocalStorage("userInfo", nextUser);
+      appStorage.set(sessionStorageKeys.userInfo, nextUser);
       return;
     }
-    removeLocalStorage("userInfo");
-  };
+    clearSession();
+  }, []);
 
-  const value = useMemo(() => ({ user, setUser }), [user]);
+  const value = useMemo(() => ({ user, setUser }), [setUser, user]);
 
   return (
     <UserContext.Provider value={value}>

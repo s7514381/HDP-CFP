@@ -4,28 +4,41 @@ import React, { useState, useRef } from 'react';
 import ActionBar from "@/components/layouts/ActionBar";
 import WrapContent from "@/components/layouts/WrapContent";
 import { SearchBlock } from "@/components/layouts/SearchBlock";
-import { Input, Checkbox, Radio } from "@packages/components/bootstrap5/Input";
+import { Input, Radio } from "@packages/components/bootstrap5/Input";
 import { Btn } from "@packages/components/bootstrap5/Btn";
 import { CommonTable, Column, CommonTableHandle } from "@/components/common/CommonTable";
 import Container from "@packages/components/bootstrap5/Container";
 import Grid from "@packages/components/bootstrap5/Grid";
-import { useAppApi } from '@/hooks/useAppApi';
-import { useToast } from '@packages/contexts/ToastContext';
-import { API_MAP,API_URL } from '@/lib/apiRoutes';
-import { MaterialNotifyItem } from '@/types/materialNotify';
+import { API_URL } from '@/lib/apiRoutes';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
 
+interface StatusSearchForm {
+  updateDateFrom: string;
+  updateDateTo: string;
+  isSend: boolean | null;
+  isUpdate: boolean | null;
+}
+
+interface StatusRow {
+  isSend?: boolean;
+  isUpdate?: boolean;
+  strCreateDate?: string;
+  strUpdateDate?: string;
+  materialNumber?: string;
+  productModel?: string;
+  productName?: string;
+  supplierName?: string;
+}
+
 export default function MaterialNotifyPage() {
-  const api = useAppApi();
-  const { success, danger } = useToast();
   const { Row, Col } = Grid;
   const { translate } = useLanguage();
 
-  const tableRef = useRef<CommonTableHandle>(null);
+  const tableRef = useRef<CommonTableHandle<StatusRow>>(null);
 
   // 搜尋表單狀態
-  const [searchForm, setSearchForm] = useState({
+  const [searchForm, setSearchForm] = useState<StatusSearchForm>({
     updateDateFrom: '',
     updateDateTo: '',
     isSend: null as boolean | null,
@@ -33,25 +46,17 @@ export default function MaterialNotifyPage() {
   });
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
-    let finalValue: any = value;
-
-    if (type === 'checkbox') {
-      finalValue = checked;
-    } else if (type === 'radio') {
-      if (value === 'true') finalValue = true;
-      else if (value === 'false') finalValue = false;
-    }
+    const { name, value } = e.target;
 
     setSearchForm(prev => ({
       ...prev,
-      [name]: finalValue
+      [name]: value
     }));
   };
 
-  const handleRadioClick = (name: string, value: boolean) => {
+  const handleRadioClick = (name: 'isSend' | 'isUpdate', value: boolean) => {
     setSearchForm(prev => {
-      const currentValue = (prev as any)[name];
+      const currentValue = prev[name];
       return {
         ...prev,
         [name]: currentValue === value ? null : value
@@ -75,7 +80,7 @@ export default function MaterialNotifyPage() {
     tableRef.current?.search({});
   };
 
-  const columns: Column<any>[] = [
+  const columns: Column<StatusRow>[] = [
     {
       header: translate(LANGUAGE_KEYS.statusQuery.sendStatus, '是否發送'),
       key: "isSend",

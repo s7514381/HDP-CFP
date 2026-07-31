@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ActionBar from "@/components/layouts/ActionBar";
 import WrapContent from "@/components/layouts/WrapContent";
@@ -19,6 +19,13 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import SupplierDeleteConfirm from '@/components/common/SupplierDeleteConfirm';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
 
+interface SupplierRow {
+  id: string | number;
+  name?: string;
+  taxID?: string;
+  contactName?: string;
+}
+
 export default function SupplierPage() {
   const router = useRouter();
   const api = useAppApi();
@@ -27,7 +34,7 @@ export default function SupplierPage() {
   const { translate } = useLanguage();
   const { Row, Col } = Grid;
 
-  const tableRef = React.useRef<CommonTableHandle>(null);
+  const tableRef = React.useRef<CommonTableHandle<SupplierRow>>(null);
   const [searchName, setSearchName] = useState('');
   const [searchTaxID, setSearchTaxID] = useState('');
   const [pendingDeleteId, setPendingDeleteId] = useState<number | string | null>(null);
@@ -62,7 +69,7 @@ export default function SupplierPage() {
     }
   };
 
-  const columns: Column<any>[] = [
+  const columns: Column<SupplierRow>[] = [
     {
       header: translate(LANGUAGE_KEYS.common.rowNumber),
       className: "text-center",

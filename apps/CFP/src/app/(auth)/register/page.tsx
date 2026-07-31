@@ -49,7 +49,7 @@ export default function Register() {
     // 建構 URL 參數（與登入頁面一致的方式）
     const url = `${API_MAP.MANAGER_REGISTER}?Account=${encodeURIComponent(formData.account)}&Email=${encodeURIComponent(formData.email)}&Name=${encodeURIComponent(formData.name)}&TaxID=${encodeURIComponent(formData.taxID)}&Password=${encodeURIComponent(formData.password)}&ConfirmPassword=${encodeURIComponent(formData.confirmPassword)}`;
 
-    const res = await post<any, any>(url, {});
+    const res = await post<unknown, Record<string, never>>(url, {});
 
     if (res.success && res.status === 200) {
       success({ message: <span>{translate(LANGUAGE_KEYS.auth.registerSuccess, '註冊成功！即將跳轉至登入頁...')}</span> });

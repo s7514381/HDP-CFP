@@ -23,7 +23,7 @@ export default function MaterialEditPage() {
       title={LANGUAGE_KEYS.material.editTitle}
       content={Content}
       onFetchModel={handleFetchModel}
-      onSubmit={(data) => formPost(API_MAP.MATERIAL_EDIT, { ...data, canSell: normalizeCanSell((data as any).canSell) })}
+      onSubmit={(data) => formPost(API_MAP.MATERIAL_EDIT, { ...data, canSell: normalizeCanSell(data.canSell) })}
       redirectPath="/Material"
     />
   );

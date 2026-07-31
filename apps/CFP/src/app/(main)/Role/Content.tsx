@@ -11,6 +11,7 @@ import { Container } from '@packages/components/bootstrap5/Container';
 import ActionBar from '@/components/layouts/ActionBar';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
+import { FormUpdate } from '@/components/common/formTypes';
 import { API_URL } from '@/lib/apiRoutes';
 import { useAppApi } from '@/hooks/useAppApi';
 
@@ -41,16 +42,42 @@ interface AdminMenu {
   iconClass: string | null;
 }
 
+const isLanguageQueryFunction = (fn: AdminFunction) =>
+  fn.controller === 'LanguageResource' && fn.action === 'Index';
+
+const getAllChildIds = (menu: AdminMenu, visited: Set<string>): string[] => {
+  if (!menu.id || visited.has(menu.id)) return [];
+  visited.add(menu.id);
+
+  let ids: string[] = [];
+  if (menu.adminFunctionId) ids.push(menu.adminFunctionId);
+  menu.adminFunction?.childList.forEach((fn) => {
+    if (fn.id && !isLanguageQueryFunction(fn)) ids.push(fn.id);
+  });
+  menu.childList.forEach((child) => {
+    ids = ids.concat(getAllChildIds(child, visited));
+  });
+  return ids;
+};
+
+const getMenuFunctionIds = (menu: AdminMenu): string[] => [
+  menu.adminFunctionId,
+  ...menu.adminFunction?.childList
+    .filter((fn) => !isLanguageQueryFunction(fn))
+    .map((fn) => fn.id) || [],
+].filter((id): id is string => Boolean(id));
+
 interface ContentProps {
   title: string;
   formData: RoleData;
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
+  updateForm: FormUpdate<RoleData>;
   onSubmit: (e: React.FormEvent) => void;
   loading?: boolean;
   submitLabel?: string;
 }
 
-export default function Content({ title, formData, onChange, onSubmit, loading = false, submitLabel = LANGUAGE_KEYS.common.save }: ContentProps) {
+export default function Content({ title, formData, onChange, updateForm, onSubmit, loading = false, submitLabel = LANGUAGE_KEYS.common.save }: ContentProps) {
   const router = useRouter();
   const { translate } = useLanguage();
   const { formPost } = useAppApi();
@@ -69,42 +96,6 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
     };
     fetchFunctions();
   }, [formPost]);
-
-  const isLanguageQueryFunction = (fn: AdminFunction) =>
-    fn.controller === 'LanguageResource' && fn.action === 'Index';
-
-  const getAllChildIds = (menu: any, visited: Set<string>): string[] => {
-    if (!menu || !menu.id || visited.has(menu.id)) return [];
-    visited.add(menu.id);
-
-    let ids: string[] = [];
-    if (menu.adminFunctionId) ids.push(menu.adminFunctionId);
-
-    const fnList = menu.adminFunction?.childList;
-    if (Array.isArray(fnList)) {
-      fnList.forEach(f => {
-        if (f?.id && !isLanguageQueryFunction(f)) ids.push(f.id);
-      });
-    }
-
-    const subMenus = menu.childList;
-    if (Array.isArray(subMenus)) {
-      subMenus.forEach(child => {
-        ids = ids.concat(getAllChildIds(child, visited));
-      });
-    }
-    return ids;
-  };
-
-  const getMenuFunctionIds = (menu: AdminMenu): string[] => {
-    const ids = [
-      menu.adminFunctionId,
-      ...(menu.adminFunction?.childList || [])
-        .filter(fn => !isLanguageQueryFunction(fn))
-        .map(fn => fn?.id),
-    ];
-    return ids.filter((id): id is string => Boolean(id));
-  };
 
   const allMenuFunctionIds = useMemo(() => {
     const ids: string[] = [];
@@ -200,13 +191,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
 
     const newMenuIds = calculateSelectedMenuIds(newFunctions);
 
-    onChange({
-      target: { name: 'selectedAdminFunctionIds', value: newFunctions, type: 'checkbox' }
-    } as any);
-
-    onChange({
-      target: { name: 'selectedAdminMenuIds', value: newMenuIds, type: 'checkbox' }
-    } as any);
+    updateForm({ selectedAdminFunctionIds: newFunctions, selectedAdminMenuIds: newMenuIds });
   };
 
   const handleMenuFunctionChange = (menu: AdminMenu, functionId: string, checked: boolean) => {
@@ -232,12 +217,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
 
     const newMenuIds = calculateSelectedMenuIds(newFunctions);
 
-    onChange({
-      target: { name: 'selectedAdminFunctionIds', value: newFunctions, type: 'checkbox' }
-    } as any);
-    onChange({
-      target: { name: 'selectedAdminMenuIds', value: newMenuIds, type: 'checkbox' }
-    } as any);
+    updateForm({ selectedAdminFunctionIds: newFunctions, selectedAdminMenuIds: newMenuIds });
   };
 
   return (
@@ -292,7 +272,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
               name="select-all"
               label={translate(LANGUAGE_KEYS.common.selectAll, '全選')}
               checked={isAllChecked(allMenuFunctionIds)}
-              onChange={(e: any) => handleCheckboxChange('', e.target.checked, allMenuFunctionIds)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleCheckboxChange('', e.target.checked, allMenuFunctionIds)}
             />
           </div>
 
@@ -311,7 +291,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                         className="fw-bold text-primary"
                         label={parentMenu.title}
                         checked={isAnyChecked(parentFunctionIds)}
-                        onChange={(e: any) => handleCheckboxChange(
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleCheckboxChange(
                           parentMenu.adminFunctionId || '',
                           e.target.checked,
                           parentFunctionIds.filter(id => id !== parentMenu.adminFunctionId)
@@ -332,7 +312,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                                   name={`fn-${fn.id}`}
                                   label={fn.title}
                                   checked={(formData?.selectedAdminFunctionIds || []).includes(fn.id)}
-                                  onChange={(e: any) => handleMenuFunctionChange(parentMenu, fn.id, e.target.checked)}
+                                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleMenuFunctionChange(parentMenu, fn.id, e.target.checked)}
                                 />
                               );
                           })}
@@ -366,7 +346,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                               className="fw-bold"
                               label={fullChild.title}
                               checked={isChildItemChecked}
-                              onChange={(e: any) => handleCheckboxChange(fullChild.adminFunctionId || '', e.target.checked, childFnIds)}
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleCheckboxChange(fullChild.adminFunctionId || '', e.target.checked, childFnIds)}
                             />
                           </Grid.Col>
                           <Grid.Col md={9}>
@@ -380,7 +360,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                                     name={`fn-${fn.id}`}
                                     label={fn.title}
                                     checked={(formData?.selectedAdminFunctionIds || []).includes(fn.id)}
-                                    onChange={(e: any) => handleMenuFunctionChange(fullChild, fn.id, e.target.checked)}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleMenuFunctionChange(fullChild, fn.id, e.target.checked)}
                                   />
                                 );
                               })}

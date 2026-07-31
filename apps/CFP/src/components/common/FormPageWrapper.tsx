@@ -5,13 +5,18 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@packages/contexts/ToastContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
+import { FormModelNormalizer, normalizeFormModel } from '@/lib/formModel';
+import { FormContentProps, FormUpdate } from './formTypes';
 
-interface FormPageWrapperProps<T> {
+const EMPTY_FORM_DATA: Record<string, never> = {};
+
+interface FormPageWrapperProps<T extends object> {
   title: string;
-  content: React.ComponentType<any> & { defaultData?: any };
+  content: React.ComponentType<FormContentProps<T>> & { defaultData?: T };
   initialData?: T;
   onSubmit: (formData: T) => Promise<{ success: boolean; message?: string }>;
-  onFetchModel?: (id: string) => Promise<any>;
+  onFetchModel?: (id: string) => Promise<unknown>;
+  normalizeModel?: FormModelNormalizer<T>;
   redirectPath: string;
   submitLabel?: string;
   successMessage?: string;
@@ -32,12 +37,13 @@ function FormPageLoading() {
 }
 
 // Inner component that uses useSearchParams
-function FormPageWrapperInner<T extends Record<string, any>>({
+function FormPageWrapperInner<T extends object>({
   title,
   content: Content,
   initialData,
   onSubmit,
   onFetchModel,
+  normalizeModel = normalizeFormModel,
   redirectPath,
   submitLabel = LANGUAGE_KEYS.common.save,
   successMessage = LANGUAGE_KEYS.common.saved,
@@ -49,7 +55,8 @@ function FormPageWrapperInner<T extends Record<string, any>>({
   const { success, danger } = useToast();
   const { translate } = useLanguage();
 
-  const [formData, setFormData] = useState<T>(initialData || (Content.defaultData as T));
+  const defaultData = initialData ?? Content.defaultData ?? (EMPTY_FORM_DATA as T);
+  const [formData, setFormData] = useState<T>(defaultData);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(!!(id && onFetchModel));
 
@@ -59,54 +66,32 @@ function FormPageWrapperInner<T extends Record<string, any>>({
     setFetching(true);
     try {
       const res = await onFetchModel(id);
-      const data = res?.data || res;
+      const data = typeof res === 'object' && res !== null && 'data' in res
+        ? res.data || res
+        : res;
 
       if (data && typeof data === 'object') {
-        // Merge initial data with the API model.
-        // - Filter null values.
-        // - Preserve objects and arrays.
-        // - Preserve status as a numeric value for backend validation.
-        const processedData = Object.fromEntries(
-          Object.entries(data).map(([k, v]) => {
-            if (v === null) return [k, ''];
-            if (typeof v === 'object') return [k, v];
-            // Normalize a backend status value of 200 to 1.
-            if (k === 'Status' || k === 'status') {
-              const statusValue = v === 200 ? 1 : v;
-              return [k, statusValue];
-            }
-            if (k === 'CanSell' || k === 'canSell') {
-              return ['canSell', String(v)];
-            }
-            return [k, String(v)];
-          })
-        );
-
-        setFormData(prev => {
-          const newData = {
-            ...(Content.defaultData || {}),
-            ...prev,
-            ...processedData
-          };
-          return newData as T;
-        });
+        setFormData(prev => normalizeModel(data, { ...defaultData, ...prev }));
       }
-    } catch (error) {
+    } catch {
       danger({ message: <span>{translate(LANGUAGE_KEYS.common.loadFailed)}</span> });
     } finally {
       setFetching(false);
     }
-  }, [id, onFetchModel, danger]);
+  }, [defaultData, danger, id, normalizeModel, onFetchModel, translate]);
 
   useEffect(() => {
     fetchModel();
   }, [fetchModel]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement> | { target: { name: string; value: any } }) => {
+  const handleChange: React.ChangeEventHandler<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement> = (e) => {
     const { name, value } = e.target;
-    // Preserve custom object values and native element values.
-    setFormData(prev => ({ ...prev, [name]: (typeof value === 'object' && value !== null) ? value : value }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
+
+  const updateForm = useCallback<FormUpdate<T>>((patch) => {
+    setFormData(prev => ({ ...prev, ...patch }));
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -142,6 +127,7 @@ function FormPageWrapperInner<T extends Record<string, any>>({
       title={title}
       formData={formData}
       onChange={handleChange}
+      updateForm={updateForm}
       onSubmit={handleSubmit}
       loading={loading}
       submitLabel={translate(submitLabel)}
@@ -150,7 +136,7 @@ function FormPageWrapperInner<T extends Record<string, any>>({
 }
 
 // Wrapper component with Suspense boundary
-export default function FormPageWrapper<T extends Record<string, any>>(props: FormPageWrapperProps<T>) {
+export default function FormPageWrapper<T extends object>(props: FormPageWrapperProps<T>) {
   return (
     <Suspense fallback={<FormPageLoading />}>
       <FormPageWrapperInner {...props} />

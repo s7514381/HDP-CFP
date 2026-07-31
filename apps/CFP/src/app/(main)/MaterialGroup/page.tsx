@@ -19,6 +19,11 @@ import { usePagePermissions } from '@/hooks/usePagePermissions';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
 
+interface MaterialGroupRow {
+  id: string | number;
+  name?: string;
+}
+
 export default function MaterialGroupPage() {
   const router = useRouter();
   const api = useAppApi();
@@ -28,7 +33,7 @@ export default function MaterialGroupPage() {
   const { Row, Col } = Grid;
   const { translate } = useLanguage();
 
-  const tableRef = React.useRef<CommonTableHandle>(null);
+  const tableRef = React.useRef<CommonTableHandle<MaterialGroupRow>>(null);
   const [searchName, setSearchName] = useState('');
 
   const handleSearch = () => {
@@ -46,7 +51,7 @@ export default function MaterialGroupPage() {
     if (await confirm(translate(LANGUAGE_KEYS.common.confirm, '確定要刪除此群組嗎？'))) {
       const fd = new FormData();
       fd.append('id', String(id));
-      const result = await api.post(`${API_URL}/MaterialGroup/Delete`, { body: fd });
+      const result = await api.post<unknown, FormData>(`${API_URL}/MaterialGroup/Delete`, { body: fd });
       if (result.success) {
         success({ message: <span>{translate(LANGUAGE_KEYS.common.deleteSuccess, '刪除成功！')}</span> });
         tableRef.current?.reload();
@@ -56,7 +61,7 @@ export default function MaterialGroupPage() {
     }
   };
 
-  const columns: Column<any>[] = [
+  const columns: Column<MaterialGroupRow>[] = [
     {
       header: translate(LANGUAGE_KEYS.common.rowNumber, '項次'),
       className: "text-center",

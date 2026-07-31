@@ -18,7 +18,7 @@ export default function MaterialCreatePage() {
     <FormPageWrapper
       title={LANGUAGE_KEYS.material.addTitle}
       content={Content}
-      onSubmit={(data) => formPost(API_MAP.MATERIAL_CREATE, { ...data, canSell: normalizeCanSell((data as any).canSell) })}
+      onSubmit={(data) => formPost(API_MAP.MATERIAL_CREATE, { ...data, canSell: normalizeCanSell(data.canSell) })}
       redirectPath="/Material"
     />
   );

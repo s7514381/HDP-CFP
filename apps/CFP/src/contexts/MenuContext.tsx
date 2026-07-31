@@ -1,8 +1,8 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState, useMemo } from 'react';
 import { MenuItem } from '@/config/menus';
-import { getLocalStorage, setLocalStorage } from '@packages/lib/localstorage';
+import { appStorage, sessionStorageKeys } from '@/lib/appStorage';
 
 type MenuContextType = {
   menus: MenuItem[];
@@ -15,18 +15,25 @@ export function MenuProvider({ children }: { children: React.ReactNode }) {
   const [menus, setMenusState] = useState<MenuItem[]>([]);
 
   useEffect(() => {
-    const cachedMenus = getLocalStorage<MenuItem[]>('menus');
-    if (cachedMenus && Array.isArray(cachedMenus)) {
-      setMenusState(cachedMenus);
-    }
+    let cancelled = false;
+    const timeoutId = window.setTimeout(() => {
+      if (!cancelled) {
+        setMenusState(appStorage.get<MenuItem[]>(sessionStorageKeys.menus, []) ?? []);
+      }
+    }, 0);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
   }, []);
 
-  const setMenus = (newMenus: MenuItem[]) => {
+  const setMenus = useCallback((newMenus: MenuItem[]) => {
     setMenusState(newMenus);
-    setLocalStorage('menus', newMenus);
-  };
+    appStorage.set(sessionStorageKeys.menus, newMenus);
+  }, []);
 
-  const value = useMemo(() => ({ menus, setMenus }), [menus]);
+  const value = useMemo(() => ({ menus, setMenus }), [menus, setMenus]);
 
   return (
     <MenuContext.Provider value={value}>

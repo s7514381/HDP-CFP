@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Btn } from '@packages/components/bootstrap5/Btn';
 import { Input, DropdownInput, DropdownItem } from '@packages/components/bootstrap5/Input';
@@ -13,6 +13,7 @@ import { useAppApi } from '@/hooks/useAppApi';
 import { API_URL } from '@/lib/apiRoutes';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
+import { FormUpdate } from '@/components/common/formTypes';
 
 
 interface MaterialCompare {
@@ -61,7 +62,26 @@ const formatSupplierMaterialLabel = (payload: {
   return fallbackText;
 };
 
-const resolveKeywordSelectItemLabel = (item: any) => formatSupplierMaterialLabel({
+interface KeywordSelectItem {
+  value?: string | number;
+  id?: string | number;
+  materialId?: string | number;
+  buyerMaterialId?: string | number;
+  text?: string;
+  Text?: string;
+  label?: string;
+  name?: string;
+  supplierName?: string;
+  supplierTaxID?: string;
+  taxID?: string;
+  materialNumber?: string;
+  buyerMaterialNumber?: string;
+  materialNo?: string;
+  number?: string;
+  supplier?: { name?: string; taxID?: string };
+}
+
+const resolveKeywordSelectItemLabel = (item: KeywordSelectItem) => formatSupplierMaterialLabel({
   supplierName: item.supplierName ?? item.name ?? item.supplier?.name,
   supplierTaxID: item.supplierTaxID ?? item.taxID ?? item.supplier?.taxID,
   materialNumber: item.materialNumber ?? item.buyerMaterialNumber ?? item.materialNo ?? item.number,
@@ -72,39 +92,30 @@ interface ContentProps {
   title: string;
   formData: FormModel;
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
-  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+  updateForm: FormUpdate<FormModel>;
+  onSubmit: (e: React.FormEvent) => void;
   loading?: boolean;
   submitLabel?: string;
 }
 
-export default function Content({ title, formData, onChange, onSubmit, loading = false, submitLabel = LANGUAGE_KEYS.common.save }: ContentProps) {
+export default function Content({ title, formData, updateForm, onSubmit, loading = false, submitLabel = LANGUAGE_KEYS.common.save }: ContentProps) {
   const router = useRouter();
   const api = useAppApi();
   const searchParams = useSearchParams();
   const parentId = searchParams.get('id');
-  const [selectedSuppliers, setSelectedSuppliers] = useState<SupplierSelectItem[]>([]);
+  const [selectedSuppliers, setSelectedSuppliers] = useState<SupplierSelectItem[] | undefined>();
   const { translate } = useLanguage();
 
-  // 當 formData.materialCompareList 從外部載入時（初始化），同步到 selectedSuppliers
-  // 使用 ref 確保只在初始載入時同步一次，避免覆蓋使用者已選的資料
-  const isInitialized = useRef(false);
-
-  useEffect(() => {
-    // 只有當 selectedSuppliers 為空且有資料時才初始化（首次載入）
-    if (selectedSuppliers.length === 0 && formData.materialCompareList && formData.materialCompareList.length > 0) {
-      const mapped = formData.materialCompareList.map((item: MaterialCompare) => ({
-        id: item.buyerMaterialId,
-        value: item.buyerMaterialId,
-        label: formatSupplierMaterialLabel({
-          supplierName: item.supplierName,
-          supplierTaxID: item.supplierTaxID,
-          materialNumber: item.buyerMaterialNumber,
-        }),
-      }));
-      setSelectedSuppliers(mapped);
-      isInitialized.current = true;
-    }
-  }, [formData.materialCompareList]);
+  const mappedFormSuppliers = useMemo(() => formData.materialCompareList.map((item) => ({
+    id: item.buyerMaterialId,
+    value: item.buyerMaterialId,
+    label: formatSupplierMaterialLabel({
+      supplierName: item.supplierName,
+      supplierTaxID: item.supplierTaxID,
+      materialNumber: item.buyerMaterialNumber,
+    }),
+  })), [formData.materialCompareList]);
+  const displayedSuppliers = selectedSuppliers ?? mappedFormSuppliers;
 
   // 將 supplierSelectItem[] 轉換為 MaterialCompare[] 的統一函數
   const syncMaterialCompareList = (suppliers: SupplierSelectItem[]) => {
@@ -114,18 +125,18 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
       supplierName: '',
       supplierTaxID: '',
     }));
-    onChange({ target: { name: 'materialCompareList', value: materialCompareList } } as any);
+    updateForm({ materialCompareList });
   };
 
   const handleRemoveSupplier = (id: string | number) => {
-    const updated = selectedSuppliers.filter(sm => String(sm.id) !== String(id));
+    const updated = displayedSuppliers.filter(sm => String(sm.id) !== String(id));
     setSelectedSuppliers(updated);
     syncMaterialCompareList(updated);
   };
 
   const handleMaterialSelect = (item: DropdownItem) => {
     // 檢查是否已選過
-    if (selectedSuppliers.some(sm => String(sm.value) === item.value)) {
+    if (displayedSuppliers.some(sm => String(sm.value) === item.value)) {
       return;
     }
 
@@ -134,7 +145,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
       value: item.value,
       label: item.label,
     };
-    const updated = [...selectedSuppliers, newItem];
+    const updated = [...displayedSuppliers, newItem];
     setSelectedSuppliers(updated);
     syncMaterialCompareList(updated);
   };
@@ -163,12 +174,12 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                           label={translate(LANGUAGE_KEYS.sellerCompare.selectSupplierMaterial, '選擇供應商/料號')}
                           placeholder={translate(LANGUAGE_KEYS.common.materialNumber, '輸入統編、料號或名稱關鍵字搜尋...')}
                           fetchItems={async (input: string) => {
-                            const res = await api.post(`${API_URL}/Material/GetKeywordSelectListItems`, {
+                            const res = await api.post<KeywordSelectItem[]>(`${API_URL}/Material/GetKeywordSelectListItems`, {
                               params: { keyword: input || "" }
                             });
-                            if (res.success && res.data) {
-                              return res.data.map((item: any) => ({
-                                value: item.value ?? item.id ?? item.materialId ?? item.buyerMaterialId,
+                            if (res.success && Array.isArray(res.data)) {
+                              return (res.data as KeywordSelectItem[]).map((item) => ({
+                                value: String(item.value ?? item.id ?? item.materialId ?? item.buyerMaterialId ?? ''),
                                 label: item.text ?? item.Text ?? resolveKeywordSelectItemLabel(item),
                               }));
                             }
@@ -179,11 +190,11 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                         />
                       </div>
 
-                      {selectedSuppliers.length > 0 && (
+                      {displayedSuppliers.length > 0 && (
                         <div className="mt-3">
-                          <label className="form-label fw-bold">{translate(LANGUAGE_KEYS.common.selectedItems, '已選取料號')} ({selectedSuppliers.length})</label>
+                          <label className="form-label fw-bold">{translate(LANGUAGE_KEYS.common.selectedItems, '已選取料號')} ({displayedSuppliers.length})</label>
                           <div className="border rounded p-3 bg-white">
-                            {selectedSuppliers.map((supplier, index) => (
+                            {displayedSuppliers.map((supplier) => (
                               <div
                                 key={supplier.id}
                                 className="d-flex align-items-center justify-content-between py-2 px-2 mb-2 bg-light rounded"

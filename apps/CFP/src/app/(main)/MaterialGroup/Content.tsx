@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Btn } from '@packages/components/bootstrap5/Btn';
 import { Input, DropdownInput, DropdownItem } from '@packages/components/bootstrap5/Input';
@@ -14,17 +14,24 @@ import { API_MAP } from '@/lib/apiRoutes';
 import { MaterialData } from '@/app/(main)/Material/Content';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
+import { FormUpdate } from '@/components/common/formTypes';
 
 export const DEFAULT_MATERIAL_GROUP_FORM = {
   name: '',
   status: '1' as string | number,
   note: '',
   id: undefined as string | undefined,
-  materialList: [] as MaterialData[]
+  materialList: [] as MaterialGroupMaterial[]
 };
 
 
 export type MaterialGroupData = typeof DEFAULT_MATERIAL_GROUP_FORM;
+
+type MaterialGroupMaterial = Partial<MaterialData> & {
+  label?: string;
+  value?: string | number;
+  name?: string;
+};
 
 
 /** 料號下拉選項格式 */
@@ -41,66 +48,59 @@ export interface MaterialSelectItem {
   title: string;
   formData: MaterialGroupData;
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
-  onSubmit: (e: React.FormEvent<HTMLFormElement>, data?: Partial<MaterialGroupData>) => void;
+  updateForm: FormUpdate<MaterialGroupData>;
+  onSubmit: (e: React.FormEvent, data?: Partial<MaterialGroupData>) => void;
   loading?: boolean;
   submitLabel?: string;
 }
 
-export default function Content({ title, formData, onChange, onSubmit, loading = false, submitLabel = LANGUAGE_KEYS.common.save }: ContentProps) {
+interface MaterialSelectApiItem {
+  text?: string;
+  value?: string | number;
+}
+
+export default function Content({ title, formData, onChange, updateForm, onSubmit, loading = false, submitLabel = LANGUAGE_KEYS.common.save }: ContentProps) {
   const router = useRouter();
   const api = useAppApi();
   const { translate } = useLanguage();
-  const [selectedMaterials, setSelectedMaterials] = useState<MaterialSelectItem[]>([]);
-
-  // 當 formData.materialList 有資料時（編輯模式載入），轉換並設定到 selectedMaterials 和 formData
-  useEffect(() => {
-    if (formData.materialList && formData.materialList.length > 0) {
-      const mapped = formData.materialList.map((m: MaterialData | any) => {
-        // Handle case where materialList items might already be in label/value format
-        if (m.label && m.value && !m.materialNumber && !m.productName) {
-          return {
-            id: m.value,
-            value: m.value,
-            label: m.label,
-          };
-        }
-
-        return {
-          id: m.id ?? '',
-          value: m.id ?? '',
-          label: m.materialNumber && m.productName
-            ? `${m.materialNumber} - ${m.productName}`
-            : (m.label || m.name || m.productName || m.materialNumber || translate(LANGUAGE_KEYS.common.unnamedItem, '未命名項目')),
-        };
-      });
-      setSelectedMaterials(mapped);
+  const [selectedMaterials, setSelectedMaterials] = useState<MaterialGroupMaterial[] | undefined>();
+  const mappedFormMaterials = useMemo(() => formData.materialList.map((material) => {
+    if (material.label && material.value && !material.materialNumber && !material.productName) {
+      return { id: material.value, value: material.value, label: material.label };
     }
-  }, [formData.materialList, translate]);
+
+    return {
+      id: material.id ?? '',
+      value: material.id ?? '',
+      label: material.materialNumber && material.productName
+        ? `${material.materialNumber} - ${material.productName}`
+        : (material.label || material.name || material.productName || material.materialNumber || translate(LANGUAGE_KEYS.common.unnamedItem, '未命名項目')),
+    };
+  }), [formData.materialList, translate]);
+  const displayedMaterials = selectedMaterials ?? mappedFormMaterials;
 
   // 刪除料號區塊
   const handleRemoveMaterial = (id: string | number) => {
-    const updated = selectedMaterials.filter(sm => String(sm.id) !== String(id));
+    const updated = displayedMaterials.filter(sm => String(sm.id) !== String(id));
     setSelectedMaterials(updated);
-    // 同步更新 formData
-    onChange({ target: { name: 'materialList', value: updated } } as any);
+    updateForm({ materialList: updated });
   };
 
   // 選擇料號時立即更新 formData
   const handleMaterialSelect = (item: DropdownItem) => {
     // 檢查是否已選過
-    if (selectedMaterials.some(sm => String(sm.value) === item.value)) {
+    if (displayedMaterials.some(sm => String(sm.value) === item.value)) {
       return;
     }
 
-    const newItem: MaterialSelectItem = {
+    const newItem: MaterialGroupMaterial = {
       id: item.value,
       value: item.value,
       label: item.label,
     };
-    const updated = [...selectedMaterials, newItem];
+    const updated = [...displayedMaterials, newItem];
     setSelectedMaterials(updated);
-    // 立即同步到 formData
-    onChange({ target: { name: 'materialList', value: updated } } as any);
+    updateForm({ materialList: updated });
   };
 
   return (
@@ -155,13 +155,13 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                         fetchItems={async (input: string) => {
                           // 根據輸入關鍵字搜尋料號，使用 params 傳遞 keyword
                           // 當 input 為空字串時，也呼叫 API 取得完整列表
-                          const res = await api.post<any[]>(`${API_MAP.MATERIAL_MST}/GetSelectListItems`, {
+                          const res = await api.post<MaterialSelectApiItem[]>(`${API_MAP.MATERIAL_MST}/GetSelectListItems`, {
                             params: { keyword: input || "" }
                           });
-                          if (res.success && res.data) {
-                            return res.data.map((m: any) => ({
-                              label: m.text,
-                              value: m.value
+                          if (res.success && Array.isArray(res.data)) {
+                            return (res.data as MaterialSelectApiItem[]).map((material) => ({
+                              label: material.text || '',
+                              value: String(material.value ?? '')
                             }));
                           }
                           return [];
@@ -172,11 +172,11 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                     </div>
 
                     {/* 已選取的料號列表 */}
-                    {selectedMaterials.length > 0 && (
+                    {displayedMaterials.length > 0 && (
                       <div className="mt-3">
-                        <label className="form-label fw-bold">{translate(LANGUAGE_KEYS.common.selectedItems, '已選取料號')} ({selectedMaterials.length})</label>
+                        <label className="form-label fw-bold">{translate(LANGUAGE_KEYS.common.selectedItems, '已選取料號')} ({displayedMaterials.length})</label>
                         <div className="border rounded p-3 bg-white">
-                          {selectedMaterials.map((material, index) => (
+                          {displayedMaterials.map((material) => (
                             <div
                               key={material.id}
                               className="d-flex align-items-center justify-content-between py-2 px-2 mb-2 bg-light rounded"
@@ -189,7 +189,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                                 color="danger"
                                 size="sm"
                                 icon="delete"
-                                onClick={() => handleRemoveMaterial(material.id)}
+                                onClick={() => handleRemoveMaterial(material.id ?? material.value ?? '')}
                               >
                                 {translate(LANGUAGE_KEYS.common.delete, '刪除')}
                               </Btn>

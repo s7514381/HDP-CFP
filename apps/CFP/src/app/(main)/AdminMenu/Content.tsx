@@ -9,11 +9,11 @@ import Card from '@packages/components/bootstrap5/Card';
 import Grid from '@packages/components/bootstrap5/Grid';
 import { Container } from '@packages/components/bootstrap5/Container';
 import ActionBar from '@/components/layouts/ActionBar';
-import FontAwesome from '@packages/components/FontAwsome';
-import { API_MAP, API_URL } from '@/lib/apiRoutes';
+import { API_URL } from '@/lib/apiRoutes';
 import { useAppApi } from '@/hooks/useAppApi';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
+import { FormUpdate } from '@/components/common/formTypes';
 
 export interface AdminMenuData {
   id?: string | number;
@@ -34,12 +34,18 @@ interface ContentProps {
   title: string;
   formData: AdminMenuData;
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
+  updateForm: FormUpdate<AdminMenuData>;
   onSubmit: (e: React.FormEvent) => void;
   loading?: boolean;
   submitLabel?: string;
 }
 
-export default function Content({ title, formData, onChange, onSubmit, loading = false, submitLabel = LANGUAGE_KEYS.common.save }: ContentProps) {
+interface AdminFunctionOptionResponse {
+  text?: string;
+  value?: string | number;
+}
+
+export default function Content({ title, formData, onChange, updateForm, onSubmit, loading = false, submitLabel = LANGUAGE_KEYS.common.save }: ContentProps) {
   const router = useRouter();
   const { formPost } = useAppApi();
   const { translate } = useLanguage();
@@ -49,11 +55,11 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
     // Fetch AdminFunctions for dropdown
     const fetchFunctions = async () => {
       try {
-        const res = await formPost(`${API_URL}/AdminFunction/GetSelectListItems`, {});
-        if (res.success && res.data) {
-          const options = res.data.map((item: any) => ({
-            label: item.text,
-            value: item.value
+        const res = await formPost<AdminFunctionOptionResponse[]>(`${API_URL}/AdminFunction/GetSelectListItems`, {});
+        if (res.success && Array.isArray(res.data)) {
+          const options = (res.data as AdminFunctionOptionResponse[]).map(item => ({
+            label: item.text ?? '',
+            value: String(item.value ?? '')
           }));
 
           setFunctionOptions([{ label: translate(LANGUAGE_KEYS.common.noOption, '無'), value: '' }, ...options]);
@@ -63,20 +69,20 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
       }
     };
     fetchFunctions();
-  }, [formPost]);
+  }, [formPost, translate]);
 
   const handleAddSubMenu = () => {
     const newList: AdminMenuData[] = [
       ...(formData?.childList || []),
       { title: '', adminFunctionId: '', sequence: 0, status: '1', childList: [] }
     ];
-    onChange({ target: { name: 'childList', value: newList } } as any);
+    updateForm({ childList: newList });
   };
 
   const handleRemoveSubMenu = (index: number) => {
     const newList = [...(formData?.childList || [])];
     newList.splice(index, 1);
-    onChange({ target: { name: 'childList', value: newList } } as any);
+    updateForm({ childList: newList });
   };
 
   const handleSubMenuChange = (index: number, field: keyof AdminMenuData, value: string) => {
@@ -91,11 +97,15 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
       }
       currentChild.adminFunctionId = value;
     } else {
-      (currentChild as any)[field] = value;
+    if (field === 'title') currentChild.title = value;
+    if (field === 'adminFunctionId') currentChild.adminFunctionId = value;
+    if (field === 'iconClass') currentChild.iconClass = value;
+    if (field === 'url') currentChild.url = value;
+    if (field === 'status') currentChild.status = value;
     }
 
     newList[index] = currentChild;
-    onChange({ target: { name: 'childList', value: newList } } as any);
+    updateForm({ childList: newList });
   };
 
   return (

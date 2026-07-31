@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useRouter } from 'next/navigation';
 import ActionBar from "@/components/layouts/ActionBar";
 import WrapContent from "@/components/layouts/WrapContent";
@@ -8,103 +8,55 @@ import { SearchBlock } from "@/components/layouts/SearchBlock";
 import { Input, FileBtn } from "@packages/components/bootstrap5/Input";
 import { Btn } from "@packages/components/bootstrap5/Btn";
 import { CommonTable, Column, CommonTableHandle } from "@/components/common/CommonTable";
+import { TableSearchParams } from '@/components/common/tableUtils';
 import Container from "@packages/components/bootstrap5/Container";
 import Grid from "@packages/components/bootstrap5/Grid";
 import FontAwesome from "@packages/components/FontAwsome";
-import { useToast } from '@packages/contexts/ToastContext';
-import { useAppApi } from '@/hooks/useAppApi';
 import { API_URL, API_MAP } from '@/lib/apiRoutes';
 import { usePagePermissions } from '@/hooks/usePagePermissions';
-import { downloadFile } from '@packages/lib/downloadFlie';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
+import { ImportListConfig, useImportList } from '@/hooks/useImportList';
+
+interface SellerCompareRow {
+  id: string | number;
+  materialNumber?: string;
+  productModel?: string;
+  productName?: string;
+  supplierName?: string;
+  buyerName?: string;
+}
+
+interface SellerCompareSearch extends TableSearchParams {
+  MaterialNumber: string;
+  SupplierName: string;
+}
+
+const SELLER_IMPORT_CONFIG: ImportListConfig<SellerCompareSearch> = {
+  importUrl: API_MAP.SELLER_IMPORT,
+  templateUrl: API_MAP.SELLER_IMPORT_TEMPLATE,
+  templateFileName: 'SellerCompareImportTemplate.xlsx',
+  initialSearch: { MaterialNumber: '', SupplierName: '' },
+};
 
 export default function MaterialPage() {
   const router = useRouter();
-  const api = useAppApi();
-  const { success, danger, warning } = useToast();
   const { hasPermission } = usePagePermissions();
   const { Row, Col } = Grid;
 
-  const tableRef = React.useRef<CommonTableHandle>(null);
-  const [searchMaterialNumber, setSearchMaterialNumber] = useState('');
-  const [searchSupplierName, setSearchSupplierName] = useState('');
-  const [importing, setImporting] = useState(false);
-  const { post, get } = api;
+  const tableRef = React.useRef<CommonTableHandle<SellerCompareRow>>(null);
   const { translate } = useLanguage();
+  const importList = useImportList<SellerCompareRow, SellerCompareSearch>(tableRef, SELLER_IMPORT_CONFIG);
 
   const handleSearch = () => {
-    tableRef.current?.search({
-      MaterialNumber: searchMaterialNumber,
-      SupplierName: searchSupplierName
-    });
+    importList.search();
   };
 
   const handleClear = () => {
-    setSearchMaterialNumber('');
-    setSearchSupplierName('');
-    tableRef.current?.search({});
+    importList.clearSearch();
   };
 
-  const handleDownloadTemplate = async () => {
-    const response = await get<Blob>(API_MAP.SELLER_IMPORT_TEMPLATE, { responseType: 'blob' } as any);
-    if (response.success && response.data) {
-      downloadFile({
-        blob: response.data,
-        defaultFileName: 'SellerCompareImportTemplate.xlsx'
-      });
-      return;
-    }
-
-    danger({ message: <span>{translate(LANGUAGE_KEYS.common.operationFailed, '下載範本失敗。')}</span> });
-  };
-
-  const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    setImporting(true);
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('ignoreErrors', 'true');
-
-      const result = await post<{ totalCount: number; successCount: number; failureCount: number; errors: string[] }>(API_MAP.SELLER_IMPORT, {
-        body: formData
-      } as any);
-
-      const summary = result.data;
-      if (result.success && summary) {
-        if (summary.successCount > 0) {
-          success({ message: <span>{translate(LANGUAGE_KEYS.common.importCompleted, '匯入完成，成功 {count} 筆。').replace('{count}', String(summary.successCount))}</span> });
-          tableRef.current?.reload();
-        }
-
-        if (summary.failureCount > 0) {
-          const errorText = summary.errors?.slice(0, 3).join('；') || translate(LANGUAGE_KEYS.common.partialImportFailed, '部分資料未成功。');
-          if (summary.successCount > 0) {
-            warning({ message: <span>{translate(LANGUAGE_KEYS.common.partialImportFailed, '匯入部分失敗，{count} 筆未成功。{errors}').replace('{count}', String(summary.failureCount)).replace('{errors}', errorText)}</span> });
-          } else {
-            danger({ message: <span>{translate(LANGUAGE_KEYS.common.importFailed, '匯入失敗，{count} 筆未成功。{errors}').replace('{count}', String(summary.failureCount)).replace('{errors}', errorText)}</span> });
-          }
-        }
-
-        if (summary.totalCount === 0) {
-          danger({ message: <span>{translate(LANGUAGE_KEYS.common.noImportData, '沒有可匯入的資料。')}</span> });
-        }
-        return;
-      }
-
-      danger({ message: <span>{result.message || translate(LANGUAGE_KEYS.common.importFailed, '匯入失敗，請確認檔案格式。')}</span> });
-    } catch (error) {
-      console.error('Import failed', error);
-      danger({ message: <span>{translate(LANGUAGE_KEYS.common.importFailed, '匯入失敗，請確認檔案格式。')}</span> });
-    } finally {
-      setImporting(false);
-    }
-  };
-
-  const columns: Column<any>[] = [
+  const columns: Column<SellerCompareRow>[] = [
     {
       header: translate(LANGUAGE_KEYS.common.rowNumber, '項次'),
       className: "text-center",
@@ -157,10 +109,10 @@ export default function MaterialPage() {
         <SearchBlock title="" icon="" className="mb-3">
           <Row align="center" gutter={3}>
             <Col md={4}>
-              <Input label={translate(LANGUAGE_KEYS.common.materialNumber, '料號')} placeholder={translate(LANGUAGE_KEYS.common.materialNumber, '料號')} value={searchMaterialNumber} onChange={(e) => setSearchMaterialNumber(e.target.value)} />
+              <Input label={translate(LANGUAGE_KEYS.common.materialNumber, '料號')} placeholder={translate(LANGUAGE_KEYS.common.materialNumber, '料號')} value={importList.searchValues.MaterialNumber} onChange={(e) => importList.updateSearchValue('MaterialNumber', e.target.value)} />
             </Col>
             <Col md={4}>
-              <Input label={translate(LANGUAGE_KEYS.report.supplierName, '供應商名稱')} placeholder={translate(LANGUAGE_KEYS.report.supplierName, '供應商名稱')} value={searchSupplierName} onChange={(e) => setSearchSupplierName(e.target.value)} />
+              <Input label={translate(LANGUAGE_KEYS.report.supplierName, '供應商名稱')} placeholder={translate(LANGUAGE_KEYS.report.supplierName, '供應商名稱')} value={importList.searchValues.SupplierName} onChange={(e) => importList.updateSearchValue('SupplierName', e.target.value)} />
             </Col>
             <Col md={4} className="d-flex justify-content-end gap-2 align-items-end">
               <Btn color="success" outline className="bg-success-light text-success border-success" style={{ backgroundColor: '#d1e7dd' }} icon="search" onClick={handleSearch}>
@@ -175,12 +127,12 @@ export default function MaterialPage() {
             <div className="d-flex justify-content-end gap-2 flex-wrap">
                 {hasPermission('Create') && (
                   <>
-                    <Btn color="secondary" outline onClick={handleDownloadTemplate}>{translate(LANGUAGE_KEYS.common.downloadTemplate, '下載範本')}</Btn>
+                    <Btn color="secondary" outline onClick={importList.downloadTemplate}>{translate(LANGUAGE_KEYS.common.downloadTemplate, '下載範本')}</Btn>
                     <FileBtn
-                      label={importing ? translate(LANGUAGE_KEYS.common.importing, '匯入中...') : translate(LANGUAGE_KEYS.common.import, '匯入')}
+                      label={importList.importing ? translate(LANGUAGE_KEYS.common.importing, '匯入中...') : translate(LANGUAGE_KEYS.common.import, '匯入')}
                       accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
-                      onChange={handleImportFile}
-                      btnProps={{ color: 'primary', disabled: importing }}
+                      onChange={importList.importFile}
+                      btnProps={{ color: 'primary', disabled: importList.importing }}
                     />
                   </>
                 )}

@@ -13,6 +13,7 @@ import { API_MAP } from '@/lib/apiRoutes';
 import { useAppApi } from '@/hooks/useAppApi';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
+import { FormUpdate } from '@/components/common/formTypes';
 
 export interface LanguageResourceTranslationData {
   id?: string;
@@ -51,12 +52,13 @@ interface ContentProps {
   title: string;
   formData: LanguageResourceData;
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
+  updateForm: FormUpdate<LanguageResourceData>;
   onSubmit: (e: React.FormEvent) => void;
   loading?: boolean;
   submitLabel?: string;
 }
 
-export default function Content({ title, formData, onChange, onSubmit, loading = false, submitLabel = LANGUAGE_KEYS.common.save }: ContentProps) {
+export default function Content({ title, formData, onChange, updateForm, onSubmit, loading = false, submitLabel = LANGUAGE_KEYS.common.save }: ContentProps) {
   const router = useRouter();
   const { formPost } = useAppApi();
   const [languages, setLanguages] = useState<LanguageData[]>([]);
@@ -102,8 +104,8 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
         text: language.isBaseLanguage ? (formData?.sourceText || '') : ''
       }))
     ];
-    onChange({ target: { name: 'translationList', value: translationList } } as unknown as React.ChangeEvent<HTMLInputElement>);
-  }, [languages, formData?.translationList, formData?.sourceText, onChange]);
+    updateForm({ translationList });
+  }, [languages, formData?.translationList, formData?.sourceText, updateForm]);
 
   const menuOptions = useMemo(() => {
     const result = [{ label: translate(LANGUAGE_KEYS.common.notConfigured, '通用'), value: '' }];
@@ -118,7 +120,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
     };
     flatten(menus);
     return result;
-  }, [menus]);
+  }, [menus, translate]);
 
   const handleSourceChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const sourceText = event.target.value;
@@ -127,15 +129,14 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
       baseLanguage && item.languageId === baseLanguage.id ? { ...item, text: sourceText } : item
     );
 
-    onChange({ target: { name: 'sourceText', value: sourceText } } as unknown as React.ChangeEvent<HTMLInputElement>);
-    onChange({ target: { name: 'translationList', value: translationList } } as unknown as React.ChangeEvent<HTMLInputElement>);
+    updateForm({ sourceText, translationList });
   };
 
   const handleTranslationChange = (languageId: string, text: string) => {
     const translationList = (formData?.translationList || []).map(item =>
       item.languageId === languageId ? { ...item, text } : item
     );
-    onChange({ target: { name: 'translationList', value: translationList } } as unknown as React.ChangeEvent<HTMLInputElement>);
+    updateForm({ translationList });
   };
 
   return (

@@ -21,7 +21,7 @@ export default function ForgotPassword() {
     e.preventDefault();
 
     const url = `${API_MAP.MANAGER_FORGOT_PASSWORD}?Email=${encodeURIComponent(email)}`;
-    const res = await post<any, any>(url, {});
+    const res = await post<unknown, Record<string, never>>(url, {});
 
     if (res.status === 200 && res.success) {
       setSubmitted(true);

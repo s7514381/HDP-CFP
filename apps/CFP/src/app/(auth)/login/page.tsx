@@ -18,22 +18,43 @@ import { LANGUAGE_KEYS } from "@/config/languageKeys";
 import FontAwesome from "@packages/components/FontAwsome";
 import LanguageSelectorModal from "@/components/layouts/LanguageSelectorModal";
 
+interface AdminFunctionResponse {
+  action?: string;
+  controller?: string;
+  childList?: AdminFunctionResponse[];
+}
+
+interface AdminMenuResponse {
+  id: string | number;
+  title?: string;
+  englishCode?: string;
+  languageResourceId?: string;
+  iconClass?: string;
+  adminFunction?: AdminFunctionResponse;
+  childList?: AdminMenuResponse[];
+}
+
+interface LoginResponse {
+  token?: string;
+  name?: string;
+  adminMenus?: AdminMenuResponse[];
+}
+
 export default function Login() {
   const router = useRouter();
   const { post, loading } = useApi();
   const { setUser } = useUser();
   const { setMenus } = useMenu();
-  const { success, danger } = useToast();
+  const { danger } = useToast();
   const { languageCode, translate } = useLanguage();
   const [showLanguageSelector, setShowLanguageSelector] = useState(false);
 
-  const mapAdminMenuToMenuItem = (menu: any): MenuItem => {
-    const toPermission = (func: any) => {
+  const mapAdminMenuToMenuItem = (menu: AdminMenuResponse): MenuItem => {
+    const toPermission = (func?: AdminFunctionResponse): string[] => {
       if (!func?.action) return [];
-      const scopedPermission = func.controller
-        ? `${func.controller}:${func.action}`
-        : undefined;
-      return [func.action, scopedPermission].filter(Boolean);
+      const permissions = [func.action];
+      if (func.controller) permissions.push(`${func.controller}:${func.action}`);
+      return permissions;
     };
 
     const permissions = [
@@ -42,7 +63,7 @@ export default function Login() {
     ];
 
     return {
-      key: menu.id,
+      key: String(menu.id),
       label: menu.title || "",
       englishCode: menu.englishCode || undefined,
       languageResourceId: menu.languageResourceId || undefined,
@@ -66,7 +87,7 @@ export default function Login() {
     const url = `${API_MAP.MANAGER_LOGIN}?Account=${encodeURIComponent(account)}&Password=${encodeURIComponent(password)}`;
 
     // 現在 API 回傳 LoginInfoModel { Token: Guid, AdminMenus: List<FullAdminMenuModel> }
-    const res = await post<any, any>(url, {});
+    const res = await post<LoginResponse, Record<string, never>>(url, {});
 
     if (res.status === 200 && res.data) {
       const { token, name, adminMenus } = res.data;

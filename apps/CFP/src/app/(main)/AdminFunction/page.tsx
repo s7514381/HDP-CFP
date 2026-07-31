@@ -13,7 +13,7 @@ import Grid from "@packages/components/bootstrap5/Grid";
 import FontAwesome from "@packages/components/FontAwsome";
 import { useToast } from '@packages/contexts/ToastContext';
 import { useConfirm } from '@packages/hooks/useConfirm';
-import { API_URL, API_MAP } from '@/lib/apiRoutes';
+import { API_MAP } from '@/lib/apiRoutes';
 import { usePagePermissions } from '@/hooks/usePagePermissions';
 import { useAppApi } from '@/hooks/useAppApi';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -28,7 +28,7 @@ export default function AdminFunctionPage() {
   const { formPost } = useAppApi();
   const { translate } = useLanguage();
 
-  const tableRef = React.useRef<CommonTableHandle>(null);
+  const tableRef = React.useRef<CommonTableHandle<{ id: string | number; title?: string; status?: string | number }>>(null);
   const [searchName, setSearchName] = useState('');
   const [searchCode, setSearchCode] = useState('');
 
@@ -51,13 +51,13 @@ export default function AdminFunctionPage() {
         await formPost(`${API_MAP.ADMIN_FUNCTION_MST}/Delete`, { id });
         success({ message: <span>{translate(LANGUAGE_KEYS.common.deleteSuccess, '刪除成功！')}</span> });
         tableRef.current?.reload();
-      } catch (err) {
+      } catch {
         danger({ message: <span>{translate(LANGUAGE_KEYS.common.deleteFailed, '刪除失敗。')}</span> });
       }
     }
   };
 
-  const columns: Column<any>[] = [
+  const columns: Column<{ id: string | number; title?: string; status?: string | number }>[] = [
     {
       header: translate(LANGUAGE_KEYS.common.rowNumber, '項次'),
       className: "text-center",

@@ -19,6 +19,13 @@ import { useAppApi } from '@/hooks/useAppApi';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
 
+interface AdminMenuRow {
+  id: string | number;
+  title?: string;
+  englishCode?: string;
+  status?: string | number;
+}
+
 export default function AdminMenuPage() {
   const router = useRouter();
   const { success, danger } = useToast();
@@ -28,7 +35,7 @@ export default function AdminMenuPage() {
   const { formPost } = useAppApi();
   const { translate } = useLanguage();
 
-  const tableRef = React.useRef<CommonTableHandle>(null);
+  const tableRef = React.useRef<CommonTableHandle<AdminMenuRow>>(null);
   const [searchTitle, setSearchTitle] = useState('');
 
   const handleSearch = () => {
@@ -48,13 +55,13 @@ export default function AdminMenuPage() {
         await formPost(`${API_MAP.ADMIN_MENU_MST}/Delete`, { id });
         success({ message: <span>{translate(LANGUAGE_KEYS.common.deleteSuccess, '刪除成功！')}</span> });
         tableRef.current?.reload();
-      } catch (err) {
+      } catch {
         danger({ message: <span>{translate(LANGUAGE_KEYS.common.deleteFailed, '刪除失敗。')}</span> });
       }
     }
   };
 
-  const columns: Column<any>[] = [
+  const columns: Column<AdminMenuRow>[] = [
     {
       header: translate(LANGUAGE_KEYS.common.rowNumber, '項次'),
       className: "text-center",

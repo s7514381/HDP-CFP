@@ -19,6 +19,12 @@ import { useAppApi } from '@/hooks/useAppApi';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
 
+interface RoleRow {
+  id: string | number;
+  name?: string;
+  adminMenuName?: string;
+}
+
 export default function AdminFunctionPage() {
   const router = useRouter();
   const { success, danger } = useToast();
@@ -28,7 +34,7 @@ export default function AdminFunctionPage() {
   const { formPost } = useAppApi();
   const { translate } = useLanguage();
 
-  const tableRef = React.useRef<CommonTableHandle>(null);
+  const tableRef = React.useRef<CommonTableHandle<RoleRow>>(null);
   const [searchName, setSearchName] = useState('');
   const [searchCode, setSearchCode] = useState('');
 
@@ -51,13 +57,13 @@ export default function AdminFunctionPage() {
         await formPost(`${API_URL}/Role/Delete`, { id });
         success({ message: <span>{translate(LANGUAGE_KEYS.common.deleteSuccess, '刪除成功！')}</span> });
         tableRef.current?.reload();
-      } catch (err) {
+      } catch {
         danger({ message: <span>{translate(LANGUAGE_KEYS.common.deleteFailed, '刪除失敗。')}</span> });
       }
     }
   };
 
-  const columns: Column<any>[] = [
+  const columns: Column<RoleRow>[] = [
     {
       header: translate(LANGUAGE_KEYS.common.rowNumber, '項次'),
       className: "text-center",
