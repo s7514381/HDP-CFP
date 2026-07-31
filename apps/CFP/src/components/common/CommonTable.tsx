@@ -1,7 +1,36 @@
 import React, { useState, useEffect, useCallback, useImperativeHandle, forwardRef } from 'react';
 import { Table, THead, TBody, Tr, Th, Td } from "@packages/components/bootstrap5/Table";
-import { Pagination } from "@packages/components/bootstrap5/Pagination";
 import { useAppApi } from "@/hooks/useAppApi";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { LANGUAGE_KEYS } from "@/config/languageKeys";
+
+type PaginationItem = number | 'ellipsis-left' | 'ellipsis-right';
+
+const getPaginationItems = (currentPage: number, pageCount: number): PaginationItem[] => {
+  if (pageCount <= 7) {
+    return Array.from({ length: pageCount }, (_, index) => index + 1);
+  }
+
+  const visiblePages = new Set<number>([1, pageCount, currentPage]);
+  for (let offset = -2; offset <= 2; offset += 1) {
+    const page = currentPage + offset;
+    if (page > 1 && page < pageCount) {
+      visiblePages.add(page);
+    }
+  }
+
+  const sortedPages = Array.from(visiblePages).sort((left, right) => left - right);
+  const items: PaginationItem[] = [];
+
+  sortedPages.forEach((page, index) => {
+    if (index > 0 && page - sortedPages[index - 1] > 1) {
+      items.push(page <= currentPage ? 'ellipsis-left' : 'ellipsis-right');
+    }
+    items.push(page);
+  });
+
+  return items;
+};
 
 export interface Column<T> {
   header: string;
@@ -23,7 +52,7 @@ interface CommonTableProps<T> {
   searchParams?: Record<string, any>;
   pageSize?: number;
   rowKey?: (item: T) => string | number;
-  // 以下為相容舊版或手動傳入資料的情況
+  // Supports legacy callers and manually supplied data.
   data?: T[];
   totalRecords?: number;
   currentPage?: number;
@@ -47,6 +76,7 @@ export const CommonTable = forwardRef(<T extends any,>(
   ref: React.Ref<CommonTableHandle<T>>
 ) => {
   const { post, loading } = useAppApi();
+  const { translate } = useLanguage();
   const [data, setData] = useState<T[]>(manualData || []);
   const [totalRecords, setTotalRecords] = useState(manualTotalRecords || 0);
   const [currentPage, setCurrentPage] = useState(manualCurrentPage || 1);
@@ -92,9 +122,9 @@ export const CommonTable = forwardRef(<T extends any,>(
       fetchList(1, searchParams);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiUrl, searchParams]); // 移除 fetchList 依賴，避免 Hook 穩定性問題導致重複請求
+  }, [apiUrl, searchParams]); // Keep fetchList out to avoid unstable-hook refetches.
 
-  // 當外部資料更新時同步 (如果不是透過 API)
+  // Synchronize external data when the table is not API-backed.
   useEffect(() => {
     if (!apiUrl) {
       if (manualData !== undefined) setData(manualData);
@@ -123,6 +153,7 @@ export const CommonTable = forwardRef(<T extends any,>(
   };
 
   const pageCount = Math.ceil(totalRecords / pageSize);
+  const paginationItems = getPaginationItems(currentPage, pageCount);
 
   return (
     <div>
@@ -130,9 +161,9 @@ export const CommonTable = forwardRef(<T extends any,>(
         <THead className="table-primary" style={{ backgroundColor: '#6cb4ee', color: 'white' }}>
           <Tr>
             {columns.map((col, index) => (
-              <Th 
-                key={index} 
-                className={col.className} 
+              <Th
+                key={index}
+                className={col.className}
                 style={{ backgroundColor: '#6cb4ee', color: 'white', ...col.style }}
               >
                 {col.header}
@@ -157,7 +188,7 @@ export const CommonTable = forwardRef(<T extends any,>(
           ) : (
             <Tr>
               <Td colSpan={columns.length} className="text-center py-4">
-                {isLoading ? '載入中...' : '暫無資料'}
+                {isLoading ? translate(LANGUAGE_KEYS.common.loading) : translate(LANGUAGE_KEYS.common.noData)}
               </Td>
             </Tr>
           )}
@@ -165,16 +196,57 @@ export const CommonTable = forwardRef(<T extends any,>(
       </Table>
 
       {!isLoading && totalRecords > 0 && (
-        <div className="d-flex justify-content-between align-items-center mt-3">
-          <div>
-            共 {totalRecords} 筆資料
+        <div className="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-3">
+          <div className="flex-shrink-0">
+            {translate(LANGUAGE_KEYS.common.total)} {totalRecords} {translate(LANGUAGE_KEYS.common.records)}
           </div>
-          <Pagination 
-            currentPage={currentPage}
-            totalCount={totalRecords}
-            pageCount={pageCount}
-            onPageChange={handlePageChange}
-          />
+          <nav
+            className="ms-auto"
+            aria-label={`${translate(LANGUAGE_KEYS.common.previousPage)} / ${translate(LANGUAGE_KEYS.common.nextPage)}`}
+            style={{ minWidth: 0, maxWidth: '100%' }}
+          >
+            <ul className="pagination flex-wrap justify-content-end mb-0">
+              <li className={`page-item ${currentPage <= 1 ? 'disabled' : ''}`}>
+                <button
+                  type="button"
+                  className="page-link"
+                  aria-label={translate(LANGUAGE_KEYS.common.previousPage)}
+                  disabled={currentPage <= 1}
+                  onClick={() => handlePageChange(currentPage - 1)}
+                >
+                  «
+                </button>
+              </li>
+              {paginationItems.map(item => {
+                if (typeof item !== 'number') {
+                  return (
+                    <li className="page-item disabled" key={item}>
+                      <span className="page-link" aria-hidden="true">…</span>
+                    </li>
+                  );
+                }
+
+                return (
+                  <li className={`page-item ${currentPage === item ? 'active' : ''}`} key={item}>
+                    <button type="button" className="page-link" onClick={() => handlePageChange(item)}>
+                      {item}
+                    </button>
+                  </li>
+                );
+              })}
+              <li className={`page-item ${currentPage >= pageCount ? 'disabled' : ''}`}>
+                <button
+                  type="button"
+                  className="page-link"
+                  aria-label={translate(LANGUAGE_KEYS.common.nextPage)}
+                  disabled={currentPage >= pageCount}
+                  onClick={() => handlePageChange(currentPage + 1)}
+                >
+                  »
+                </button>
+              </li>
+            </ul>
+          </nav>
         </div>
       )}
     </div>

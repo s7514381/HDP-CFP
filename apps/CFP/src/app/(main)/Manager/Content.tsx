@@ -12,6 +12,8 @@ import ActionBar from '@/components/layouts/ActionBar';
 import { useAppApi } from '@/hooks/useAppApi';
 import { API_MAP, API_URL } from '@/lib/apiRoutes';
 import { SelectListItem } from '@/types/SelectListItem';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { LANGUAGE_KEYS } from '@/config/languageKeys';
 
 export const DEFAULT_MANAGER_FORM = {
   account: '',
@@ -38,9 +40,10 @@ interface ContentProps {
   submitLabel?: string;
 }
 
-export default function Content({ title, formData, onChange, onSubmit, loading = false, submitLabel = '儲存' }: ContentProps) {
+export default function Content({ title, formData, onChange, onSubmit, loading = false, submitLabel = LANGUAGE_KEYS.common.save }: ContentProps) {
   const router = useRouter();
   const api = useAppApi();
+  const { translate } = useLanguage();
   const [selectItem, setSelectItem] = React.useState<SelectListItem[]>([]);
 
 
@@ -63,7 +66,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
       <ActionBar title={title}>
         <div className="ms-auto">
           <Btn color="secondary" outline onClick={() => router.back()} icon="cancel">
-            返回列表
+            {translate(LANGUAGE_KEYS.common.backToList, '返回列表')}
           </Btn>
         </div>
       </ActionBar>
@@ -75,39 +78,39 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
               <Grid.Row className="g-3">
                 <Grid.Col md={6}>
                   <Input
-                    label="姓名"
+                    label={translate(LANGUAGE_KEYS.manager.name, '姓名')}
                     name="name"
                     value={formData.name || ''}
                     onChange={onChange}
-                    placeholder="請輸入姓名"
+                    placeholder={translate(LANGUAGE_KEYS.manager.name, '請輸入姓名')}
                     required
                   />
                 </Grid.Col>
                 <Grid.Col md={6}>
                   <Input
-                    label="帳號"
+                    label={translate(LANGUAGE_KEYS.manager.account, '帳號')}
                     name="account"
                     value={formData.account || ''}
                     onChange={onChange}
-                    placeholder="請輸入帳號"
+                    placeholder={translate(LANGUAGE_KEYS.auth.accountPlaceholder, '請輸入帳號')}
                     required
                   />
                 </Grid.Col>
 
                 <Grid.Col md={6}>
                   <Input
-                    label="密碼"
+                    label={translate(LANGUAGE_KEYS.manager.password, '密碼')}
                     type="password"
                     name="password"
                     value={formData.password || ''}
                     onChange={onChange}
-                    placeholder={formData.id ? "若不修改請留空" : "請輸入密碼"}
+                    placeholder={formData.id ? translate(LANGUAGE_KEYS.manager.passwordKeep, '若不修改請留空') : translate(LANGUAGE_KEYS.auth.passwordPlaceholder, '請輸入密碼')}
                     required={!formData.id}
                   />
                 </Grid.Col>
                 <Grid.Col md={6}>
                   <Input
-                    label="電子郵件"
+                    label={translate(LANGUAGE_KEYS.auth.email, '電子郵件')}
                     type="email"
                     name="email"
                     value={formData.email || ''}
@@ -122,23 +125,23 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                   name="phone"
                   value={formData.phone || ''}
                   onChange={onChange}
-                  placeholder="例：0912345678"
+                    placeholder={translate(LANGUAGE_KEYS.common.phonePlaceholder, '例：0912345678')}
                 />
               </Grid.Col> */}
 
                 <Grid.Col md={6}>
                   <Input
-                    label="統一編號"
+                    label={translate(LANGUAGE_KEYS.manager.taxId, '統一編號')}
                     name="taxID"
                     value={formData.taxID || ''}
                     onChange={onChange}
-                    placeholder="請輸入統編"
+                    placeholder={translate(LANGUAGE_KEYS.auth.taxIdPlaceholder, '請輸入統編')}
                   />
                 </Grid.Col>
 
                 <Grid.Col md={6}>
                   <Select
-                    label="角色"
+                    label={translate(LANGUAGE_KEYS.manager.role, '角色')}
                     name="roleId"
                     value={formData.roleId || ''}
                     onChange={onChange}
@@ -162,24 +165,24 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
 
                 {/* <Grid.Col md={12}>
                 <div className="mb-3">
-                  <label className="form-label">備註</label>
+                  <label className="form-label">{translate(LANGUAGE_KEYS.manager.note, '備註')}</label>
                   <textarea
                     className="form-control"
                     name="note"
                     rows={3}
                     value={formData.note || ''}
                     onChange={onChange}
-                    placeholder="其他補充說明"
+                    placeholder={translate(LANGUAGE_KEYS.common.notePlaceholder, '其他補充說明')}
                   />
                 </div>
               </Grid.Col> */}
 
                 <Grid.Col md={12} className="d-flex justify-content-end gap-2 mt-4">
                   <Btn type="button" color="secondary" outline onClick={() => router.push('/Manager')}>
-                    取消
+                    {translate(LANGUAGE_KEYS.common.cancel, '取消')}
                   </Btn>
                   <Btn type="submit" color="primary" loading={loading} icon="save">
-                    {submitLabel}
+                    {translate(submitLabel, submitLabel)}
                   </Btn>
                 </Grid.Col>
               </Grid.Row>

@@ -9,11 +9,14 @@ import { useApi } from "@packages/hooks/useApi";
 import { API_MAP } from "@/lib/apiRoutes";
 import { useToast } from '@packages/contexts/ToastContext';
 import { ApiError } from "@packages/components/ApiError";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { LANGUAGE_KEYS } from "@/config/languageKeys";
 
 export default function Register() {
   const router = useRouter();
   const { post, loading } = useApi();
   const { success, danger } = useToast();
+  const { translate } = useLanguage();
   const [formData, setFormData] = useState({
     account: "",
     email: "",
@@ -33,41 +36,41 @@ export default function Register() {
 
     // 密碼確認
     if (formData.password !== formData.confirmPassword) {
-      danger({ message: <span>密碼與確認密碼不一致</span> });
+      danger({ message: <span>{translate(LANGUAGE_KEYS.auth.passwordMismatch, '密碼與確認密碼不一致')}</span> });
       return;
     }
 
     // 密碼長度檢查
     if (formData.password.length < 6) {
-      danger({ message: <span>密碼長度至少需要 6 個字元</span> });
+      danger({ message: <span>{translate(LANGUAGE_KEYS.auth.passwordTooShort, '密碼長度至少需要 6 個字元')}</span> });
       return;
     }
 
     // 建構 URL 參數（與登入頁面一致的方式）
     const url = `${API_MAP.MANAGER_REGISTER}?Account=${encodeURIComponent(formData.account)}&Email=${encodeURIComponent(formData.email)}&Name=${encodeURIComponent(formData.name)}&TaxID=${encodeURIComponent(formData.taxID)}&Password=${encodeURIComponent(formData.password)}&ConfirmPassword=${encodeURIComponent(formData.confirmPassword)}`;
-    
+
     const res = await post<any, any>(url, {});
 
     if (res.success && res.status === 200) {
-      success({ message: <span>註冊成功！即將跳轉至登入頁...</span> });
+      success({ message: <span>{translate(LANGUAGE_KEYS.auth.registerSuccess, '註冊成功！即將跳轉至登入頁...')}</span> });
       setTimeout(() => {
         router.push("/login/");
       }, 1500);
     } else {
-      danger({ message: <span>{res.message || "註冊失敗，請稍後再試"}</span> });
+      danger({ message: <span>{res.message || translate(LANGUAGE_KEYS.auth.registerFailed, '註冊失敗，請稍後再試')}</span> });
     }
   };
 
   return (
     <>
       <ApiError />
-      <h3 className="auth-title">註冊帳號</h3>
+      <h3 className="auth-title">{translate(LANGUAGE_KEYS.auth.registerAccount, '註冊帳號')}</h3>
       <form onSubmit={handleSubmit}>
         <div className="mb-3">
           <Input
-            label="帳號"
+            label={translate(LANGUAGE_KEYS.auth.account, '帳號')}
             name="account"
-            placeholder="請輸入登入帳號"
+            placeholder={translate(LANGUAGE_KEYS.auth.accountPlaceholder, '請輸入登入帳號')}
             value={formData.account}
             onChange={handleChange}
             required
@@ -76,9 +79,9 @@ export default function Register() {
         </div>
         <div className="mb-3">
           <Input
-            label="使用者名稱"
+            label={translate(LANGUAGE_KEYS.auth.userName, '使用者名稱')}
             name="name"
-            placeholder="請輸入使用者名稱"
+            placeholder={translate(LANGUAGE_KEYS.auth.userNamePlaceholder, '請輸入使用者名稱')}
             value={formData.name}
             onChange={handleChange}
             required
@@ -87,7 +90,7 @@ export default function Register() {
         </div>
         <div className="mb-3">
           <Input
-            label="電子郵件"
+            label={translate(LANGUAGE_KEYS.auth.email, '電子郵件')}
             name="email"
             type="email"
             placeholder="example@mail.com"
@@ -99,9 +102,9 @@ export default function Register() {
         </div>
         <div className="mb-3">
           <Input
-            label="統編（TaxID）"
+            label={translate(LANGUAGE_KEYS.auth.taxId, '統編（TaxID）')}
             name="taxID"
-            placeholder="請輸入公司統編"
+            placeholder={translate(LANGUAGE_KEYS.auth.taxIdPlaceholder, '請輸入公司統編')}
             value={formData.taxID}
             onChange={handleChange}
             required
@@ -110,10 +113,10 @@ export default function Register() {
         </div>
         <div className="mb-3">
           <Input
-            label="密碼"
+            label={translate(LANGUAGE_KEYS.auth.password, '密碼')}
             name="password"
             type="password"
-            placeholder="請輸入密碼（至少6個字元）"
+            placeholder={translate(LANGUAGE_KEYS.auth.passwordPlaceholder, '請輸入密碼（至少6個字元）')}
             value={formData.password}
             onChange={handleChange}
             required
@@ -122,10 +125,10 @@ export default function Register() {
         </div>
         <div className="mb-4">
           <Input
-            label="確認密碼"
+            label={translate(LANGUAGE_KEYS.auth.confirmPassword, '確認密碼')}
             name="confirmPassword"
             type="password"
-            placeholder="請再次輸入密碼"
+            placeholder={translate(LANGUAGE_KEYS.auth.confirmPasswordPlaceholder, '請再次輸入密碼')}
             value={formData.confirmPassword}
             onChange={handleChange}
             required
@@ -134,12 +137,12 @@ export default function Register() {
         </div>
         <div className="d-grid gap-2">
           <Btn type="submit" color="success" outline={false} size="lg" loading={loading === 'loading'}>
-            註冊
+            {translate(LANGUAGE_KEYS.auth.register, '註冊')}
           </Btn>
         </div>
       </form>
       <div className="auth-footer">
-        已有帳號？ <Link href="/login/">返回登入</Link>
+        {translate(LANGUAGE_KEYS.auth.hasAccount, '已有帳號？')} <Link href="/login/">{translate(LANGUAGE_KEYS.auth.returnLogin, '返回登入')}</Link>
       </div>
     </>
   );

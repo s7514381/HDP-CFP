@@ -1,9 +1,9 @@
 /**
  * 集中所有API路徑的設定檔
- * 
+ *
  * 注意：路徑格式為 {controller}/{action}
  * 前端請求會透過 /api/{controller}/{action} 代理到後端
- * 
+ *
  * 例如：
  *   API_MAP 中：Manager/GetList
  *   前端呼叫：/api/Manager/GetList
@@ -43,7 +43,19 @@ export const API_MAP: Record<string, string> = {
   ADMIN_MENU_EDIT: `${API_URL}/AdminMenu/Edit`,
   ADMIN_MENU_GET_MODEL: `${API_URL}/AdminMenu/GetModel`,
   ADMIN_MENU_GET_LIST: `${API_URL}/AdminMenu/GetList`,
+  ADMIN_MENU_GET_ADMIN_MENUS: `${API_URL}/AdminMenu/GetAdminMenus`,
   ADMIN_MENU_MST: `${API_URL}/AdminMenu`,
+
+  // ===== 多語言設定 =====
+  LANGUAGE_CREATE: `${API_URL}/Language/Create`,
+  LANGUAGE_GET_ACTIVE: `${API_URL}/Language/GetActiveLanguages`,
+  LANGUAGE_RESOURCE_CREATE: `${API_URL}/LanguageResource/Create`,
+  LANGUAGE_RESOURCE_EDIT: `${API_URL}/LanguageResource/Edit`,
+  LANGUAGE_RESOURCE_GET_MODEL: `${API_URL}/LanguageResource/GetModel`,
+  LANGUAGE_RESOURCE_GET_LIST: `${API_URL}/LanguageResource/GetList`,
+  LANGUAGE_RESOURCE_GET_ACTIVE_LANGUAGES: `${API_URL}/LanguageResource/GetActiveLanguages`,
+  LANGUAGE_RESOURCE_GET_TRANSLATIONS: `${API_URL}/LanguageResource/GetTranslations`,
+  LANGUAGE_RESOURCE_MST: `${API_URL}/LanguageResource`,
 
   // ===== 管理員管理 =====
   MANAGER_CREATE: `${API_URL}/Manager/Create`,

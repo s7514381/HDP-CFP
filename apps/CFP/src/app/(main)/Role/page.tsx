@@ -16,6 +16,8 @@ import { useConfirm } from '@packages/hooks/useConfirm';
 import { API_URL, API_MAP } from '@/lib/apiRoutes';
 import { usePagePermissions } from '@/hooks/usePagePermissions';
 import { useAppApi } from '@/hooks/useAppApi';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { LANGUAGE_KEYS } from '@/config/languageKeys';
 
 export default function AdminFunctionPage() {
   const router = useRouter();
@@ -24,6 +26,7 @@ export default function AdminFunctionPage() {
   const { hasPermission } = usePagePermissions();
   const { Row, Col } = Grid;
   const { formPost } = useAppApi();
+  const { translate } = useLanguage();
 
   const tableRef = React.useRef<CommonTableHandle>(null);
   const [searchName, setSearchName] = useState('');
@@ -43,49 +46,49 @@ export default function AdminFunctionPage() {
   };
 
   const handleDelete = async (id: number | string) => {
-    if (await confirm('確定要刪除此功能嗎？')) {
+    if (await confirm(translate(LANGUAGE_KEYS.common.confirm, '確定要刪除此角色嗎？'))) {
       try {
         await formPost(`${API_URL}/Role/Delete`, { id });
-        success({ message: <span>刪除成功！</span> });
+        success({ message: <span>{translate(LANGUAGE_KEYS.common.deleteSuccess, '刪除成功！')}</span> });
         tableRef.current?.reload();
       } catch (err) {
-        danger({ message: <span>刪除失敗。</span> });
+        danger({ message: <span>{translate(LANGUAGE_KEYS.common.deleteFailed, '刪除失敗。')}</span> });
       }
     }
   };
 
   const columns: Column<any>[] = [
     {
-      header: "項次",
+      header: translate(LANGUAGE_KEYS.common.rowNumber, '項次'),
       className: "text-center",
       style: { width: '80px' },
       render: (_, index) => index + 1
     },
-    { 
-      header: "角色名稱", 
-      key: "name" 
-    },
-    { 
-      header: "功能名稱", 
-      key: "adminMenuName" 
+    {
+      header: translate(LANGUAGE_KEYS.role.name, '角色名稱'),
+      key: "name"
     },
     {
-      header: "操作",
+      header: translate(LANGUAGE_KEYS.common.functionName, '功能名稱'),
+      key: "adminMenuName"
+    },
+    {
+      header: translate(LANGUAGE_KEYS.common.actions, '操作'),
       className: "text-center",
       style: { width: '120px' },
       render: (item) => (
         <div className="d-flex justify-content-center gap-2">
           {hasPermission('Edit') && (
-            <FontAwesome 
-              icon="fa-regular fa-pen-to-square" 
-              className="text-warning cursor-pointer" 
+            <FontAwesome
+              icon="fa-regular fa-pen-to-square"
+              className="text-warning cursor-pointer"
               onClick={() => router.push(`/Role/Edit/?id=${item.id}`)}
             />
           )}
           {hasPermission('Delete') && (
-            <FontAwesome 
-              icon="fa-regular fa-trash-can" 
-              className="text-danger cursor-pointer" 
+            <FontAwesome
+              icon="fa-regular fa-trash-can"
+              className="text-danger cursor-pointer"
               onClick={() => handleDelete(item.id)}
             />
           )}
@@ -96,7 +99,7 @@ export default function AdminFunctionPage() {
 
   return (
     <>
-      <ActionBar title="功能管理">
+      <ActionBar title={LANGUAGE_KEYS.role.title}>
       </ActionBar>
 
       <WrapContent className="p-3">
@@ -119,12 +122,14 @@ export default function AdminFunctionPage() {
 
         <Container fluid className="mb-3">
             <div className="d-flex justify-content-end gap-2">
-                <Btn color="success" icon="add" outline={false} onClick={() => router.push('/Role/Create')}>新增</Btn>
+                {hasPermission('Create') && (
+                  <Btn color="success" icon="add" outline={false} onClick={() => router.push('/Role/Create')}>{translate(LANGUAGE_KEYS.common.add, '新增')}</Btn>
+                )}
             </div>
         </Container>
 
         <Container fluid>
-            <CommonTable 
+            <CommonTable
               ref={tableRef}
               columns={columns}
               apiUrl={`${API_URL}/Role/GetList`}

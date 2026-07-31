@@ -1,47 +1,57 @@
 "use client";
 import Container from "@packages/components/bootstrap5/Container";
 import { usePathname } from "next/navigation";
-import { MenuItem } from "@/config/menus";
+import { getMenuLanguageResourceSerialNumber, MenuItem } from "@/config/menus";
 import { useMenu } from "@/contexts/MenuContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 type ActionBarProps = {
     readonly title?: string;
     readonly children?: React.ReactNode;
 }
 
-/**
- * 根據路徑查找菜單標題
- */
-const findMenuTitle = (pathname: string, items: MenuItem[]): string | undefined => {
+/** Find a menu title by route. */
+const findMenuItem = (pathname: string, items: MenuItem[]): MenuItem | undefined => {
   for (const item of items) {
-    // 清理路徑進行比較
+    // Normalize paths before comparing them.
     const cleanPathname = pathname.replace(/^\/|\/$/g, "");
     const cleanHref = item.href?.replace(/^\/|\/$/g, "");
-    
+
     if (cleanHref && cleanPathname === cleanHref) {
-      return item.label;
+      return item;
     }
-    
-    // 遞歸查找子菜單
+
+    // Search child menus recursively.
     if (item.children) {
-      const found = findMenuTitle(pathname, item.children);
+      const found = findMenuItem(pathname, item.children);
       if (found) return found;
     }
   }
   return undefined;
 };
 
-/**
- * 功能列元件，以及額外的操作功能
- * 如果沒有傳入 title，會自動從路由路徑獲取對應的菜單標題
- */
+/** Page action bar with optional actions. */
 export default function ActionBar({title, children}: ActionBarProps) {
   const pathname = usePathname();
   const { menus } = useMenu();
-  
-  // 如果有傳入 title，優先使用；否則從路由獲取
-  const displayTitle = title ?? findMenuTitle(pathname, menus);
-  
+  const { translate, translateByLanguageResourceId } = useLanguage();
+
+  const getMenuLabel = (menuItem?: MenuItem) => {
+    if (!menuItem) return undefined;
+    if (menuItem.languageResourceId) {
+      return translateByLanguageResourceId(menuItem.languageResourceId, menuItem.label);
+    }
+
+    const serialNumber = getMenuLanguageResourceSerialNumber(menuItem.englishCode);
+    return serialNumber ? translate(serialNumber, menuItem.label) : menuItem.label;
+  };
+
+  // Prefer an explicit title and otherwise resolve the route title.
+  const menuItem = title ? undefined : findMenuItem(pathname, menus);
+  const displayTitle = title
+    ? (/^[A-Z]{2}\d{4}$/.test(title) ? translate(title) : title)
+    : getMenuLabel(menuItem);
+
   return (
     <Container className="action-bar no-print" fluid>
         <p className="action-bar-title">{displayTitle}</p>

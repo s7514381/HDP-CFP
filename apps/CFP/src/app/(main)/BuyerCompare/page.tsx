@@ -16,6 +16,8 @@ import { useConfirm } from '@packages/hooks/useConfirm';
 import { useAppApi } from '@/hooks/useAppApi';
 import { API_URL } from '@/lib/apiRoutes';
 import { usePagePermissions } from '@/hooks/usePagePermissions';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { LANGUAGE_KEYS } from '@/config/languageKeys';
 
 export default function MaterialPage() {
   const router = useRouter();
@@ -24,6 +26,7 @@ export default function MaterialPage() {
   const { confirm } = useConfirm();
   const { hasPermission } = usePagePermissions();
   const { Row, Col } = Grid;
+  const { translate } = useLanguage();
 
   const tableRef = React.useRef<CommonTableHandle>(null);
   const [searchMaterialNumber, setSearchMaterialNumber] = useState('');
@@ -47,35 +50,35 @@ export default function MaterialPage() {
 
   const columns: Column<any>[] = [
     {
-      header: "項次",
+      header: translate(LANGUAGE_KEYS.common.rowNumber, '項次'),
       className: "text-center",
       style: { width: '80px' },
       render: (_, index) => index + 1
     },
-    { 
-      header: "料號", 
-      key: "materialNumber" 
-    },
-    { 
-      header: "產品型號", 
-      key: "productModel" 
-    },
-    { 
-      header: "產品名稱", 
-      key: "productName" 
-    },
-    { 
-      header: "供應商", 
-      key: "supplierName" 
+    {
+      header: translate(LANGUAGE_KEYS.common.materialNumber, '料號'),
+      key: "materialNumber"
     },
     {
-      header: "規格碼筆數",
+      header: translate(LANGUAGE_KEYS.common.productModel, '產品型號'),
+      key: "productModel"
+    },
+    {
+      header: translate(LANGUAGE_KEYS.common.productName, '產品名稱'),
+      key: "productName"
+    },
+    {
+      header: translate(LANGUAGE_KEYS.common.supplier, '供應商'),
+      key: "supplierName"
+    },
+    {
+      header: translate(LANGUAGE_KEYS.buyerCompare.specCount, '規格碼筆數'),
       className: "text-center",
       style: { width: '120px' },
       key: "specCount",
     },
     {
-      header: "未對照筆數",
+      header: translate(LANGUAGE_KEYS.buyerCompare.unmappedCount, '未對照筆數'),
       className: "text-center",
       style: { width: '120px' },
       key: "notCompareCount",
@@ -87,9 +90,9 @@ export default function MaterialPage() {
       render: (item) => (
         <div className="d-flex justify-content-center gap-2">
           {hasPermission('Edit') && (
-            <FontAwesome 
-              icon="fa-regular fa-pen-to-square" 
-              className="text-warning cursor-pointer" 
+            <FontAwesome
+              icon="fa-regular fa-pen-to-square"
+              className="text-warning cursor-pointer"
               onClick={() => router.push(`/BuyerCompare/Edit/?id=${item.id}`)}
             />
           )}
@@ -106,22 +109,22 @@ export default function MaterialPage() {
         <SearchBlock title="" icon="" className="mb-3">
           <Row align="center" gutter={3}>
             <Col md={4}>
-              <Input label="料號" placeholder="料號" value={searchMaterialNumber} onChange={(e) => setSearchMaterialNumber(e.target.value)} />
+              <Input label={translate(LANGUAGE_KEYS.common.materialNumber, '料號')} placeholder={translate(LANGUAGE_KEYS.common.materialNumber, '料號')} value={searchMaterialNumber} onChange={(e) => setSearchMaterialNumber(e.target.value)} />
             </Col>
             <Col md={4}>
-              <Input label="供應商名稱" placeholder="供應商名稱" value={searchSupplierName} onChange={(e) => setSearchSupplierName(e.target.value)} />
+              <Input label={translate(LANGUAGE_KEYS.report.supplierName, '供應商名稱')} placeholder={translate(LANGUAGE_KEYS.report.supplierName, '供應商名稱')} value={searchSupplierName} onChange={(e) => setSearchSupplierName(e.target.value)} />
             </Col>
             <Col md={4} className="d-flex justify-content-end gap-2 align-items-end">
               <Btn color="success" outline className="bg-success-light text-success border-success" style={{ backgroundColor: '#d1e7dd' }} icon="search" onClick={handleSearch}>
-                查詢
+                {translate(LANGUAGE_KEYS.common.search, '查詢')}
               </Btn>
-              <Btn color="light" className="text-primary border" onClick={handleClear}>清除</Btn>
+              <Btn color="light" className="text-primary border" onClick={handleClear}>{translate(LANGUAGE_KEYS.common.clear, '清除')}</Btn>
             </Col>
           </Row>
         </SearchBlock>
 
         <Container fluid>
-            <CommonTable 
+            <CommonTable
               ref={tableRef}
               columns={columns}
               apiUrl={`${API_URL}/BuyerCompare/GetList`}

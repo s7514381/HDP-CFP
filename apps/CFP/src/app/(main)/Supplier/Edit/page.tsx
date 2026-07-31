@@ -5,6 +5,7 @@ import Content from '../Content';
 import { API_MAP } from '@/lib/apiRoutes';
 import FormPageWrapper from '@/components/common/FormPageWrapper';
 import { useAppApi } from '@/hooks/useAppApi';
+import { LANGUAGE_KEYS } from '@/config/languageKeys';
 
 export default function SupplierEditPage() {
   const { post, formPost } = useAppApi();
@@ -14,7 +15,7 @@ export default function SupplierEditPage() {
 
   return (
     <FormPageWrapper
-      title="編輯供應商"
+      title={LANGUAGE_KEYS.supplier.edit}
       content={Content}
       onFetchModel={handleFetchModel}
       onSubmit={(data) => formPost(API_MAP.SUPPLIER_EDIT, data)}

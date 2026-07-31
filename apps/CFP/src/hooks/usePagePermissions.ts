@@ -5,9 +5,10 @@ import { usePathname } from 'next/navigation';
 import { useMenu } from '@/contexts/MenuContext';
 import { MenuItem } from '@/config/menus';
 
-export function usePagePermissions() {
+export function usePagePermissions(permissionPath?: string) {
   const pathname = usePathname();
   const { menus } = useMenu();
+  const targetPath = permissionPath || pathname;
 
   const permissions = useMemo(() => {
     const findMenuItem = (items: MenuItem[], targetPath: string): MenuItem | undefined => {
@@ -24,11 +25,11 @@ export function usePagePermissions() {
     };
 
     // 處理路徑，確保與選單配置匹配 (移除結尾斜線)
-    const cleanPath = pathname.replace(/\/$/, '') || '/';
+    const cleanPath = targetPath.replace(/\/$/, '') || '/';
     const currentItem = findMenuItem(menus, cleanPath);
     
     return currentItem?.permissions || [];
-  }, [menus, pathname]);
+  }, [menus, targetPath]);
 
   const hasPermission = (permission: string) => {
     return permissions.includes(permission);
@@ -36,6 +37,7 @@ export function usePagePermissions() {
 
   return {
     permissions,
+    isReady: menus.length > 0,
     hasPermission
   };
 }

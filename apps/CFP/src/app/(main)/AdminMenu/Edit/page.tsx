@@ -5,6 +5,7 @@ import Content from '../Content';
 import { API_MAP } from '@/lib/apiRoutes';
 import FormPageWrapper from '@/components/common/FormPageWrapper';
 import { useAppApi } from '@/hooks/useAppApi';
+import { LANGUAGE_KEYS } from '@/config/languageKeys';
 
 export default function AdminMenuEditPage() {
   const { formPost } = useAppApi();
@@ -14,7 +15,7 @@ export default function AdminMenuEditPage() {
 
   return (
     <FormPageWrapper
-      title="編輯選單"
+      title={LANGUAGE_KEYS.adminMenu.editTitle}
       content={Content}
       onFetchModel={handleFetchModel}
       onSubmit={(data) => formPost(API_MAP.ADMIN_MENU_EDIT, data)}

@@ -9,6 +9,8 @@ import Card from '@packages/components/bootstrap5/Card';
 import Grid from '@packages/components/bootstrap5/Grid';
 import { Container } from '@packages/components/bootstrap5/Container';
 import ActionBar from '@/components/layouts/ActionBar';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { LANGUAGE_KEYS } from '@/config/languageKeys';
 
 export const DEFAULT_SUPPLIER_FORM = {
   name: '',
@@ -35,15 +37,17 @@ interface ContentProps {
   submitLabel?: string;
 }
 
-export default function Content({ title, formData, onChange, onSubmit, loading = false, submitLabel = '儲存' }: ContentProps) {
+export default function Content({ title, formData, onChange, onSubmit, loading = false, submitLabel = LANGUAGE_KEYS.common.save }: ContentProps) {
   const router = useRouter();
+  const { translate } = useLanguage();
+  const displayTitle = translate(title);
 
   return (
     <>
-      <ActionBar title={title}>
+      <ActionBar title={displayTitle}>
         <div className="ms-auto">
           <Btn color="secondary" outline onClick={() => router.back()} icon="cancel">
-            返回列表
+            {translate(LANGUAGE_KEYS.common.backToList)}
           </Btn>
         </div>
       </ActionBar>
@@ -55,47 +59,47 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
             <Grid.Row className="g-3">
               <Grid.Col md={6}>
                 <Input
-                  label="供應商名稱"
+                  label={translate(LANGUAGE_KEYS.supplier.name)}
                   name="name"
                   value={formData.name || ''}
                   onChange={onChange}
-                  placeholder="請輸入供應商全名"
+                  placeholder={translate(LANGUAGE_KEYS.supplier.namePlaceholder)}
                   required
                 />
               </Grid.Col>
               <Grid.Col md={6}>
                 <Input
-                  label="統一編號"
+                  label={translate(LANGUAGE_KEYS.supplier.taxId)}
                   name="taxID"
                   value={formData.taxID || ''}
                   onChange={onChange}
-                  placeholder="請輸入 8 位統一編號"
+                  placeholder={translate(LANGUAGE_KEYS.supplier.taxIdPlaceholder)}
                   required
-                />
-              </Grid.Col>
-              
-              <Grid.Col md={6}>
-                <Input
-                  label="聯絡人"
-                  name="contactName"
-                  value={formData.contactName || ''}
-                  onChange={onChange}
-                  placeholder="請輸入主要聯絡人姓名"
-                />
-              </Grid.Col>
-              <Grid.Col md={6}>
-                <Input
-                  label="聯絡電話"
-                  name="contactPhone"
-                  value={formData.contactPhone || ''}
-                  onChange={onChange}
-                  placeholder="例：02-12345678"
                 />
               </Grid.Col>
 
               <Grid.Col md={6}>
                 <Input
-                  label="電子郵件"
+                  label={translate(LANGUAGE_KEYS.supplier.contactName)}
+                  name="contactName"
+                  value={formData.contactName || ''}
+                  onChange={onChange}
+                  placeholder={translate(LANGUAGE_KEYS.supplier.contactNamePlaceholder)}
+                />
+              </Grid.Col>
+              <Grid.Col md={6}>
+                <Input
+                  label={translate(LANGUAGE_KEYS.supplier.contactPhone)}
+                  name="contactPhone"
+                  value={formData.contactPhone || ''}
+                  onChange={onChange}
+                  placeholder={translate(LANGUAGE_KEYS.supplier.contactPhonePlaceholder)}
+                />
+              </Grid.Col>
+
+              <Grid.Col md={6}>
+                <Input
+                  label={translate(LANGUAGE_KEYS.supplier.email)}
                   type="email"
                   name="email"
                   value={formData.email || ''}
@@ -105,47 +109,23 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
               </Grid.Col>
               <Grid.Col md={6}>
                 <Select
-                  label="狀態"
+                  label={translate(LANGUAGE_KEYS.common.status)}
                   name="status"
                   value={formData.status || ''}
                   onChange={onChange}
                   options={[
-                    { label: '啟用', value: '1' },
-                    { label: '停用', value: '0' }
+                    { label: translate(LANGUAGE_KEYS.common.enabled), value: '1' },
+                    { label: translate(LANGUAGE_KEYS.common.disabled), value: '0' }
                   ]}
                 />
               </Grid.Col>
 
-              {/* <Grid.Col md={12}>
-                <Input
-                  label="通訊地址"
-                  name="address"
-                  value={formData.address || ''}
-                  onChange={onChange}
-                  placeholder="請輸入原始地址"
-                />
-              </Grid.Col>
-
-              <Grid.Col md={12}>
-                <div className="mb-3">
-                  <label className="form-label">備註</label>
-                  <textarea
-                    className="form-control"
-                    name="note"
-                    rows={3}
-                    value={formData.note || ''}
-                    onChange={onChange}
-                    placeholder="其他補充說明"
-                  />
-                </div>
-              </Grid.Col> */}
-
               <Grid.Col md={12} className="d-flex justify-content-end gap-2 mt-4">
                 <Btn type="button" color="secondary" outline onClick={() => router.push('/Supplier')}>
-                  取消
+                  {translate(LANGUAGE_KEYS.common.cancel)}
                 </Btn>
                 <Btn type="submit" color="primary" loading={loading} icon="save">
-                  {submitLabel}
+                  {translate(submitLabel)}
                 </Btn>
               </Grid.Col>
             </Grid.Row>

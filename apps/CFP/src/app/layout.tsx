@@ -9,10 +9,11 @@ import { HeadProvider, useHead } from "@packages/contexts/HeadContext";
 import { ToastProvider } from "@packages/contexts/ToastContext";
 import { UserProvider } from "@/contexts/UserContext";
 import { MenuProvider } from "@/contexts/MenuContext";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 
 /**
  * 接收全域Head Context，並更新head內容
- * @returns 
+ * @returns
  */
 const UpdateHead = () => {
   const { head } = useHead();
@@ -26,8 +27,8 @@ const UpdateHead = () => {
 
 /**
  * 需要帳號通過驗證的模板
- * @param param0 
- * @returns 
+ * @param param0
+ * @returns
  */
 export default function RootLayout({
   children,
@@ -44,7 +45,9 @@ export default function RootLayout({
             <UserProvider user={null}>
               <MenuProvider>
                 <ApiProvider>
-                  {children}
+                  <LanguageProvider>
+                    {children}
+                  </LanguageProvider>
                 </ApiProvider>
               </MenuProvider>
             </UserProvider>

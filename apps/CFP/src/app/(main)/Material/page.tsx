@@ -17,6 +17,8 @@ import { useAppApi } from '@/hooks/useAppApi';
 import { API_URL, API_MAP } from '@/lib/apiRoutes';
 import { usePagePermissions } from '@/hooks/usePagePermissions';
 import { downloadFile } from '@packages/lib/downloadFlie';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { LANGUAGE_KEYS } from '@/config/languageKeys';
 
 export default function MaterialPage() {
   const router = useRouter();
@@ -31,6 +33,7 @@ export default function MaterialPage() {
   const [searchSupplierName, setSearchSupplierName] = useState('');
   const [importing, setImporting] = useState(false);
   const { post, get } = api;
+  const { translate } = useLanguage();
 
   const handleSearch = () => {
     tableRef.current?.search({
@@ -55,7 +58,7 @@ export default function MaterialPage() {
       return;
     }
 
-    danger({ message: <span>下載範本失敗。</span> });
+    danger({ message: <span>{translate(LANGUAGE_KEYS.common.operationFailed, '下載範本失敗。')}</span> });
   };
 
   const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -75,84 +78,84 @@ export default function MaterialPage() {
       const summary = result.data;
       if (result.success && summary) {
         if (summary.successCount > 0) {
-          success({ message: <span>匯入完成，成功 {summary.successCount} 筆。</span> });
+          success({ message: <span>{translate(LANGUAGE_KEYS.common.importCompleted, '匯入完成，成功 {count} 筆。').replace('{count}', String(summary.successCount))}</span> });
           tableRef.current?.reload();
         }
 
         if (summary.failureCount > 0) {
-          const errorText = summary.errors?.slice(0, 3).join('；') || '部分資料未成功。';
+          const errorText = summary.errors?.slice(0, 3).join('；') || translate(LANGUAGE_KEYS.common.partialImportFailed, '部分資料未成功。');
           if (summary.successCount > 0) {
-            warning({ message: <span>匯入部分失敗，{summary.failureCount} 筆未成功。{errorText}</span> });
+            warning({ message: <span>{translate(LANGUAGE_KEYS.common.partialImportFailed, '匯入部分失敗，{count} 筆未成功。{errors}').replace('{count}', String(summary.failureCount)).replace('{errors}', errorText)}</span> });
           } else {
-            danger({ message: <span>匯入失敗，{summary.failureCount} 筆未成功。{errorText}</span> });
+            danger({ message: <span>{translate(LANGUAGE_KEYS.common.importFailed, '匯入失敗，{count} 筆未成功。{errors}').replace('{count}', String(summary.failureCount)).replace('{errors}', errorText)}</span> });
           }
         }
 
         if (summary.totalCount === 0) {
-          danger({ message: <span>沒有可匯入的資料。</span> });
+          danger({ message: <span>{translate(LANGUAGE_KEYS.common.noImportData, '沒有可匯入的資料。')}</span> });
         }
         return;
       }
 
-      danger({ message: <span>{result.message || '匯入失敗，請確認檔案格式。'}</span> });
+      danger({ message: <span>{result.message || translate(LANGUAGE_KEYS.common.importFailed, '匯入失敗，請確認檔案格式。')}</span> });
     } catch (error) {
       console.error('Import failed', error);
-      danger({ message: <span>匯入失敗，請確認檔案格式。</span> });
+      danger({ message: <span>{translate(LANGUAGE_KEYS.common.importFailed, '匯入失敗，請確認檔案格式。')}</span> });
     } finally {
       setImporting(false);
     }
   };
 
   const handleDelete = async (id: number | string) => {
-    if (await confirm('確定要刪除此料號嗎？')) {
+    if (await confirm(translate(LANGUAGE_KEYS.common.confirm, '確定要刪除此料號嗎？'))) {
       const fd = new FormData();
       fd.append('id', String(id));
       const result = await api.post(`${API_URL}/Material/Delete`, { body: fd });
       if (result.success) {
-        success({ message: <span>刪除成功！</span> });
+        success({ message: <span>{translate(LANGUAGE_KEYS.common.deleteSuccess, '刪除成功！')}</span> });
         tableRef.current?.reload();
       } else {
-        danger({ message: <span>刪除失敗。</span> });
+        danger({ message: <span>{translate(LANGUAGE_KEYS.common.deleteFailed, '刪除失敗。')}</span> });
       }
     }
   };
 
   const columns: Column<any>[] = [
     {
-      header: "項次",
+      header: translate(LANGUAGE_KEYS.common.rowNumber, '項次'),
       className: "text-center",
       style: { width: '80px' },
       render: (_, index) => index + 1
     },
-    { 
-      header: "群組", 
-      key: "materialGroupName" 
-    },
-    { 
-      header: "料號", 
-      key: "materialNumber" 
-    },
-    { 
-      header: "產品型號", 
-      key: "productModel" 
-    },
-    { 
-      header: "產品名稱", 
-      key: "productName" 
+    {
+      header: translate(LANGUAGE_KEYS.material.group, '群組'),
+      key: "materialGroupName"
     },
     {
-      header: "是否可銷售",
+      header: translate(LANGUAGE_KEYS.common.materialNumber, '料號'),
+      key: "materialNumber"
+    },
+    {
+      header: translate(LANGUAGE_KEYS.common.productModel, '產品型號'),
+      key: "productModel"
+    },
+    {
+      header: translate(LANGUAGE_KEYS.common.productName, '產品名稱'),
+      key: "productName"
+    },
+    {
+      header: translate(LANGUAGE_KEYS.material.canSell, '是否可銷售'),
       className: "text-center",
       style: { width: '120px' },
       render: (item) => {
         const value = item.canSell ?? item.CanSell;
         const isCanSell = value === '1' || value === 1 || value === true || value === 'true';
-        return isCanSell ? '可銷售' : '不可銷售';
+        return isCanSell ? translate(LANGUAGE_KEYS.material.sellable, '可銷售') : translate(LANGUAGE_KEYS.material.notSellable, '不可銷售');
       }
     },
-    { 
-      header: "供應商", 
-      key: "supplierName" 
+    {
+      header: translate(LANGUAGE_KEYS.common.supplier, '供應商'),
+      key: "supplierName"
     },
     {
       header: "",
@@ -161,16 +164,16 @@ export default function MaterialPage() {
       render: (item) => (
         <div className="d-flex justify-content-center gap-2">
           {hasPermission('Edit') && (
-            <FontAwesome 
-              icon="fa-regular fa-pen-to-square" 
-              className="text-warning cursor-pointer" 
+            <FontAwesome
+              icon="fa-regular fa-pen-to-square"
+              className="text-warning cursor-pointer"
               onClick={() => router.push(`/Material/Edit/?id=${item.id}`)}
             />
           )}
           {hasPermission('Delete') && (
-            <FontAwesome 
-              icon="fa-regular fa-trash-can" 
-              className="text-danger cursor-pointer" 
+            <FontAwesome
+              icon="fa-regular fa-trash-can"
+              className="text-danger cursor-pointer"
               onClick={() => handleDelete(item.id)}
             />
           )}
@@ -181,42 +184,46 @@ export default function MaterialPage() {
 
   return (
     <>
-      <ActionBar title="料號管理">
+      <ActionBar title={LANGUAGE_KEYS.material.title}>
       </ActionBar>
 
       <WrapContent className="p-3">
         <SearchBlock title="" icon="" className="mb-3">
           <Row align="center" gutter={3}>
             <Col md={4}>
-              <Input label="料號" placeholder="料號" value={searchMaterialNumber} onChange={(e) => setSearchMaterialNumber(e.target.value)} />
+              <Input label={translate(LANGUAGE_KEYS.common.materialNumber, '料號')} placeholder={translate(LANGUAGE_KEYS.common.materialNumber, '料號')} value={searchMaterialNumber} onChange={(e) => setSearchMaterialNumber(e.target.value)} />
             </Col>
             <Col md={4}>
-              <Input label="供應商名稱" placeholder="供應商名稱" value={searchSupplierName} onChange={(e) => setSearchSupplierName(e.target.value)} />
+              <Input label={translate(LANGUAGE_KEYS.report.supplierName, '供應商名稱')} placeholder={translate(LANGUAGE_KEYS.report.supplierName, '供應商名稱')} value={searchSupplierName} onChange={(e) => setSearchSupplierName(e.target.value)} />
             </Col>
             <Col md={4} className="d-flex justify-content-end gap-2 align-items-end">
               <Btn color="success" outline className="bg-success-light text-success border-success" style={{ backgroundColor: '#d1e7dd' }} icon="search" onClick={handleSearch}>
-                查詢
+                {translate(LANGUAGE_KEYS.common.search, '查詢')}
               </Btn>
-              <Btn color="light" className="text-primary border" onClick={handleClear}>清除</Btn>
+              <Btn color="light" className="text-primary border" onClick={handleClear}>{translate(LANGUAGE_KEYS.common.clear, '清除')}</Btn>
             </Col>
           </Row>
         </SearchBlock>
 
         <Container fluid className="mb-3">
             <div className="d-flex justify-content-end gap-2 flex-wrap">
-                <Btn color="secondary" outline onClick={handleDownloadTemplate}>下載範本</Btn>
-                <FileBtn
-                  label={importing ? '匯入中...' : '匯入'}
-                  accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
-                  onChange={handleImportFile}
-                  btnProps={{ color: 'primary', disabled: importing }}
-                />
-                <Btn color="success" icon="add" outline={false} onClick={() => router.push('/Material/Create')}>新增</Btn>
+                {hasPermission('Create') && (
+                  <>
+                    <Btn color="secondary" outline onClick={handleDownloadTemplate}>{translate(LANGUAGE_KEYS.common.downloadTemplate, '下載範本')}</Btn>
+                    <FileBtn
+                      label={importing ? translate(LANGUAGE_KEYS.common.importing, '匯入中...') : translate(LANGUAGE_KEYS.common.import, '匯入')}
+                      accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
+                      onChange={handleImportFile}
+                      btnProps={{ color: 'primary', disabled: importing }}
+                    />
+                    <Btn color="success" icon="add" outline={false} onClick={() => router.push('/Material/Create')}>{translate(LANGUAGE_KEYS.common.add, '新增')}</Btn>
+                  </>
+                )}
             </div>
         </Container>
 
         <Container fluid>
-            <CommonTable 
+            <CommonTable
               ref={tableRef}
               columns={columns}
               apiUrl={API_MAP.MATERIAL_GET_LIST}

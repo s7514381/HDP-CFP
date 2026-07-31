@@ -7,12 +7,15 @@ import { Btn } from "@packages/components/bootstrap5/Btn";
 import { useApi } from "@packages/hooks/useApi";
 import { API_MAP } from "@/lib/apiRoutes";
 import { useToast } from '@packages/contexts/ToastContext';
+import { useLanguage } from "@/contexts/LanguageContext";
+import { LANGUAGE_KEYS } from "@/config/languageKeys";
 
 export default function ForgotPassword() {
   const [submitted, setSubmitted] = useState(false);
   const [email, setEmail] = useState("");
   const { post, loading } = useApi();
   const { danger } = useToast();
+  const { translate } = useLanguage();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -23,19 +26,19 @@ export default function ForgotPassword() {
     if (res.status === 200 && res.success) {
       setSubmitted(true);
     } else {
-      danger({ message: <span>{res.message || "發送失敗，請稍後再試"}</span> });
+      danger({ message: <span>{res.message || translate(LANGUAGE_KEYS.auth.sendFailed, '發送失敗，請稍後再試')}</span> });
     }
   };
 
   if (submitted) {
     return (
       <>
-        <h3 className="auth-title">郵件已發送</h3>
+        <h3 className="auth-title">{translate(LANGUAGE_KEYS.auth.emailSent, '郵件已發送')}</h3>
         <div className="alert alert-success" role="alert">
-          重設密碼的連結已發送到您的電子郵件信箱，請查收。
+          {translate(LANGUAGE_KEYS.auth.resetEmailSent, '重設密碼的連結已發送到您的電子郵件信箱，請查收。')}
         </div>
         <div className="auth-footer">
-          <Link href="/login/" className="btn btn-outline-primary w-100">返回登入</Link>
+          <Link href="/login/" className="btn btn-outline-primary w-100">{translate(LANGUAGE_KEYS.auth.returnLogin, '返回登入')}</Link>
         </div>
       </>
     );
@@ -43,12 +46,12 @@ export default function ForgotPassword() {
 
   return (
     <>
-      <h3 className="auth-title">忘記密碼</h3>
-      <p className="text-center text-muted mb-4">請輸入您的電子郵件，我們將寄送重設密碼連結給您。</p>
+      <h3 className="auth-title">{translate(LANGUAGE_KEYS.auth.forgotPassword, '忘記密碼')}</h3>
+      <p className="text-center text-muted mb-4">{translate(LANGUAGE_KEYS.auth.forgotPasswordDescription, '請輸入您的電子郵件，我們將寄送重設密碼連結給您。')}</p>
       <form onSubmit={handleSubmit}>
         <div className="mb-3">
           <Input
-            label="電子郵件"
+            label={translate(LANGUAGE_KEYS.auth.email, '電子郵件')}
             name="email"
             type="email"
             placeholder="example@mail.com"
@@ -60,12 +63,12 @@ export default function ForgotPassword() {
         </div>
         <div className="d-grid gap-2">
           <Btn type="submit" color="primary" outline={false} size="lg" loading={loading === 'loading'}>
-            發送重設郵件
+            {translate(LANGUAGE_KEYS.auth.sendResetEmail, '發送重設郵件')}
           </Btn>
         </div>
       </form>
       <div className="auth-footer">
-        記起密碼了？ <Link href="/login/">返回登入</Link>
+        {translate(LANGUAGE_KEYS.auth.rememberPassword, '記起密碼了？')} <Link href="/login/">{translate(LANGUAGE_KEYS.auth.returnLogin, '返回登入')}</Link>
       </div>
     </>
   );

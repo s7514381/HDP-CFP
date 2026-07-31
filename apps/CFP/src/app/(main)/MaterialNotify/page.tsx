@@ -10,17 +10,22 @@ import { CommonTable, Column, CommonTableHandle } from "@/components/common/Comm
 import Container from "@packages/components/bootstrap5/Container";
 import Grid from "@packages/components/bootstrap5/Grid";
 import { useAppApi } from '@/hooks/useAppApi';
+import { usePagePermissions } from '@/hooks/usePagePermissions';
 import { useToast } from '@packages/contexts/ToastContext';
 import { API_MAP } from '@/lib/apiRoutes';
 import { MaterialNotifyItem } from '@/types/materialNotify';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { LANGUAGE_KEYS } from '@/config/languageKeys';
 
 export default function MaterialNotifyPage() {
   const api = useAppApi();
   const { success, danger } = useToast();
   const { Row, Col } = Grid;
+  const { translate } = useLanguage();
+  const { hasPermission } = usePagePermissions();
 
   const tableRef = useRef<CommonTableHandle>(null);
-  
+
   // 搜尋表單狀態
   const [searchForm, setSearchForm] = useState({
     updateDateFrom: '',
@@ -67,27 +72,27 @@ export default function MaterialNotifyPage() {
 
   const handleAddNotify = async () => {
     if (selectedIds.size === 0) {
-      danger({ message: <span>請至少勾選一項。</span> });
+      danger({ message: <span>{translate(LANGUAGE_KEYS.notify.check, '請至少勾選一項。')}</span> });
       return;
     }
-    
+
     try {
       // 將選取的 ID 轉換為 Guid 陣列
       const ids = Array.from(selectedIds).map(id => id as string);
-      
+
       // 使用 useAppApi 的 post 方法
       const result = await api.post(API_MAP.MATERIAL_NOTIFY_ADD, {
         body: ids
       });
-      
+
       if (result.status === 200) {
-        success({ message: <span>已加入通知紀錄！</span> });
+        success({ message: <span>{translate(LANGUAGE_KEYS.notify.addRecord, '已加入通知紀錄！')}</span> });
         setSelectedIds(new Set());
       } else {
-        danger({ message: <span>加入通知紀錄失敗</span> });
+        danger({ message: <span>{translate(LANGUAGE_KEYS.common.saveFailed, '加入通知紀錄失敗')}</span> });
       }
     } catch (error) {
-      danger({ message: <span>加入通知紀錄失敗</span> });
+      danger({ message: <span>{translate(LANGUAGE_KEYS.common.saveFailed, '加入通知紀錄失敗')}</span> });
     }
   };
 
@@ -108,21 +113,21 @@ export default function MaterialNotifyPage() {
 
   const columns: Column<any>[] = [
     {
-      header: "勾選",
+      header: translate(LANGUAGE_KEYS.notify.selectRecord, '勾選'),
       className: "text-center",
       style: { width: '60px' },
       render: (item) => (
-        <Checkbox 
+        <Checkbox
           checked={selectedIds.has(item.id)}
           onChange={() => handleToggleSelect(item.id)}
         />
       )
     },
-    { header: "群組", key: "materialGroupName" },
-    { header: "料號", key: "materialNumber" },
-    { header: "產品型號", key: "productModel" },
-    { header: "產品名稱", key: "productName" },
-    { header: "供應商", key: "supplierName" }
+    { header: translate(LANGUAGE_KEYS.notify.group, '群組'), key: "materialGroupName" },
+    { header: translate(LANGUAGE_KEYS.common.materialNumber, '料號'), key: "materialNumber" },
+    { header: translate(LANGUAGE_KEYS.common.productModel, '產品型號'), key: "productModel" },
+    { header: translate(LANGUAGE_KEYS.common.productName, '產品名稱'), key: "productName" },
+    { header: translate(LANGUAGE_KEYS.common.supplier, '供應商'), key: "supplierName" }
   ];
 
   return (
@@ -133,55 +138,55 @@ export default function MaterialNotifyPage() {
         <SearchBlock title="" icon="" className="mb-3">
           <Row align="center" gutter={3}>
             <Col md={3}>
-              <Input 
+              <Input
                 type="date"
-                label="異動紀錄開始日期" 
+                label={translate(LANGUAGE_KEYS.notify.changeStart, '異動紀錄開始日期')}
                 name="updateDateFrom"
-                value={searchForm.updateDateFrom} 
-                onChange={handleSearchChange} 
+                value={searchForm.updateDateFrom}
+                onChange={handleSearchChange}
               />
             </Col>
             <Col md={3}>
-              <Input 
+              <Input
                 type="date"
-                label="異動紀錄結束日期" 
+                label={translate(LANGUAGE_KEYS.notify.changeEnd, '異動紀錄結束日期')}
                 name="updateDateTo"
-                value={searchForm.updateDateTo} 
-                onChange={handleSearchChange} 
+                value={searchForm.updateDateTo}
+                onChange={handleSearchChange}
               />
             </Col>
             <Col md={1}>
-              <Input 
-                label="群組" 
+              <Input
+                label={translate(LANGUAGE_KEYS.notify.group, '群組')}
                 name="materialGroupName"
-                placeholder="" 
-                value={searchForm.materialGroupName} 
-                onChange={handleSearchChange} 
+                placeholder=""
+                value={searchForm.materialGroupName}
+                onChange={handleSearchChange}
               />
             </Col>
             <Col md={2}>
-              <Input 
-                label="產品型號" 
+              <Input
+                label={translate(LANGUAGE_KEYS.common.productModel, '產品型號')}
                 name="productModel"
-                placeholder="" 
-                value={searchForm.productModel} 
-                onChange={handleSearchChange} 
+                placeholder=""
+                value={searchForm.productModel}
+                onChange={handleSearchChange}
               />
             </Col>
             <Col md={1}>
-              <Input 
-                label="供應商" 
+              <Input
+                label={translate(LANGUAGE_KEYS.common.supplier, '供應商')}
                 name="supplierName"
-                placeholder="" 
-                value={searchForm.supplierName} 
-                onChange={handleSearchChange} 
+                placeholder=""
+                value={searchForm.supplierName}
+                onChange={handleSearchChange}
               />
             </Col>
             <Col md={2} className="d-flex justify-content-end gap-2 align-items-end">
               <Btn color="success" outline className="bg-success-light text-success border-success" style={{ backgroundColor: '#d1e7dd' }} icon="search" onClick={handleSearch}>
-                篩選
+                {translate(LANGUAGE_KEYS.common.filter, '篩選')}
               </Btn>
-              <Btn color="light" className="text-primary border" onClick={handleClear}>清除</Btn>
+              <Btn color="light" className="text-primary border" onClick={handleClear}>{translate(LANGUAGE_KEYS.common.clear, '清除')}</Btn>
             </Col>
           </Row>
         </SearchBlock>
@@ -189,7 +194,7 @@ export default function MaterialNotifyPage() {
         <Container fluid className="mb-3">
             <div className="d-flex justify-content-start gap-2">
                 <Btn onClick={handleSelectAll}>
-                  {selectedIds.size > 0 ? '取消全選' : '全選'}
+                  {selectedIds.size > 0 ? translate(LANGUAGE_KEYS.common.deselectAll, '取消全選') : translate(LANGUAGE_KEYS.common.selectAll, '全選')}
                 </Btn>
             </div>
         </Container>
@@ -203,11 +208,13 @@ export default function MaterialNotifyPage() {
             />
         </Container>
 
-        <Container fluid className="mt-3 d-flex justify-content-end">
-            <Btn color="success" outline className="bg-success-light text-success border-success" style={{ backgroundColor: '#d1e7dd' }} onClick={handleAddNotify}>
-              加入通知紀錄
-            </Btn>
-        </Container>
+        {hasPermission('Edit') && (
+          <Container fluid className="mt-3 d-flex justify-content-end">
+              <Btn color="success" outline className="bg-success-light text-success border-success" style={{ backgroundColor: '#d1e7dd' }} onClick={handleAddNotify}>
+                {translate(LANGUAGE_KEYS.notify.addRecord, '加入通知紀錄')}
+              </Btn>
+          </Container>
+        )}
       </WrapContent>
     </>
   );

@@ -12,6 +12,8 @@ import { SpinnerBorder } from '@packages/components/bootstrap5/Spinner';
 import FontAwesome from '@packages/components/FontAwsome';
 import { useAppApi } from '@/hooks/useAppApi';
 import { API_MAP, API_URL } from '@/lib/apiRoutes';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { LANGUAGE_KEYS } from '@/config/languageKeys';
 
 // 買方料號狀態 (與 API 一致：0=停用, 1=啟用)
 type BuyerStatus = 0 | 1;
@@ -67,11 +69,12 @@ interface ContentProps {
 const EMPTY_MATERIALS: BuyerMaterialItem[] = [];
 const EMPTY_SPECS: MaterialSpec[] = [];
 
-export default function Content({ title, formData, onChange, onSubmit, loading = false, submitLabel = '儲存' }: ContentProps) {
+export default function Content({ title, formData, onChange, onSubmit, loading = false, submitLabel = LANGUAGE_KEYS.common.save }: ContentProps) {
   const router = useRouter();
   const api = useAppApi();
   const searchParams = useSearchParams();
   const materialId = searchParams.get('id');
+  const { translate } = useLanguage();
 
   // 右側料號資料 (來自 API)
   const [materials, setMaterials] = useState<BuyerMaterialItem[]>(EMPTY_MATERIALS);
@@ -105,10 +108,10 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
         }));
         setMaterials(mappedItems);
       } else {
-        setMaterialsError(res.message || '取得料號資料失敗');
+        setMaterialsError(res.message || translate(LANGUAGE_KEYS.common.loadFailed, '取得料號資料失敗'));
       }
     } catch {
-      setMaterialsError('網路錯誤，請稍後再試');
+      setMaterialsError(translate(LANGUAGE_KEYS.common.loadFailed, '網路錯誤，請稍後再試'));
     } finally {
       setMaterialsLoading(false);
     }
@@ -157,7 +160,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
     console.log(item)
     // 檢查是否已存在相同 specNumber 的規格碼
     if (specs.some((s) => s.materialCompareId === item.id)) {
-      alert('此料號已產生規格碼，請勿重複產生');
+      alert(translate(LANGUAGE_KEYS.common.saveError, '此料號已產生規格碼，請勿重複產生'));
       return;
     }
 
@@ -228,7 +231,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
   const handleCancelSelectedSpecsCompare = useCallback(() => {
     const selectedCount = specs.filter((spec) => spec.selected).length;
     if (selectedCount === 0) {
-      alert('請先勾選左邊規格碼再取消對照');
+      alert(translate(LANGUAGE_KEYS.buyerCompare.specCodes, '請先勾選左邊規格碼再取消對照'));
       return;
     }
 
@@ -254,7 +257,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
   const handleCancelSelectedMaterialsCompare = useCallback(() => {
     const selectedMaterials = visibleMaterials.filter((item) => item.selected);
     if (selectedMaterials.length === 0) {
-      alert('請先勾選右邊料號再取消對照');
+      alert(translate(LANGUAGE_KEYS.buyerCompare.materialList, '請先勾選右邊料號再取消對照'));
       return;
     }
 
@@ -282,7 +285,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
     const selectedMaterials = visibleMaterials.filter((item) => item.selected);
 
     if (selectedSpecs.length !== 1 || selectedMaterials.length !== 1) {
-      alert('請左邊與右邊各勾選一項後再進行對照');
+      alert(translate(LANGUAGE_KEYS.common.compare, '請左邊與右邊各勾選一項後再進行對照'));
       return;
     }
 
@@ -324,7 +327,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
   const handleDeleteSelectedMaterialCompare = useCallback(() => {
     const selectedMaterials = visibleMaterials.filter((item) => item.selected);
     if (selectedMaterials.length === 0) {
-      alert('請先勾選右邊料號再刪除對照');
+      alert(translate(LANGUAGE_KEYS.common.delete, '請先勾選右邊料號再刪除對照'));
       return;
     }
 
@@ -354,7 +357,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
 
   return (
     <>
-      <ActionBar title={title || '買方料號對照'}>
+      <ActionBar title={title || LANGUAGE_KEYS.buyerCompare.title}>
         <div className="ms-auto">
           <Btn
             color="secondary"
@@ -362,7 +365,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
             onClick={() => router.back()}
             icon="cancel"
           >
-            返回列表
+            {translate(LANGUAGE_KEYS.common.backToList, '返回列表')}
           </Btn>
         </div>
       </ActionBar>
@@ -372,15 +375,15 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
           {/* 標題與資訊 */}
           <div className="mb-3">
             <h4 className="mb-0">
-              料號 {formData?.materialNumber}
+              {translate(LANGUAGE_KEYS.common.materialNumber, '料號')} {formData?.materialNumber}
               <span className="text-primary ms-5">{formData?.productName}</span>
             </h4>
             <div className="text-muted small">
               <i className="bi bi-people me-1"></i> {formData?.supplierName}
             </div>
             <div className="d-flex gap-2 mt-2 flex-wrap">
-              <span className="badge text-bg-primary">規格碼筆數：{mappedSpecCount}</span>
-              <span className="badge text-bg-warning">未對照筆數：{unmappedMaterialCount}</span>
+              <span className="badge text-bg-primary">{translate(LANGUAGE_KEYS.buyerCompare.specCount, '規格碼筆數')}：{mappedSpecCount}</span>
+              <span className="badge text-bg-warning">{translate(LANGUAGE_KEYS.buyerCompare.unmappedCount, '未對照筆數')}：{unmappedMaterialCount}</span>
             </div>
           </div>
 
@@ -395,28 +398,28 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                       color="warning"
                       onClick={() => toggleAll('left', true)}
                     >
-                      全選
+                      {translate(LANGUAGE_KEYS.common.selectAll, '全選')}
                     </Btn>
                     <Btn
                       size="sm"
                       color="secondary"
                       onClick={() => toggleAll('left', false)}
                     >
-                      取消選取
+                      {translate(LANGUAGE_KEYS.common.deselectAll, '取消選取')}
                     </Btn>
                     <Btn
                       size="sm"
                       color="danger"
                       onClick={() => changeStatus('left', 0 as BuyerStatus)}
                     >
-                      停用
+                      {translate(LANGUAGE_KEYS.common.disable, '停用')}
                     </Btn>
                     <Btn
                       size="sm"
                       color="success"
                       onClick={() => changeStatus('left', 1 as BuyerStatus)}
                     >
-                      啟用
+                      {translate(LANGUAGE_KEYS.common.enable, '啟用')}
                     </Btn>
                     <Btn
                       size="sm"
@@ -425,7 +428,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                       disabled={!specs.some((s) => s.selected)}
                       onClick={handleCancelSelectedSpecsCompare}
                     >
-                      取消對照
+                      {translate(LANGUAGE_KEYS.common.uncompare, '取消對照')}
                     </Btn>
                     <Btn
                       size="sm"
@@ -434,7 +437,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                       disabled={!specs.some((s) => s.selected)}
                       onClick={handleDeleteSelectedSpecs}
                     >
-                      刪除選中
+                      {translate(LANGUAGE_KEYS.common.deleteSelected, '刪除選中')}
                     </Btn>
                   </div>
 
@@ -453,7 +456,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                               <i className="bi bi-caret-right-fill me-1"></i>
                               {formData?.productModel}
                               {spec.status === 0 && (
-                                <span className="ms-2 text-danger" title="已停用">
+                                <span className="ms-2 text-danger" title={translate(LANGUAGE_KEYS.common.disabled, '已停用')}>
                                   <FontAwesome icon="fas fa-ban" />
                                 </span>
                               )}
@@ -498,7 +501,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                     ))}
                     {specs.length === 0 && (
                       <div className="text-center text-muted py-5">
-                        尚無規格碼，請由右側產生
+                        {translate(LANGUAGE_KEYS.buyerCompare.noSpecCodes, '尚無規格碼，請由右側產生')}
                       </div>
                     )}
                   </div>
@@ -516,28 +519,28 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                       color="warning"
                       onClick={() => toggleAll('right', true)}
                     >
-                      全選
+                      {translate(LANGUAGE_KEYS.common.selectAll, '全選')}
                     </Btn>
                     <Btn
                       size="sm"
                       color="secondary"
                       onClick={() => toggleAll('right', false)}
                     >
-                      取消選取
+                      {translate(LANGUAGE_KEYS.common.deselectAll, '取消選取')}
                     </Btn>
                     <Btn
                       size="sm"
                       color="danger"
                       onClick={() => changeStatus('right', 0 as BuyerStatus)}
                     >
-                      停用
+                      {translate(LANGUAGE_KEYS.common.disable, '停用')}
                     </Btn>
                     <Btn
                       size="sm"
                       color="success"
                       onClick={() => changeStatus('right', 1 as BuyerStatus)}
                     >
-                      啟用
+                      {translate(LANGUAGE_KEYS.common.enable, '啟用')}
                     </Btn>
                     <Btn
                       size="sm"
@@ -546,7 +549,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                       disabled={!(specs.some((s) => s.selected) && visibleMaterials.some((m) => m.selected))}
                       onClick={handleCompareSelectedItems}
                     >
-                      對照
+                      {translate(LANGUAGE_KEYS.common.compare, '對照')}
                     </Btn>
                     <Btn
                       size="sm"
@@ -555,7 +558,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                       disabled={!visibleMaterials.some((m) => m.selected)}
                       onClick={handleCancelSelectedMaterialsCompare}
                     >
-                      取消對照
+                      {translate(LANGUAGE_KEYS.common.uncompare, '取消對照')}
                     </Btn>
                     <Btn
                       size="sm"
@@ -564,7 +567,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                       disabled={!materials.some((m) => m.selected)}
                       onClick={handleDeleteSelectedMaterialCompare}
                     >
-                      刪除對照
+                      {translate(LANGUAGE_KEYS.common.delete, '刪除對照')}
                     </Btn>
                   </div>
 
@@ -572,7 +575,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                     {materialsLoading && (
                       <div className="text-center py-5">
                         <SpinnerBorder full={false} />
-                        <div className="mt-2 text-muted small">載入料號資料...</div>
+                        <div className="mt-2 text-muted small">{translate(LANGUAGE_KEYS.common.loadingData, '載入料號資料...')}</div>
                       </div>
                     )}
 
@@ -586,14 +589,14 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                           className="mt-2"
                           onClick={fetchBuyerMaterials}
                         >
-                          重新載入
+                          {translate(LANGUAGE_KEYS.common.reload, '重新載入')}
                         </Btn>
                       </div>
                     )}
 
                     {!materialsLoading && !materialsError && materials.length === 0 && (
                       <div className="text-center text-muted py-5">
-                        尚無料號資料
+                        {translate(LANGUAGE_KEYS.buyerCompare.noMaterials, '尚無料號資料')}
                       </div>
                     )}
 
@@ -613,7 +616,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                                 <span className="fw-bold">
                                   {item.productModel}
                                   {item.status === 0 && (
-                                    <span className="ms-2 text-danger" title="已停用">
+                                    <span className="ms-2 text-danger" title={translate(LANGUAGE_KEYS.common.disabled, '已停用')}>
                                       <FontAwesome icon="fas fa-ban" />
                                     </span>
                                   )}
@@ -636,20 +639,20 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                                     return (
                                       <div className="mt-1 small text-success">
                                         <i className="bi bi-check-circle me-1"></i>
-                                        已對照 {mappedSpec.specNumber}
+                                        {translate(LANGUAGE_KEYS.common.compared, '已對照')} {mappedSpec.specNumber}
                                       </div>
                                     );
                                   }
                                   return (
                                     <div className="mt-1 small text-muted">
                                       <i className="bi bi-question-circle me-1"></i>
-                                      未對照
+                                      {translate(LANGUAGE_KEYS.common.notCompared, '未對照')}
                                     </div>
                                   );
                                 })()}
 
                                 <span className="small">
-                                  供 {item.sellerMaterialNumber}
+                                  {translate(LANGUAGE_KEYS.buyerCompare.supplierMaterial, '供')} {item.sellerMaterialNumber}
                                 </span>
                               </div>
 
@@ -677,7 +680,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                                 disabled={item.status === 0}
                                 onClick={() => handleGenerateSpec(item)}
                               >
-                                + 產生規格碼
+                                + {translate(LANGUAGE_KEYS.common.generateSpecCode, '產生規格碼')}
                               </Btn>
                             </div>
                           </div>
@@ -692,7 +695,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
           {/* 提交按鈕 */}
           <div className="d-flex justify-content-end mt-4 gap-2">
             <Btn type="submit" color="primary" loading={loading} icon="save">
-              {submitLabel}
+              {translate(submitLabel, submitLabel)}
             </Btn>
           </div>
         </form>

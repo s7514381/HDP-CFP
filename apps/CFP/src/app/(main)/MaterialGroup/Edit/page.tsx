@@ -5,6 +5,7 @@ import Content from '../Content';
 import { API_MAP } from '@/lib/apiRoutes';
 import FormPageWrapper from '@/components/common/FormPageWrapper';
 import { useAppApi } from '@/hooks/useAppApi';
+import { LANGUAGE_KEYS } from '@/config/languageKeys';
 
 export default function MaterialGroupEditPage() {
   const { post, formPost } = useAppApi();
@@ -14,7 +15,7 @@ export default function MaterialGroupEditPage() {
 
   return (
     <FormPageWrapper
-      title="編輯群組"
+      title={LANGUAGE_KEYS.materialGroup.editTitle}
       content={Content}
       onFetchModel={handleFetchModel}
       onSubmit={(data) => formPost(API_MAP.MATERIAL_GROUP_EDIT, data)}

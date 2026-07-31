@@ -16,6 +16,8 @@ import { useConfirm } from '@packages/hooks/useConfirm';
 import { useAppApi } from '@/hooks/useAppApi';
 import { API_URL, API_MAP } from '@/lib/apiRoutes';
 import { usePagePermissions } from '@/hooks/usePagePermissions';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { LANGUAGE_KEYS } from '@/config/languageKeys';
 
 export default function MaterialGroupPage() {
   const router = useRouter();
@@ -24,6 +26,7 @@ export default function MaterialGroupPage() {
   const { confirm } = useConfirm();
   const { hasPermission } = usePagePermissions();
   const { Row, Col } = Grid;
+  const { translate } = useLanguage();
 
   const tableRef = React.useRef<CommonTableHandle>(null);
   const [searchName, setSearchName] = useState('');
@@ -40,29 +43,29 @@ export default function MaterialGroupPage() {
   };
 
   const handleDelete = async (id: number | string) => {
-    if (await confirm('確定要刪除此群組嗎？')) {
+    if (await confirm(translate(LANGUAGE_KEYS.common.confirm, '確定要刪除此群組嗎？'))) {
       const fd = new FormData();
       fd.append('id', String(id));
       const result = await api.post(`${API_URL}/MaterialGroup/Delete`, { body: fd });
       if (result.success) {
-        success({ message: <span>刪除成功！</span> });
+        success({ message: <span>{translate(LANGUAGE_KEYS.common.deleteSuccess, '刪除成功！')}</span> });
         tableRef.current?.reload();
       } else {
-        danger({ message: <span>刪除失敗。</span> });
+        danger({ message: <span>{translate(LANGUAGE_KEYS.common.deleteFailed, '刪除失敗。')}</span> });
       }
     }
   };
 
   const columns: Column<any>[] = [
     {
-      header: "項次",
+      header: translate(LANGUAGE_KEYS.common.rowNumber, '項次'),
       className: "text-center",
       style: { width: '80px' },
       render: (_, index) => index + 1
     },
-    { 
-      header: "群組名稱", 
-      key: "name" 
+    {
+      header: translate(LANGUAGE_KEYS.materialGroup.name, '群組名稱'),
+      key: "name"
     },
     {
       header: "",
@@ -71,16 +74,16 @@ export default function MaterialGroupPage() {
       render: (item) => (
         <div className="d-flex justify-content-center gap-2">
           {hasPermission('Edit') && (
-            <FontAwesome 
-              icon="fa-regular fa-pen-to-square" 
-              className="text-warning cursor-pointer" 
+            <FontAwesome
+              icon="fa-regular fa-pen-to-square"
+              className="text-warning cursor-pointer"
               onClick={() => router.push(`/MaterialGroup/Edit/?id=${item.id}`)}
             />
           )}
           {hasPermission('Delete') && (
-            <FontAwesome 
-              icon="fa-regular fa-trash-can" 
-              className="text-danger cursor-pointer" 
+            <FontAwesome
+              icon="fa-regular fa-trash-can"
+              className="text-danger cursor-pointer"
               onClick={() => handleDelete(item.id)}
             />
           )}
@@ -91,32 +94,34 @@ export default function MaterialGroupPage() {
 
   return (
     <>
-      <ActionBar title="群組管理">
+      <ActionBar title={LANGUAGE_KEYS.materialGroup.title}>
       </ActionBar>
 
       <WrapContent className="p-3">
         <SearchBlock title="" icon="" className="mb-3">
           <Row align="center" gutter={3}>
             <Col md={4}>
-              <Input label="群組名稱" placeholder="群組名稱" value={searchName} onChange={(e) => setSearchName(e.target.value)} />
+              <Input label={translate(LANGUAGE_KEYS.materialGroup.name, '群組名稱')} placeholder={translate(LANGUAGE_KEYS.materialGroup.name, '群組名稱')} value={searchName} onChange={(e) => setSearchName(e.target.value)} />
             </Col>
             <Col md={4} className="d-flex justify-content-end gap-2 align-items-end">
               <Btn color="success" outline className="bg-success-light text-success border-success" style={{ backgroundColor: '#d1e7dd' }} icon="search" onClick={handleSearch}>
-                查詢
+                {translate(LANGUAGE_KEYS.common.search, '查詢')}
               </Btn>
-              <Btn color="light" className="text-primary border" onClick={handleClear}>清除</Btn>
+              <Btn color="light" className="text-primary border" onClick={handleClear}>{translate(LANGUAGE_KEYS.common.clear, '清除')}</Btn>
             </Col>
           </Row>
         </SearchBlock>
 
         <Container fluid className="mb-3">
             <div className="d-flex justify-content-end gap-2">
-                <Btn color="success" icon="add" outline={false} onClick={() => router.push('/MaterialGroup/Create')}>新增</Btn>
+                {hasPermission('Create') && (
+                  <Btn color="success" icon="add" outline={false} onClick={() => router.push('/MaterialGroup/Create')}>{translate(LANGUAGE_KEYS.common.add, '新增')}</Btn>
+                )}
             </div>
         </Container>
 
         <Container fluid>
-            <CommonTable 
+            <CommonTable
               ref={tableRef}
               columns={columns}
               apiUrl={API_MAP.MATERIAL_GROUP_GET_LIST}

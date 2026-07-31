@@ -13,6 +13,8 @@ import { useAppApi } from '@/hooks/useAppApi';
 import { useToast } from '@packages/contexts/ToastContext';
 import { API_URL } from '@/lib/apiRoutes';
 import { downloadFile } from '@packages/lib/downloadFlie';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { LANGUAGE_KEYS } from '@/config/languageKeys';
 
 interface NotifyStatusReportItem {
   strDate: string;
@@ -20,13 +22,6 @@ interface NotifyStatusReportItem {
   sentCount: string | number;
   updateCount: string | number;
 }
-
-const TABLE_COLUMNS = [
-  { header: "寄送時間", key: "strDate" },
-  { header: "供應商", key: "supplierName" },
-  { header: "收到筆數", key: "sentCount" },
-  { header: "更新筆數", key: "updateCount" },
-] as const;
 
 function escapeCsvValue(value: unknown) {
   if (value === null || value === undefined) {
@@ -37,8 +32,8 @@ function escapeCsvValue(value: unknown) {
   return `"${text}"`;
 }
 
-function toCsv(items: NotifyStatusReportItem[]) {
-  const headers = TABLE_COLUMNS.map((col) => escapeCsvValue(col.header)).join(',');
+function toCsv(items: NotifyStatusReportItem[], headers: string[]) {
+  const headerText = headers.map(escapeCsvValue).join(',');
   const rows = items.map((item) =>
     [
       escapeCsvValue(item.strDate),
@@ -48,13 +43,20 @@ function toCsv(items: NotifyStatusReportItem[]) {
     ].join(',')
   );
 
-  return ['\uFEFF' + headers, ...rows].join('\n');
+  return ['\uFEFF' + headerText, ...rows].join('\n');
 }
 
 export default function MaterialNotifyPage() {
   const api = useAppApi();
   const { danger } = useToast();
   const { Row, Col } = Grid;
+  const { translate } = useLanguage();
+  const tableColumns = [
+    { header: translate(LANGUAGE_KEYS.common.sendTime, '寄送時間'), key: 'strDate' },
+    { header: translate(LANGUAGE_KEYS.common.supplier, '供應商'), key: 'supplierName' },
+    { header: translate(LANGUAGE_KEYS.common.receiveCount, '收到筆數'), key: 'sentCount' },
+    { header: translate(LANGUAGE_KEYS.common.updateCount, '更新筆數'), key: 'updateCount' },
+  ] as const;
 
   const tableRef = useRef<CommonTableHandle>(null);
 
@@ -127,7 +129,7 @@ export default function MaterialNotifyPage() {
 
       const response = await api.post(`${API_URL}/NotifyStatusReport/GetList?${params.toString()}`);
       if (!response.success) {
-        danger({ message: <span>匯出失敗。</span> });
+        danger({ message: <span>{translate(LANGUAGE_KEYS.common.operationFailed, '匯出失敗。')}</span> });
         return;
       }
 
@@ -137,28 +139,25 @@ export default function MaterialNotifyPage() {
         : (Array.isArray(responseData) ? responseData : []);
 
       if (list.length === 0) {
-        danger({ message: <span>目前篩選條件沒有可匯出的資料。</span> });
+        danger({ message: <span>{translate(LANGUAGE_KEYS.common.noData, '目前篩選條件沒有可匯出的資料。')}</span> });
         return;
       }
 
-      const csv = toCsv(list as NotifyStatusReportItem[]);
+      const csv = toCsv(list as NotifyStatusReportItem[], tableColumns.map(column => column.header));
       downloadFile({
         blob: new Blob([csv], { type: 'text/csv;charset=utf-8;' }),
         defaultFileName: 'NotifyStatusReport.csv'
       });
     } catch (error) {
       console.error('Export failed', error);
-      danger({ message: <span>匯出失敗。</span> });
+      danger({ message: <span>{translate(LANGUAGE_KEYS.common.operationFailed, '匯出失敗。')}</span> });
     } finally {
       setExporting(false);
     }
   };
 
   const columns: Column<any>[] = [
-    { header: "寄送時間", key: "strDate" },
-    { header: "供應商", key: "supplierName" },
-    { header: "收到筆數", key: "sentCount" },
-    { header: "更新筆數", key: "updateCount" },
+    ...tableColumns,
   ];
 
   return (
@@ -171,7 +170,7 @@ export default function MaterialNotifyPage() {
             <Col md={3}>
               <Input
                 type="date"
-                label="寄送開始日期"
+                label={translate(LANGUAGE_KEYS.report.sendStart, '寄送開始日期')}
                 name="createDateFrom"
                 value={searchForm.createDateFrom}
                 onChange={handleSearchChange}
@@ -180,7 +179,7 @@ export default function MaterialNotifyPage() {
             <Col md={3}>
               <Input
                 type="date"
-                label="寄送結束日期"
+                label={translate(LANGUAGE_KEYS.report.sendEnd, '寄送結束日期')}
                 name="createDateTo"
                 value={searchForm.createDateTo}
                 onChange={handleSearchChange}
@@ -189,21 +188,21 @@ export default function MaterialNotifyPage() {
             <Col md={3}>
               <Input
                 type="text"
-                label="供應商"
+                label={translate(LANGUAGE_KEYS.common.supplier, '供應商')}
                 name="supplierName"
                 value={searchForm.supplierName}
                 onChange={handleSearchChange}
-                placeholder="請輸入供應商名稱"
+                placeholder={translate(LANGUAGE_KEYS.report.supplierName, '請輸入供應商名稱')}
               />
             </Col>
 
             <Col md={3} className="d-flex justify-content-end gap-2 align-items-end">
               <Btn color="success" outline className="bg-success-light text-success border-success" style={{ backgroundColor: '#d1e7dd' }} icon="search" onClick={handleSearch}>
-                篩選
+                {translate(LANGUAGE_KEYS.common.filter, '篩選')}
               </Btn>
-              <Btn color="light" className="text-primary border" onClick={handleClear}>清除</Btn>
+              <Btn color="light" className="text-primary border" onClick={handleClear}>{translate(LANGUAGE_KEYS.common.clear, '清除')}</Btn>
               <Btn color="secondary" outline disabled={exporting} onClick={handleExport}>
-                {exporting ? '匯出中...' : '匯出報表'}
+                {exporting ? translate(LANGUAGE_KEYS.common.exporting, '匯出中...') : translate(LANGUAGE_KEYS.common.exportReport, '匯出報表')}
               </Btn>
             </Col>
           </Row>

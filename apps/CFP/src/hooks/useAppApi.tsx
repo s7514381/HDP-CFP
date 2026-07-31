@@ -34,6 +34,14 @@ export const useAppApi = (): UseApiResult => {
         };
       }
 
+      const languageCode = getLocalStorage<string>("languageCode");
+      if (languageCode) {
+        reqOptions.headers = {
+          ...reqOptions.headers,
+          "X-Language-Code": languageCode,
+        };
+      }
+
       const result = await originalRequest<TRes, TReq>(url, reqOptions);
 
       // 如果收到 401，表示未登入或 token 過期，跳轉到首頁

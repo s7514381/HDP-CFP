@@ -11,6 +11,8 @@ import { Container } from '@packages/components/bootstrap5/Container';
 import ActionBar from '@/components/layouts/ActionBar';
 import { useAppApi } from '@/hooks/useAppApi';
 import { API_URL } from '@/lib/apiRoutes';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { LANGUAGE_KEYS } from '@/config/languageKeys';
 
 
 interface MaterialCompare {
@@ -75,17 +77,18 @@ interface ContentProps {
   submitLabel?: string;
 }
 
-export default function Content({ title, formData, onChange, onSubmit, loading = false, submitLabel = '儲存' }: ContentProps) {
+export default function Content({ title, formData, onChange, onSubmit, loading = false, submitLabel = LANGUAGE_KEYS.common.save }: ContentProps) {
   const router = useRouter();
   const api = useAppApi();
   const searchParams = useSearchParams();
   const parentId = searchParams.get('id');
   const [selectedSuppliers, setSelectedSuppliers] = useState<SupplierSelectItem[]>([]);
+  const { translate } = useLanguage();
 
   // 當 formData.materialCompareList 從外部載入時（初始化），同步到 selectedSuppliers
   // 使用 ref 確保只在初始載入時同步一次，避免覆蓋使用者已選的資料
   const isInitialized = useRef(false);
-  
+
   useEffect(() => {
     // 只有當 selectedSuppliers 為空且有資料時才初始化（首次載入）
     if (selectedSuppliers.length === 0 && formData.materialCompareList && formData.materialCompareList.length > 0) {
@@ -141,7 +144,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
       <ActionBar title={title}>
         <div className="ms-auto">
           <Btn color="secondary" outline onClick={() => router.back()} icon="cancel">
-            返回列表
+            {translate(LANGUAGE_KEYS.common.backToList, '返回列表')}
           </Btn>
         </div>
       </ActionBar>
@@ -157,8 +160,8 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                     <Card.Body>
                       <div className="mb-3">
                         <DropdownInput
-                          label="選擇供應商/料號"
-                          placeholder="輸入統編、料號或名稱關鍵字搜尋..."
+                          label={translate(LANGUAGE_KEYS.sellerCompare.selectSupplierMaterial, '選擇供應商/料號')}
+                          placeholder={translate(LANGUAGE_KEYS.common.materialNumber, '輸入統編、料號或名稱關鍵字搜尋...')}
                           fetchItems={async (input: string) => {
                             const res = await api.post(`${API_URL}/Material/GetKeywordSelectListItems`, {
                               params: { keyword: input || "" }
@@ -178,7 +181,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
 
                       {selectedSuppliers.length > 0 && (
                         <div className="mt-3">
-                          <label className="form-label fw-bold">已選取料號 ({selectedSuppliers.length})</label>
+                          <label className="form-label fw-bold">{translate(LANGUAGE_KEYS.common.selectedItems, '已選取料號')} ({selectedSuppliers.length})</label>
                           <div className="border rounded p-3 bg-white">
                             {selectedSuppliers.map((supplier, index) => (
                               <div
@@ -189,7 +192,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                                   <span >
                                     {supplier.label}
                                   </span>
-                                  
+
                                 </div>
                                 <Btn
                                   type="button"
@@ -198,7 +201,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                                   icon="delete"
                                   onClick={() => handleRemoveSupplier(supplier.id)}
                                 >
-                                  刪除
+                                  {translate(LANGUAGE_KEYS.common.delete, '刪除')}
                                 </Btn>
                               </div>
                             ))}
@@ -213,7 +216,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
 
                   <div className="d-flex justify-content-end gap-2">
                     <Btn type="submit" color="primary" loading={loading} icon="save">
-                      {submitLabel}
+                      {translate(submitLabel, submitLabel)}
                     </Btn>
                   </div>
                 </Grid.Col>

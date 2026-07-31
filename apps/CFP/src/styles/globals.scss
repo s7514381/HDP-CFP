@@ -55,6 +55,86 @@ $badgeInfoBg: #429898ad;
   max-height: 300px;
   overflow-y: auto;
 }
+// Keep the CFP user menu inside the navbar's right boundary.
+.cfp-user-menu {
+  left: auto !important;
+  right: 0 !important;
+  min-width: 190px;
+  margin-top: .65rem !important;
+  padding: .45rem;
+  border: 1px solid rgba($darkBlue, .12);
+  border-radius: 14px;
+  box-shadow: 0 12px 28px rgba($darkBlue, .14);
+
+  .dropdown-item {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: .6rem .7rem;
+    border: 0;
+    border-radius: 9px;
+    color: $darkBlue;
+    background: transparent;
+    text-align: left;
+    transition: background-color .15s ease, color .15s ease;
+
+    &:hover,
+    &:focus-visible {
+      color: #075b9f;
+      background-color: #eef6fc;
+    }
+  }
+
+  .dropdown-divider {
+    margin: .35rem .5rem;
+    opacity: .12;
+  }
+}
+
+.cfp-user-trigger {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: .55rem .75rem !important;
+  border: 1px solid rgba($darkBlue, .14) !important;
+  border-radius: 999px;
+  color: #334155 !important;
+  background-color: rgba($white, .88);
+  box-shadow: 0 3px 10px rgba($darkBlue, .08);
+  font-size: .95rem;
+  line-height: 1.2;
+  transition: border-color .15s ease, background-color .15s ease, box-shadow .15s ease, color .15s ease;
+
+  &:hover {
+    border-color: rgba(#075b9f, .3) !important;
+    color: #075b9f !important;
+    background-color: $white;
+    box-shadow: 0 5px 14px rgba($darkBlue, .12);
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba(#0d6efd, .2);
+    outline-offset: 2px;
+  }
+
+  &[aria-expanded="true"] {
+    border-color: rgba(#075b9f, .35) !important;
+    color: #075b9f !important;
+    background-color: #eef6fc;
+    box-shadow: 0 5px 14px rgba($darkBlue, .12);
+  }
+
+  &::after {
+    margin-left: .45rem;
+    border-top-color: currentColor;
+  }
+
+  .fa-circle-user {
+    margin-right: .15rem !important;
+    color: #075b9f;
+    font-size: 1.25rem;
+  }
+}
 // qrcode圖片大小
 .qrcode-sm{
   width: 50px;
@@ -251,12 +331,19 @@ body {
 }
 
 .auth-card {
+  position: relative;
   background: rgba(255, 255, 255, 0.95);
   border-radius: 10px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
   width: 100%;
   max-width: 450px;
   padding: 2.5rem;
+
+  .auth-language-trigger {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+  }
 
   .auth-logo {
     display: block;

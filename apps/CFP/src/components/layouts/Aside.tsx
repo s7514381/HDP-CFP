@@ -5,23 +5,30 @@ import { useMenu } from "@/contexts/MenuContext";
 import { ListGroup, ListGroupItem } from "@packages/components/bootstrap5/ListGroup";
 import FontAwesome from "@packages/components/FontAwsome";
 import { Btn } from "@packages/components/bootstrap5/Btn";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { getMenuLanguageResourceSerialNumber, MenuItem } from "@/config/menus";
 
-/**
- * 需要身份驗證授權的側邊欄
- * @param param0
- * @returns
- */
+/** Authenticated application sidebar. */
 export default function Aside() {
   const { menus } = useMenu();
-  /** 路由導向 */
+  const { translate, translateByLanguageResourceId } = useLanguage();
+  const getLabel = (menu: Pick<MenuItem, 'label' | 'englishCode' | 'languageResourceId'>) => {
+    if (menu.languageResourceId) {
+      return translateByLanguageResourceId(menu.languageResourceId, menu.label);
+    }
+
+    const serialNumber = getMenuLanguageResourceSerialNumber(menu.englishCode);
+    return serialNumber ? translate(serialNumber, menu.label) : menu.label;
+  };
+  /** Route navigation. */
   const router = useRouter();
-  /** 當前網頁路徑 */
+  /** Current route. */
   const pathname = usePathname();
-  /** 開啟關閉整個側邊欄 */
+  /** Sidebar visibility. */
   const [isOpen, setIsOpen] = useState(true);
-  /** 折疊選單項目 */
+  /** Collapsed menu items. */
   const [collapse, setCollapse] = useState<string[]>([]);
-  /** 處理折疊選單 */
+  /** Toggle a menu item. */
   const onCollapse = (key: string) => {
     if (collapse.includes(key)) {
       setCollapse(collapse.filter((k) => k !== key));
@@ -29,16 +36,16 @@ export default function Aside() {
       setCollapse([...collapse, key]);
     }
   };
-  /** 判斷子選單是否為目前路徑 */
+  /** Check whether a child route is active. */
   const isActive = (href: string | undefined) => {
     if (!href) return false;
-    /** 將pathname與href的前後斜線都先拿掉後再進行比對 */
+    /** Normalize both route values before comparing them. */
     const cleanPathname = pathname.replace(/^\/|\/$/g, "");
     const cleanHref = href.replace(/^\/|\/$/g, "");
     return cleanPathname === cleanHref;
   };
 
-  /** 當路徑改變時，自動展開對應的父選單 */
+  /** Expand the parent menu when its child route becomes active. */
   useEffect(() => {
     menus.forEach((menu) => {
       if (menu.children) {
@@ -56,20 +63,19 @@ export default function Aside() {
         {menus.map((menu) => (
           <ListGroupItem key={menu.key} container="li">
             {
-              /** 判斷使用連結還是按鈕 */
               menu.href ? (
-                // 如果是next js app使用router.push元件，反之使用a標籤讓功能可以導回傳統頁面
+                // Use router navigation for Next.js routes and anchors otherwise.
                 menu.isNextJsApp ? (
                 <Btn color="link" onClick={() => menu.href && router.push(menu.href)} className={`${pathname === menu.href ? "active" : ""} aside-item`}>
-                  <FontAwesome icon={menu.icon} className="me-2" /> {menu.label}
+                      <FontAwesome icon={menu.icon} className="me-2" /> {getLabel(menu)}
                 </Btn>) : (
                 <a href={menu.href} className={`${pathname === menu.href ? "active" : ""} aside-item`}>
-                  <FontAwesome icon={menu.icon} className="me-2" /> {menu.label}
+                  <FontAwesome icon={menu.icon} className="me-2" /> {getLabel(menu)}
                 </a>
                 )
               ) : (
                 <Btn color="link" className={`aside-item d-flex align-items-center ${collapse.includes(menu.key) && "active"}`} onClick={() => onCollapse(menu.key)}>
-                  <FontAwesome icon={menu.icon} className="me-2" /> {menu.label}
+                  <FontAwesome icon={menu.icon} className="me-2" /> {getLabel(menu)}
                   <FontAwesome icon={`fa-solid fa-angle-down ${collapse.includes(menu.key) ? "fa-rotate-0" : "fa-rotate-270"}`} className="ms-auto"/>
                 </Btn>
               )
@@ -78,16 +84,15 @@ export default function Aside() {
               <ListGroup flush={true} className={`collapse ${collapse.includes(menu.key) ? "show" : ""}`}>
                 {menu.children.map((item) => (
                   <ListGroupItem key={item.key} href={item.href}>
-                    {/* 如果是next js app使用router.push，反之使用a標籤讓功能可以導回傳統頁面 */}
                     {item.isNextJsApp ? (
                     <Btn color="link" onClick={() => item.href && router.push(item.href)} className={`${isActive(item.href) ? "active aside-item" : "aside-item"}`}>
                       <FontAwesome icon={item.icon} className="me-2" />{" "}
-                      {item.label}
+                      {getLabel(item)}
                     </Btn>
                     ) : (
                     <a href={item.href} className={`${isActive(item.href) ? "active aside-item" : "aside-item"}`}>
                       <FontAwesome icon={item.icon} className="me-2" />{" "}
-                      {item.label}
+                      {getLabel(item)}
                     </a>
                     )}
                   </ListGroupItem>

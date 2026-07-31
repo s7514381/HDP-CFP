@@ -16,6 +16,8 @@ import { useConfirm } from '@packages/hooks/useConfirm';
 import { API_MAP } from '@/lib/apiRoutes';
 import { usePagePermissions } from '@/hooks/usePagePermissions';
 import { useAppApi } from '@/hooks/useAppApi';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { LANGUAGE_KEYS } from '@/config/languageKeys';
 
 export default function ManagerPage() {
   const router = useRouter();
@@ -24,6 +26,7 @@ export default function ManagerPage() {
   const { hasPermission } = usePagePermissions();
   const { Row, Col } = Grid;
   const { formPost } = useAppApi();
+  const { translate } = useLanguage();
 
   const tableRef = React.useRef<CommonTableHandle>(null);
   const [searchName, setSearchName] = useState('');
@@ -43,50 +46,50 @@ export default function ManagerPage() {
   };
 
   const handleDelete = async (id: number | string) => {
-    if (await confirm('確定要刪除此管理員嗎？')) {
+    if (await confirm(translate(LANGUAGE_KEYS.common.confirm, '確定要刪除此管理員嗎？'))) {
       try {
         await formPost(`${API_MAP.MANAGER_MST}/Delete`, { id });
-        success({ message: <span>刪除成功！</span> });
+        success({ message: <span>{translate(LANGUAGE_KEYS.common.deleteSuccess, '刪除成功！')}</span> });
         tableRef.current?.reload();
       } catch (err) {
-        danger({ message: <span>刪除失敗。</span> });
+        danger({ message: <span>{translate(LANGUAGE_KEYS.common.deleteFailed, '刪除失敗。')}</span> });
       }
     }
   };
 
   const columns: Column<any>[] = [
     {
-      header: "項次",
+      header: translate(LANGUAGE_KEYS.common.rowNumber, '項次'),
       className: "text-center",
       style: { width: '80px' },
       render: (_, index) => index + 1
     },
-    { 
-      header: "姓名", 
-      key: "name" 
-    },
-    { 
-      header: "帳號", 
-      key: "account" 
-    },
-    { 
-      header: "統一編號", 
-      key: "taxID" 
-    },
-    { 
-      header: "Email", 
-      key: "email" 
+    {
+      header: translate(LANGUAGE_KEYS.manager.name, '姓名'),
+      key: "name"
     },
     {
-      header: "操作",
+      header: translate(LANGUAGE_KEYS.manager.account, '帳號'),
+      key: "account"
+    },
+    {
+      header: translate(LANGUAGE_KEYS.manager.taxId, '統一編號'),
+      key: "taxID"
+    },
+    {
+      header: "Email",
+      key: "email"
+    },
+    {
+      header: translate(LANGUAGE_KEYS.common.actions, '操作'),
       className: "text-center",
       style: { width: '120px' },
       render: (item) => (
         <div className="d-flex justify-content-center gap-2">
           {hasPermission('Edit') && (
-            <FontAwesome 
-              icon="fa-regular fa-pen-to-square" 
-              className="text-warning cursor-pointer" 
+            <FontAwesome
+              icon="fa-regular fa-pen-to-square"
+              className="text-warning cursor-pointer"
               onClick={() => router.push(`/Manager/Edit/?id=${item.id}`)}
             />
           )}
@@ -97,7 +100,7 @@ export default function ManagerPage() {
 
   return (
     <>
-      <ActionBar title="帳號管理">
+      <ActionBar title={LANGUAGE_KEYS.manager.title}>
       </ActionBar>
 
       <WrapContent className="p-3">
@@ -118,7 +121,7 @@ export default function ManagerPage() {
           </Row>
         </SearchBlock> */}
         <Container fluid>
-            <CommonTable 
+            <CommonTable
               ref={tableRef}
               columns={columns}
               apiUrl={API_MAP.MANAGER_GET_LIST}

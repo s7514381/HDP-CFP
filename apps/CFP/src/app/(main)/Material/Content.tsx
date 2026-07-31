@@ -12,6 +12,8 @@ import { Container } from '@packages/components/bootstrap5/Container';
 import ActionBar from '@/components/layouts/ActionBar';
 import { useAppApi } from '@/hooks/useAppApi';
 import { API_MAP } from '@/lib/apiRoutes';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { LANGUAGE_KEYS } from '@/config/languageKeys';
 
 export const DEFAULT_MATERIAL_FORM = {
   supplierId: null as string | null,
@@ -34,9 +36,10 @@ interface ContentProps {
   submitLabel?: string;
 }
 
-export default function Content({ title, formData, onChange, onSubmit, loading = false, submitLabel = '儲存' }: ContentProps) {
+export default function Content({ title, formData, onChange, onSubmit, loading = false, submitLabel = LANGUAGE_KEYS.common.save }: ContentProps) {
   const router = useRouter();
   const api = useAppApi();
+  const { translate } = useLanguage();
   const [suppliers, setSuppliers] = React.useState<any[]>([]);
   const canSellValue = formData.canSell ?? (formData as any).CanSell ?? '0';
   const normalizedCanSellValue = String(canSellValue).trim().toLowerCase();
@@ -64,7 +67,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
       <ActionBar title={title}>
         <div className="ms-auto">
           <Btn color="secondary" outline onClick={() => router.back()} icon="cancel">
-            返回列表
+            {translate(LANGUAGE_KEYS.common.backToList, '返回列表')}
           </Btn>
         </div>
       </ActionBar>
@@ -76,49 +79,49 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
               <Grid.Row className="g-3">
                 <Grid.Col md={6}>
                   <Select
-                    label="供應商"
+                    label={translate(LANGUAGE_KEYS.common.supplier, '供應商')}
                     name="supplierId"
                     value={formData.supplierId || ''}
                     onChange={onChange}
                     options={[
-                      { label: '請選擇供應商', value: '' },
+                      { label: translate(LANGUAGE_KEYS.material.selectSupplier, '請選擇供應商'), value: '' },
                       ...(suppliers?.map((s: any) => ({ label: s.text || s.name, value: s.value || s.id })) || [])
                     ]}
                   />
                 </Grid.Col>
                 <Grid.Col md={6}>
                   <Input
-                    label="料號"
+                    label={translate(LANGUAGE_KEYS.common.materialNumber, '料號')}
                     name="materialNumber"
                     value={formData.materialNumber || ''}
                     onChange={onChange}
-                    placeholder="請輸入料號"
+                    placeholder={translate(LANGUAGE_KEYS.common.materialNumber, '請輸入料號')}
                   />
                 </Grid.Col>
-                
+
                 <Grid.Col md={6}>
                   <Input
-                    label="產品型號"
+                    label={translate(LANGUAGE_KEYS.common.productModel, '產品型號')}
                     name="productModel"
                     value={formData.productModel || ''}
                     onChange={onChange}
-                    placeholder="請輸入產品型號"
+                    placeholder={translate(LANGUAGE_KEYS.common.productModel, '請輸入產品型號')}
                   />
                 </Grid.Col>
                 <Grid.Col md={6}>
                   <Input
-                    label="產品名稱"
+                    label={translate(LANGUAGE_KEYS.common.productName, '產品名稱')}
                     name="productName"
                     value={formData.productName || ''}
                     onChange={onChange}
-                    placeholder="請輸入產品名稱"
+                    placeholder={translate(LANGUAGE_KEYS.common.productName, '請輸入產品名稱')}
                   />
                 </Grid.Col>
 
                 <Grid.Col md={6} className="d-flex align-items-end">
                   <Checkbox
                     name="canSell"
-                    label="是否可銷售"
+                    label={translate(LANGUAGE_KEYS.material.canSell, '是否可銷售')}
                     checked={isCanSell}
                     onChange={handleCanSellChange}
                   />
@@ -126,10 +129,10 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
 
                 <Grid.Col md={12} className="d-flex justify-content-end gap-2 mt-4">
                   <Btn type="button" color="secondary" outline onClick={() => router.push('/Material')}>
-                    取消
+                    {translate(LANGUAGE_KEYS.common.cancel, '取消')}
                   </Btn>
                   <Btn type="submit" color="primary" loading={loading} icon="save">
-                    {submitLabel}
+                    {translate(submitLabel, submitLabel)}
                   </Btn>
                 </Grid.Col>
               </Grid.Row>

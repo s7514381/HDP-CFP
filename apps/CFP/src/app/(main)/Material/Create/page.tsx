@@ -5,6 +5,7 @@ import Content from '../Content';
 import { API_MAP } from '@/lib/apiRoutes';
 import FormPageWrapper from '@/components/common/FormPageWrapper';
 import { useAppApi } from '@/hooks/useAppApi';
+import { LANGUAGE_KEYS } from '@/config/languageKeys';
 
 const normalizeCanSell = (value: unknown) => {
   const normalized = String(value ?? '').trim().toLowerCase();
@@ -15,7 +16,7 @@ export default function MaterialCreatePage() {
   const { formPost } = useAppApi();
   return (
     <FormPageWrapper
-      title="新增料號"
+      title={LANGUAGE_KEYS.material.addTitle}
       content={Content}
       onSubmit={(data) => formPost(API_MAP.MATERIAL_CREATE, { ...data, canSell: normalizeCanSell((data as any).canSell) })}
       redirectPath="/Material"

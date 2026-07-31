@@ -9,6 +9,8 @@ import Card from '@packages/components/bootstrap5/Card';
 import Grid from '@packages/components/bootstrap5/Grid';
 import { Container } from '@packages/components/bootstrap5/Container';
 import ActionBar from '@/components/layouts/ActionBar';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { LANGUAGE_KEYS } from '@/config/languageKeys';
 import { API_URL } from '@/lib/apiRoutes';
 import { useAppApi } from '@/hooks/useAppApi';
 
@@ -48,8 +50,9 @@ interface ContentProps {
   submitLabel?: string;
 }
 
-export default function Content({ title, formData, onChange, onSubmit, loading = false, submitLabel = '儲存' }: ContentProps) {
+export default function Content({ title, formData, onChange, onSubmit, loading = false, submitLabel = LANGUAGE_KEYS.common.save }: ContentProps) {
   const router = useRouter();
+  const { translate } = useLanguage();
   const { formPost } = useAppApi();
   const [menus, setMenus] = useState<AdminMenu[]>([]);
 
@@ -67,6 +70,9 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
     fetchFunctions();
   }, [formPost]);
 
+  const isLanguageQueryFunction = (fn: AdminFunction) =>
+    fn.controller === 'LanguageResource' && fn.action === 'Index';
+
   const getAllChildIds = (menu: any, visited: Set<string>): string[] => {
     if (!menu || !menu.id || visited.has(menu.id)) return [];
     visited.add(menu.id);
@@ -77,7 +83,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
     const fnList = menu.adminFunction?.childList;
     if (Array.isArray(fnList)) {
       fnList.forEach(f => {
-        if (f?.id) ids.push(f.id);
+        if (f?.id && !isLanguageQueryFunction(f)) ids.push(f.id);
       });
     }
 
@@ -88,6 +94,16 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
       });
     }
     return ids;
+  };
+
+  const getMenuFunctionIds = (menu: AdminMenu): string[] => {
+    const ids = [
+      menu.adminFunctionId,
+      ...(menu.adminFunction?.childList || [])
+        .filter(fn => !isLanguageQueryFunction(fn))
+        .map(fn => fn?.id),
+    ];
+    return ids.filter((id): id is string => Boolean(id));
   };
 
   const allMenuFunctionIds = useMemo(() => {
@@ -142,7 +158,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
       }
 
       if (menu.adminFunction?.childList) {
-        if (menu.adminFunction.childList.some(f => f.id && functions.includes(f.id))) {
+        if (menu.adminFunction.childList.some(f => !isLanguageQueryFunction(f) && f.id && functions.includes(f.id))) {
           isSelected = true;
         }
       }
@@ -193,13 +209,44 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
     } as any);
   };
 
+  const handleMenuFunctionChange = (menu: AdminMenu, functionId: string, checked: boolean) => {
+    const currentFunctions = formData?.selectedAdminFunctionIds || [];
+    let newFunctions = [...currentFunctions];
+    const parentFunctionId = menu.adminFunctionId;
+    const directFunctionIds = (menu.adminFunction?.childList || [])
+      .filter(fn => !isLanguageQueryFunction(fn))
+      .map(fn => fn?.id)
+      .filter((id): id is string => Boolean(id));
+
+    if (checked) {
+      if (!newFunctions.includes(functionId)) newFunctions.push(functionId);
+      if (parentFunctionId && !newFunctions.includes(parentFunctionId)) {
+        newFunctions.push(parentFunctionId);
+      }
+    } else {
+      newFunctions = newFunctions.filter(id => id !== functionId);
+      if (parentFunctionId && directFunctionIds.every(id => !newFunctions.includes(id))) {
+        newFunctions = newFunctions.filter(id => id !== parentFunctionId);
+      }
+    }
+
+    const newMenuIds = calculateSelectedMenuIds(newFunctions);
+
+    onChange({
+      target: { name: 'selectedAdminFunctionIds', value: newFunctions, type: 'checkbox' }
+    } as any);
+    onChange({
+      target: { name: 'selectedAdminMenuIds', value: newMenuIds, type: 'checkbox' }
+    } as any);
+  };
+
   return (
     <>
       <form onSubmit={onSubmit}>
         <ActionBar title={title}>
           <div className="ms-auto">
             <Btn color="secondary" outline onClick={() => router.back()} icon="cancel">
-              返回列表
+              {translate(LANGUAGE_KEYS.common.backToList, '返回列表')}
             </Btn>
             <Btn className='ms-2' type="submit" color="primary" loading={loading} icon="save">
               {submitLabel}
@@ -214,23 +261,23 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
               <Grid.Row className="g-3">
                 <Grid.Col md={6}>
                   <Input
-                    label="角色名稱"
+                    label={translate(LANGUAGE_KEYS.role.name, '角色名稱')}
                     name="name"
                     value={formData?.name || ''}
                     onChange={onChange}
-                    placeholder="請輸入角色名稱"
+                    placeholder={translate(LANGUAGE_KEYS.role.name, '請輸入角色名稱')}
                     required
                   />
                 </Grid.Col>
                 {/* <Grid.Col md={6}>
                   <Select
-                    label="狀態"
+                    label={translate(LANGUAGE_KEYS.common.status, '狀態')}
                     name="status"
                     value={formData?.status || ''}
                     onChange={onChange}
                     options={[
-                      { label: '啟用', value: '1' },
-                      { label: '停用', value: '0' }
+                      { label: translate(LANGUAGE_KEYS.common.enabled, '啟用'), value: '1' },
+                      { label: translate(LANGUAGE_KEYS.common.disabled, '停用'), value: '0' }
                     ]}
                   />
                 </Grid.Col> */}
@@ -239,55 +286,83 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
           </Card>
 
           <div className="mb-3 d-flex align-items-center gap-2">
-            <label className="fw-bold">權限*</label>
+            <label className="fw-bold">{translate(LANGUAGE_KEYS.role.permissions, '權限*')}</label>
             <Checkbox
               id="select-all"
-              label="全選"
+              name="select-all"
+              label={translate(LANGUAGE_KEYS.common.selectAll, '全選')}
               checked={isAllChecked(allMenuFunctionIds)}
               onChange={(e: any) => handleCheckboxChange('', e.target.checked, allMenuFunctionIds)}
             />
           </div>
 
           {Array.isArray(menus) && menus.filter(m => m && m.parentId === null).map(parentMenu => {
-            // 收集所有 childItem 的 ID（包括其 adminFunctionId 和 childFnIds）
-            const childItemIds = (parentMenu.childList || []).flatMap(childItem => {
-              if (!childItem || !childItem.id) return [];
-              const fullChild = menuMap.get(childItem.id) || childItem;
-              const childFnList = fullChild.adminFunction?.childList || [];
-              const childFnIds = childFnList.map(f => f?.id).filter(id => !!id) as string[];
-              return [fullChild.adminFunctionId || '', ...childFnIds].filter(id => !!id);
-            });
+            const parentFunctionIds = getAllChildIds(parentMenu, new Set<string>());
+            const parentDirectFunctionIds = getMenuFunctionIds(parentMenu);
 
             return (
               <Card key={parentMenu.id} className="mb-3 border-light shadow-sm">
-                <div className="p-3 border-bottom bg-light d-flex align-items-center">
-                  <Checkbox
-                    id={`menu-${parentMenu.id}`}
-                    className="fw-bold text-primary"
-                    label={parentMenu.title}
-                    checked={isAnyChecked(childItemIds)}
-                    onChange={(e: any) => handleCheckboxChange(parentMenu.adminFunctionId || '', e.target.checked, childItemIds)}
-                  />
+                <div className="p-3 border-bottom bg-light">
+                  <Grid.Row className="align-items-center">
+                    <Grid.Col md={3}>
+                      <Checkbox
+                        id={`menu-${parentMenu.id}`}
+                        name={`menu-${parentMenu.id}`}
+                        className="fw-bold text-primary"
+                        label={parentMenu.title}
+                        checked={isAnyChecked(parentFunctionIds)}
+                        onChange={(e: any) => handleCheckboxChange(
+                          parentMenu.adminFunctionId || '',
+                          e.target.checked,
+                          parentFunctionIds.filter(id => id !== parentMenu.adminFunctionId)
+                        )}
+                      />
+                    </Grid.Col>
+                    {parentDirectFunctionIds.length > 1 && (
+                      <Grid.Col md={9}>
+                        <div className="d-flex flex-wrap gap-3">
+                          {(parentMenu.adminFunction?.childList || [])
+                            .filter(fn => !isLanguageQueryFunction(fn))
+                            .map(fn => {
+                              if (!fn?.id) return null;
+                              return (
+                                <Checkbox
+                                  key={fn.id}
+                                  id={`fn-${fn.id}`}
+                                  name={`fn-${fn.id}`}
+                                  label={fn.title}
+                                  checked={(formData?.selectedAdminFunctionIds || []).includes(fn.id)}
+                                  onChange={(e: any) => handleMenuFunctionChange(parentMenu, fn.id, e.target.checked)}
+                                />
+                              );
+                          })}
+                        </div>
+                      </Grid.Col>
+                    )}
+                  </Grid.Row>
                 </div>
                 <Card.Body className="p-3">
-                  {(parentMenu.childList || []).map(childItem => {
+                  {(parentMenu.childList || []).map((childItem, childIndex, childItems) => {
                     if (!childItem || !childItem.id) return null;
                     const fullChild = menuMap.get(childItem.id) || childItem;
                     const childFnList = fullChild.adminFunction?.childList || [];
                     const childFnIds = childFnList.map(f => f?.id).filter(id => !!id) as string[];
+                    const childFunctionIds = [fullChild.adminFunctionId || '', ...childFnIds].filter(id => !!id);
+                    const isLastChild = childIndex === childItems.length - 1;
 
                     // 判斷 childItem 是否應被勾選
-                    // 如果有子項目，檢查任一子項目是否被勾選；如果沒有子項目，檢查 adminFunctionId 本身是否被勾選
-                    const isChildItemChecked = childFnIds.length > 0
-                      ? isAnyChecked(childFnIds)
-                      : (fullChild.adminFunctionId ? (formData?.selectedAdminFunctionIds || []).includes(fullChild.adminFunctionId) : false);
+                    const isChildItemChecked = isAnyChecked(childFunctionIds);
 
                     return (
-                      <div key={childItem.id} className="mb-3 border-bottom pb-2 last-child-no-border">
+                      <div
+                        key={childItem.id}
+                        className={isLastChild ? 'mb-0 border-0 pb-0' : 'mb-3 border-bottom pb-2'}
+                      >
                         <Grid.Row>
                           <Grid.Col md={3}>
                             <Checkbox
                               id={`submenu-${childItem.id}`}
+                              name={`submenu-${childItem.id}`}
                               className="fw-bold"
                               label={fullChild.title}
                               checked={isChildItemChecked}
@@ -302,9 +377,10 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                                   <Checkbox
                                     key={fn.id}
                                     id={`fn-${fn.id}`}
+                                    name={`fn-${fn.id}`}
                                     label={fn.title}
                                     checked={(formData?.selectedAdminFunctionIds || []).includes(fn.id)}
-                                    onChange={(e: any) => handleCheckboxChange(fn.id, e.target.checked)}
+                                    onChange={(e: any) => handleMenuFunctionChange(fullChild, fn.id, e.target.checked)}
                                   />
                                 );
                               })}
@@ -321,10 +397,10 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
           })}
           <Grid.Col md={12} className="d-flex justify-content-end gap-2 mt-4">
             <Btn type="button" color="secondary" outline onClick={() => router.push('/Role')}>
-              取消
+              {translate(LANGUAGE_KEYS.common.cancel, '取消')}
             </Btn>
             <Btn type="submit" color="primary" loading={loading} icon="save">
-              {submitLabel}
+              {translate(submitLabel, submitLabel)}
             </Btn>
           </Grid.Col>
         </Container>
