@@ -135,6 +135,70 @@ $badgeInfoBg: #429898ad;
     font-size: 1.25rem;
   }
 }
+
+@keyframes cfp-language-modal-slide-up {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-24px);
+  }
+}
+
+@keyframes cfp-language-modal-slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes cfp-language-modal-backdrop-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: .5;
+  }
+}
+
+@keyframes cfp-language-modal-backdrop-fade-out {
+  from {
+    opacity: .5;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.modal:has(.cfp-language-selector-title) .modal-dialog {
+  animation: cfp-language-modal-slide-down .18s ease-out both;
+}
+
+.modal:has(.cfp-language-selector-title) + .modal-backdrop {
+  animation: cfp-language-modal-backdrop-fade-in .18s ease-out both;
+}
+
+.modal:has(.cfp-language-modal-exiting) .modal-dialog {
+  animation: cfp-language-modal-slide-up .18s ease-in forwards;
+}
+
+.modal:has(.cfp-language-modal-exiting) + .modal-backdrop {
+  animation: cfp-language-modal-backdrop-fade-out .18s ease-in forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal:has(.cfp-language-selector-title) .modal-dialog,
+  .modal:has(.cfp-language-selector-title) + .modal-backdrop {
+    animation-duration: .01ms;
+  }
+}
+
 // qrcode圖片大小
 .qrcode-sm{
   width: 50px;

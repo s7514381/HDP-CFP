@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Modal from '@packages/components/bootstrap5/Modal';
 import { API_MAP } from '@/lib/apiRoutes';
 import { useAppApi } from '@/hooks/useAppApi';
@@ -25,27 +25,50 @@ const DEFAULT_LANGUAGES: LanguageItem[] = [
   { id: 'en-US', name: LANGUAGE_KEYS.common.english, code: 'en-US', isBaseLanguage: false },
 ];
 
+const CLOSE_ANIMATION_DURATION_MS = 180;
+
 export default function LanguageSelectorModal({ show, onClose }: LanguageSelectorModalProps) {
   const { formPost } = useAppApi();
   const { languageCode, setLanguage, translate } = useLanguage();
-  const [languages, setLanguages] = useState<LanguageItem[]>(DEFAULT_LANGUAGES);
-  const [loading, setLoading] = useState(false);
+  const [languages, setLanguages] = useState<LanguageItem[]>([]);
+  const [loading, setLoading] = useState(show);
+  const [changingLanguage, setChangingLanguage] = useState(false);
+  const [isExiting, setIsExiting] = useState(false);
+  const closeTimerRef = useRef<number | null>(null);
+
+  const handleClose = useCallback(() => {
+    if (isExiting) return;
+
+    setIsExiting(true);
+    closeTimerRef.current = window.setTimeout(() => {
+      closeTimerRef.current = null;
+      setIsExiting(false);
+      onClose();
+    }, CLOSE_ANIMATION_DURATION_MS);
+  }, [isExiting, onClose]);
+
+  useEffect(() => () => {
+    if (closeTimerRef.current !== null) window.clearTimeout(closeTimerRef.current);
+  }, []);
 
   useEffect(() => {
     if (!show) return;
 
     let isMounted = true;
     const loadLanguages = async () => {
-      await Promise.resolve();
-      if (!isMounted) return;
       setLoading(true);
       try {
         const result = await formPost(API_MAP.LANGUAGE_RESOURCE_GET_ACTIVE_LANGUAGES, {});
-        if (isMounted && result.success && Array.isArray(result.data) && result.data.length > 0) {
+        if (!isMounted) return;
+
+        if (result.success && Array.isArray(result.data)) {
           setLanguages(result.data as LanguageItem[]);
+        } else {
+          setLanguages(DEFAULT_LANGUAGES);
         }
       } catch (error) {
         console.error('Failed to load languages', error);
+        if (isMounted) setLanguages(DEFAULT_LANGUAGES);
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -57,31 +80,43 @@ export default function LanguageSelectorModal({ show, onClose }: LanguageSelecto
     };
   }, [formPost, show]);
 
-  const handleLanguageSelect = (code: string) => {
-    setLanguage(code);
-    onClose();
+  const handleLanguageSelect = async (code: string) => {
+    setChangingLanguage(true);
+    const changed = await setLanguage(code);
+    setChangingLanguage(false);
+    if (changed) handleClose();
   };
 
   return (
-    <Modal show={show} size="sm" onClose={onClose}>
-      <Modal.Title onClose={onClose}>{translate(LANGUAGE_KEYS.common.language)}</Modal.Title>
+    <Modal show={show || isExiting} size="sm" onClose={handleClose}>
+      <Modal.Title
+        onClose={handleClose}
+      >
+        <span className={`cfp-language-selector-title${isExiting ? ' cfp-language-modal-exiting' : ''}`}>
+          {translate(LANGUAGE_KEYS.common.language)}
+        </span>
+      </Modal.Title>
       <Modal.Body>
         <div className="mb-3 text-muted">{translate(LANGUAGE_KEYS.common.selectLanguage)}</div>
-        <div className="list-group" role="radiogroup" aria-label={translate(LANGUAGE_KEYS.common.languageSelection)}>
-          {languages.map(language => (
-            <button
-              type="button"
-              className={`list-group-item list-group-item-action d-flex justify-content-between align-items-center ${languageCode === language.code ? 'active' : ''}`}
-              key={language.id}
-              aria-pressed={languageCode === language.code}
-              onClick={() => handleLanguageSelect(language.code)}
-            >
-              <span>{getNativeLanguageName(language.code, language.name)} ({language.code})</span>
-              {languageCode === language.code && <span aria-hidden="true">✓</span>}
-            </button>
-          ))}
-        </div>
-        {loading && <div className="mt-2 text-muted" role="status">{translate(LANGUAGE_KEYS.common.loadingLanguages)}</div>}
+        {loading ? (
+          <div className="text-muted" role="status">{translate(LANGUAGE_KEYS.common.loadingLanguages)}</div>
+        ) : (
+          <div className="list-group" role="radiogroup" aria-label={translate(LANGUAGE_KEYS.common.languageSelection)}>
+            {languages.map(language => (
+              <button
+                type="button"
+                className={`list-group-item list-group-item-action d-flex justify-content-between align-items-center ${languageCode === language.code ? 'active' : ''}`}
+                key={language.id}
+                aria-pressed={languageCode === language.code}
+                disabled={changingLanguage}
+                onClick={() => handleLanguageSelect(language.code)}
+              >
+                <span>{getNativeLanguageName(language.code, language.name)} ({language.code})</span>
+                {languageCode === language.code && <span aria-hidden="true">✓</span>}
+              </button>
+            ))}
+          </div>
+        )}
       </Modal.Body>
     </Modal>
   );

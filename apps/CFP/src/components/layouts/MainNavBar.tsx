@@ -63,7 +63,9 @@ const UserBtn = () => {
           </li>
         </ul>
       </li>
-      <LanguageSelectorModal show={showLanguageSelector} onClose={() => setShowLanguageSelector(false)} />
+      {showLanguageSelector && (
+        <LanguageSelectorModal show onClose={() => setShowLanguageSelector(false)} />
+      )}
     </>
   );
 }
