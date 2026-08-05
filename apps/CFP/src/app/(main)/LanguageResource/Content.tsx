@@ -29,7 +29,6 @@ export interface LanguageResourceData {
   id?: string;
   serialNumber?: string;
   adminMenuId?: string;
-  sourceText?: string;
   status?: string | number;
   translationList?: LanguageResourceTranslationData[];
 }
@@ -101,11 +100,11 @@ export default function Content({ title, formData, onChange, updateForm, onSubmi
         languageName: language.name,
         languageCode: language.code,
         isBaseLanguage: language.isBaseLanguage,
-        text: language.isBaseLanguage ? (formData?.sourceText || '') : ''
+        text: ''
       }))
     ];
     updateForm({ translationList });
-  }, [languages, formData?.translationList, formData?.sourceText, updateForm]);
+  }, [languages, formData?.translationList, updateForm]);
 
   const menuOptions = useMemo(() => {
     const result = [{ label: translate(LANGUAGE_KEYS.common.notConfigured, '通用'), value: '' }];
@@ -121,16 +120,6 @@ export default function Content({ title, formData, onChange, updateForm, onSubmi
     flatten(menus);
     return result;
   }, [menus, translate]);
-
-  const handleSourceChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const sourceText = event.target.value;
-    const baseLanguage = languages.find(language => language.isBaseLanguage);
-    const translationList = (formData?.translationList || []).map(item =>
-      baseLanguage && item.languageId === baseLanguage.id ? { ...item, text: sourceText } : item
-    );
-
-    updateForm({ sourceText, translationList });
-  };
 
   const handleTranslationChange = (languageId: string, text: string) => {
     const translationList = (formData?.translationList || []).map(item =>
@@ -167,17 +156,6 @@ export default function Content({ title, formData, onChange, updateForm, onSubmi
                   />
                 </Grid.Col>
                 <Grid.Col md={12}>
-                  <Input
-                    label={translate(LANGUAGE_KEYS.languageResource.baseContent, '中文（基礎語言）')}
-                    name="sourceText"
-                    value={formData?.sourceText || ''}
-                    onChange={handleSourceChange}
-                    placeholder={translate(LANGUAGE_KEYS.languageResource.baseContent, '例如：確定要XX嗎')}
-                    required
-                  />
-                </Grid.Col>
-
-                <Grid.Col md={12}>
                   <h5 className="fw-bold mt-3 mb-2">{translate(LANGUAGE_KEYS.languageResource.translationContent, '翻譯內容')}</h5>
                   <div className="d-flex flex-column gap-3">
                     {(formData?.translationList || []).map(language => (
@@ -190,8 +168,8 @@ export default function Content({ title, formData, onChange, updateForm, onSubmi
                             label={language.isBaseLanguage ? translate(LANGUAGE_KEYS.common.baseLanguageContent, '基礎內容') : translate(LANGUAGE_KEYS.common.translation, '翻譯')}
                             value={language.text || ''}
                             onChange={(event) => handleTranslationChange(language.languageId, event.target.value)}
-                            disabled={language.isBaseLanguage}
-                            placeholder={language.isBaseLanguage ? translate(LANGUAGE_KEYS.common.baseLanguageContent, '由中文欄位同步') : translate(LANGUAGE_KEYS.common.translation, '請輸入翻譯內容')}
+                            required={language.isBaseLanguage}
+                            placeholder={language.isBaseLanguage ? translate(LANGUAGE_KEYS.common.baseLanguageContent, '請輸入基礎語言內容') : translate(LANGUAGE_KEYS.common.translation, '請輸入翻譯內容')}
                           />
                         </Grid.Col>
                       </Grid.Row>

@@ -33,7 +33,7 @@ interface LanguageResourceListItem {
   serialNumber?: string;
   menuName?: string;
   menuCode?: string;
-  sourceText?: string;
+  baseText?: string;
   status?: number;
 }
 
@@ -53,7 +53,7 @@ export default function LanguageResourcePage() {
   const { formPost } = useAppApi();
   const { hasPermission } = usePagePermissions();
   const tableRef = React.useRef<CommonTableHandle>(null);
-  const [searchSourceText, setSearchSourceText] = useState('');
+  const [searchBaseText, setSearchBaseText] = useState('');
   const [searchSerialNumber, setSearchSerialNumber] = useState('');
   const [searchMenuId, setSearchMenuId] = useState('');
   const [languages, setLanguages] = useState<LanguageItem[]>([]);
@@ -111,7 +111,7 @@ export default function LanguageResourcePage() {
   }, [languageCode, menus, translate]);
 
   const getSearchParams = () => ({
-    SourceText: searchSourceText,
+    BaseText: searchBaseText,
     SerialNumber: searchSerialNumber,
     AdminMenuId: searchMenuId === COMMON_MENU_FILTER_VALUE ? undefined : searchMenuId,
     IsCommon: searchMenuId === COMMON_MENU_FILTER_VALUE ? 'true' : undefined,
@@ -122,7 +122,7 @@ export default function LanguageResourcePage() {
   };
 
   const handleClear = () => {
-    setSearchSourceText('');
+    setSearchBaseText('');
     setSearchSerialNumber('');
     setSearchMenuId('');
     tableRef.current?.search({});
@@ -177,7 +177,7 @@ export default function LanguageResourcePage() {
       }
     },
     { header: translate(LANGUAGE_KEYS.common.functionName, '功能'), key: 'menuName' },
-    { header: translate(LANGUAGE_KEYS.common.chineseContent, '中文'), key: 'sourceText' },
+    { header: translate(LANGUAGE_KEYS.common.baseLanguageContent, '基礎語言'), key: 'baseText' },
     { header: translate(LANGUAGE_KEYS.common.status, '狀態'), render: item => (item as LanguageResourceListItem).status === 1 ? translate(LANGUAGE_KEYS.common.enabled, '啟用') : translate(LANGUAGE_KEYS.common.disabled, '停用') },
     {
       header: translate(LANGUAGE_KEYS.common.actions, '操作'),
@@ -204,7 +204,7 @@ export default function LanguageResourcePage() {
           <Row align="center" gutter={3}>
             <Col md={3}><Input label={translate(LANGUAGE_KEYS.common.resourceCode, languageCode === 'en-US' ? 'Code' : '代號')} value={searchSerialNumber} onChange={event => setSearchSerialNumber(event.target.value)} /></Col>
             <Col md={3}><Select label={translate(LANGUAGE_KEYS.common.functionName, '功能名稱')} options={menuOptions} value={searchMenuId} onChange={event => setSearchMenuId(event.target.value)} /></Col>
-            <Col md={3}><Input label={translate(LANGUAGE_KEYS.common.chineseContent, '中文內容')} value={searchSourceText} onChange={event => setSearchSourceText(event.target.value)} /></Col>
+            <Col md={3}><Input label={translate(LANGUAGE_KEYS.common.baseLanguageContent, '基礎語言內容')} value={searchBaseText} onChange={event => setSearchBaseText(event.target.value)} /></Col>
             <Col md={3} className="d-flex justify-content-end gap-2 align-items-end">
               <Btn color="success" outline className="bg-success-light text-success border-success" onClick={handleSearch}>{translate(LANGUAGE_KEYS.common.search, '查詢')}</Btn>
               <Btn color="light" className="text-primary border" onClick={handleClear}>{translate(LANGUAGE_KEYS.common.clear, '清除')}</Btn>

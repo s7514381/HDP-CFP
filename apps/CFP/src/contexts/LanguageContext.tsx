@@ -28,7 +28,20 @@ interface TranslationState {
   translationsById: Record<string, string>;
 }
 
+interface TranslationCache {
+  version: 1;
+  state: TranslationState;
+}
+
 const LanguageContext = createContext<LanguageContextValue | null>(null);
+
+const isRecord = (value: unknown): value is Record<string, unknown> => (
+  typeof value === 'object' && value !== null
+);
+
+const isStringRecord = (value: unknown): value is Record<string, string> => (
+  isRecord(value) && Object.values(value).every(item => typeof item === 'string')
+);
 
 const buildTranslationState = (data: unknown): TranslationState | null => {
   if (!Array.isArray(data)) return null;
@@ -44,6 +57,21 @@ const buildTranslationState = (data: unknown): TranslationState | null => {
   }, {});
 
   return { translations, translationsById };
+};
+
+const readCachedTranslations = (languageCode: string): TranslationState | null => {
+  const cache = appStorage.get<unknown>(translationStorageKey(languageCode));
+  if (!isRecord(cache) || cache.version !== 1 || !isRecord(cache.state)) return null;
+
+  const { translations, translationsById } = cache.state;
+  if (!isStringRecord(translations) || !isStringRecord(translationsById)) return null;
+
+  return { translations, translationsById };
+};
+
+const writeCachedTranslations = (languageCode: string, state: TranslationState): void => {
+  const cache: TranslationCache = { version: 1, state };
+  appStorage.set(translationStorageKey(languageCode), cache);
 };
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
@@ -67,6 +95,17 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     if (normalizedCode === languageCode && appliedLanguageCodeRef.current === normalizedCode) return true;
 
     const requestId = ++translationRequestIdRef.current;
+    const cachedTranslations = readCachedTranslations(normalizedCode);
+
+    if (cachedTranslations) {
+      setTranslations(cachedTranslations.translations);
+      setTranslationsById(cachedTranslations.translationsById);
+      appliedLanguageCodeRef.current = normalizedCode;
+      appStorage.set(sessionStorageKeys.languageCode, normalizedCode);
+      setLoading(false);
+      return true;
+    }
+
     setLoading(true);
     try {
       const nextState = await fetchTranslations(normalizedCode);
@@ -78,7 +117,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
       setTranslations(nextState.translations);
       setTranslationsById(nextState.translationsById);
-      appStorage.set(translationStorageKey(normalizedCode), nextState.translations);
+      writeCachedTranslations(normalizedCode, nextState);
       appliedLanguageCodeRef.current = normalizedCode;
       appStorage.set(sessionStorageKeys.languageCode, normalizedCode);
       return true;
@@ -95,6 +134,15 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
     let isMounted = true;
     const requestId = ++translationRequestIdRef.current;
+    const cachedTranslations = readCachedTranslations(languageCode);
+
+    if (cachedTranslations) {
+      setTranslations(cachedTranslations.translations);
+      setTranslationsById(cachedTranslations.translationsById);
+      appliedLanguageCodeRef.current = languageCode;
+      setLoading(false);
+      return;
+    }
 
     const loadTranslations = async () => {
       setLoading(true);
@@ -110,7 +158,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
         setTranslations(nextState.translations);
         setTranslationsById(nextState.translationsById);
-        appStorage.set(translationStorageKey(languageCode), nextState.translations);
+        writeCachedTranslations(languageCode, nextState);
         appliedLanguageCodeRef.current = languageCode;
       } catch (error) {
         if (isMounted && requestId === translationRequestIdRef.current) {

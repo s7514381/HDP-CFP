@@ -1,4 +1,4 @@
-import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useState } from 'react';
+import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { Table, THead, TBody, Tr, Th, Td } from '@packages/components/bootstrap5/Table';
 import { useAppApi } from '@/hooks/useAppApi';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -54,30 +54,47 @@ function CommonTableInner<T extends object>(
   }: CommonTableProps<T>,
   ref: React.ForwardedRef<CommonTableHandle<T>>
 ) {
-  const { post, loading } = useAppApi();
+  const { post } = useAppApi();
   const { translate } = useLanguage();
+  const postRef = useRef(post);
+  const requestIdRef = useRef(0);
   const [data, setData] = useState<T[]>(manualData ?? []);
   const [totalRecords, setTotalRecords] = useState(manualTotalRecords ?? 0);
   const [currentPage, setCurrentPage] = useState(manualCurrentPage ?? 1);
   const [currentSearchParams, setCurrentSearchParams] = useState<TableSearchParams>(externalSearchParams);
+  const [isFetching, setIsFetching] = useState(false);
 
-  const isLoading = apiUrl ? loading === 'loading' : Boolean(manualIsLoading);
+  useEffect(() => {
+    postRef.current = post;
+  }, [post]);
 
   const fetchList = useCallback(async (page: number, params: TableSearchParams) => {
     if (!apiUrl) return;
 
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
+    setIsFetching(true);
+    setData([]);
+    setTotalRecords(0);
+
     try {
-      const response = await post<unknown>(`${apiUrl}?${buildTableQuery(page, pageSize, params)}`);
-      if (!response.success) return;
+      const response = await postRef.current<unknown>(`${apiUrl}?${buildTableQuery(page, pageSize, params)}`);
+      if (requestId !== requestIdRef.current || !response.success) return;
 
       const parsed = parseTableResponse<T>(response);
       setData(parsed.data);
       setTotalRecords(parsed.totalRecords);
       setCurrentPage(page);
     } catch (error) {
-      console.error('CommonTable fetch failed', error);
+      if (requestId === requestIdRef.current) {
+        console.error('CommonTable fetch failed', error);
+      }
+    } finally {
+      if (requestId === requestIdRef.current) {
+        setIsFetching(false);
+      }
     }
-  }, [apiUrl, pageSize, post]);
+  }, [apiUrl, pageSize]);
 
   useEffect(() => {
     if (!apiUrl) return;
@@ -95,15 +112,19 @@ function CommonTableInner<T extends object>(
   const displayData = apiUrl ? data : (manualData ?? data);
   const displayTotalRecords = apiUrl ? totalRecords : (manualTotalRecords ?? totalRecords);
   const displayCurrentPage = apiUrl ? currentPage : (manualCurrentPage ?? currentPage);
+  const isLoading = apiUrl ? isFetching : Boolean(manualIsLoading);
+  const visibleData = useMemo(
+    () => (isLoading && apiUrl ? [] : displayData),
+    [apiUrl, displayData, isLoading]
+  );
 
   useImperativeHandle(ref, () => ({
     reload: () => { void fetchList(displayCurrentPage, currentSearchParams); },
     search: (params) => {
       setCurrentSearchParams(params);
-      void fetchList(1, params);
     },
-    getData: () => Promise.resolve(displayData),
-  }), [currentSearchParams, displayData, displayCurrentPage, fetchList]);
+    getData: () => Promise.resolve(visibleData),
+  }), [currentSearchParams, displayCurrentPage, fetchList, visibleData]);
 
   const handlePageChange = (page: number) => {
     if (apiUrl) {
@@ -118,7 +139,7 @@ function CommonTableInner<T extends object>(
 
   return (
     <div>
-      <Table hover bordered className={isLoading ? 'opacity-50' : ''}>
+      <Table hover bordered className={!apiUrl && isLoading ? 'opacity-50' : ''} aria-busy={isLoading}>
         <THead className="table-primary" style={{ backgroundColor: '#6cb4ee', color: 'white' }}>
           <Tr>
             {columns.map((column, columnIndex) => (
@@ -129,7 +150,7 @@ function CommonTableInner<T extends object>(
           </Tr>
         </THead>
         <TBody>
-          {displayData.length > 0 ? displayData.map((item, index) => (
+          {visibleData.length > 0 ? visibleData.map((item, index) => (
             <Tr key={rowKey ? rowKey(item) : index}>
               {columns.map((column, columnIndex) => (
                 <Td key={`cell-${columnIndex}`} className={column.className} style={column.style}>

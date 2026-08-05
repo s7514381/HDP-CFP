@@ -100,4 +100,11 @@ export const API_MAP: Record<string, string> = {
   MATERIAL_NOTIFY_GET_LIST: `${API_URL}/MaterialNotify/GetList`,
   MATERIAL_NOTIFY_ADD: `${API_URL}/MaterialNotify/AddNotify`,
 
+  // ===== 碳排資料維護 =====
+  PCR_TEMPLATE_CREATE: `${API_URL}/PcrTemplate/Create`,
+  PCR_TEMPLATE_EDIT: `${API_URL}/PcrTemplate/Edit`,
+  PCR_TEMPLATE_GET_MODEL: `${API_URL}/PcrTemplate/GetModel`,
+  PCR_TEMPLATE_GET_LIST: `${API_URL}/PcrTemplate/GetList`,
+  PCR_TEMPLATE_MST: `${API_URL}/PcrTemplate`,
+
 };

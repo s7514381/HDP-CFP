@@ -5,21 +5,35 @@
 3. [快速定位表](#3-快速定位表)
 4. [啟動、建置與環境](#4-啟動建置與環境)
 5. [整體資料流與責任分界](#5-整體資料流與責任分界)
+   - [5.3 列表請求、狀態與競態控制](#53-列表請求狀態與競態控制)
 6. [前端規格](#6-前端規格)
+   - [6.1.1 PCR 模板頁面實作規則](#611-pcr-模板頁面實作規則)
+   - [6.5 多語言系統：執行期載入與資料流](#65-多語言系統執行期載入與資料流)
+      - [6.5.1 資料模型與識別方式](#651-資料模型與識別方式)
+      - [6.5.2 前端初始化與切換流程](#652-前端初始化與切換流程)
+      - [6.5.3 動態選單與頁面標題](#653-動態選單與頁面標題)
+      - [6.5.4 後台維護流程](#654-後台維護流程)
+      - [6.5.5 多語言功能開發檢查清單](#655-多語言功能開發檢查清單)
+      - [6.5.6 PCR 多語言資料規則](#656-pcr-多語言資料規則)
 7. [後端規格](#7-後端規格)
+   - [7.6 Migration 與實際資料庫更新](#76-migration-與實際資料庫更新)
 8. [前後端 API 契約](#8-前後端-api-契約)
+   - [8.4 PCR 模板 API 契約](#84-pcr-模板-api-契約)
 9. [資料模型與業務規則](#9-資料模型與業務規則)
    - [9.1 基底欄位與狀態](#91-基底欄位與狀態)
    - [9.2 主要資料表](#92-主要資料表)
    - [9.3 領域規則](#93-領域規則)
+      - [9.3.1 PCR 模板父子資料與列表規則](#931-pcr-模板父子資料與列表規則)
    - [9.4 ManyToMany 關聯設計與使用方式](#94-manytomany-關聯設計與使用方式)
 10. [常見修改路徑](#10-常見修改路徑)
+    - [10.5 新增或修改多語言](#105-新增或修改多語言)
+    - [10.6 修改 PCR 模板功能](#106-修改-pcr-模板功能)
 11. [已確認的限制與注意事項](#11-已確認的限制與注意事項)
 12. [維護規則](#12-維護規則)
 
 # HOP-CFP 專案索引
 
-> 本文件是給 AI 與開發者使用的快速入口。內容依 2026-07-27 工作區原始碼、設定與後端相鄰 Repository 盤點整理；若本文件與程式碼不一致，以實際執行程式碼為準，並應在修改後同步更新本文件。
+> 本文件是給 AI 與開發者使用的快速入口。內容依 2026-08-05 工作區原始碼、設定、Migration、資料庫與瀏覽器驗證整理；若本文件與程式碼不一致，以實際執行程式碼與 API 結果為準，並應在修改後同步更新本文件。
 
 ## 1. 文件定位與使用方式
 
@@ -92,6 +106,7 @@ HOP-CFP-Backend/
 | 料號匯入 | `src/app/(main)/Material/page.tsx` | `MaterialController.Import` → `MaterialService.ImportFromCsv` |
 | 賣方比對匯入 | `src/app/(main)/SellerCompare/page.tsx` | `SellerCompareController.Import` → `SellerCompareService.ImportFromCsv` |
 | 通知建立/狀態 | `MaterialNotify/page.tsx`、`StatusQuery/page.tsx`、`NotifyStatusReport/page.tsx` | 三個對應 Controller / Service |
+| PCR 模板與父子項目 | `src/app/(main)/PcrTemplate/page.tsx`、`Content.tsx` | `PcrTemplateController` → `PcrTemplateService` → `PcrTemplate` / `LanguageResource` |
 | 資料表欄位與 Migration | `HOP-CFP-Backend.Library/Models/*`、`DBContext.cs` | `HOP-CFP-Backend/Migrations/*` |
 
 ## 4. 啟動、建置與環境
@@ -117,7 +132,7 @@ HOP-CFP-Backend/
 | 啟動 HTTPS | `dotnet run --project HOP-CFP-Backend.csproj --launch-profile https` |
 | HTTPS | `https://localhost:7007` |
 | HTTP 開發端口 | `http://localhost:5224` |
-| 建置 | `dotnet build HOP-CFP-Backend.slnx`（相鄰 Repository root） |
+| 建置 | `dotnet build HOP-CFP-Backend.csproj --no-restore`（`HOP-CFP-Backend` 專案資料夾） |
 | API 文件 | Development 環境啟用 OpenAPI、Swagger、Swagger UI |
 | Session Cookie | `HOP_CFP_Backend`，HttpOnly、Secure、SameSite=Lax、20 分鐘 |
 
@@ -129,6 +144,8 @@ HOP-CFP-Backend/
 2. API 修改要用 HTTPS profile 重啟後端，再用實際請求確認 HTTP status、`success`、`message`、`data`。
 3. UI 修改在環境允許時啟動前後端、登入並操作受影響頁面。
 4. 需要真實資料寫入或郵件發送時，先確認測試資料與授權範圍；不可把只完成 build 當成整合驗證。
+5. 瀏覽器驗證要同時觀察頁面狀態、Network 請求、HTTP status、回應資料與是否重新導向登入；頁面最後顯示正確不代表中間沒有重複請求或競態。
+6. 使用真實資料測試新增/編輯/刪除時，測試前記錄資料 Id，測試後確認子資料、翻譯資源與軟刪除狀態均已清理。
 
 本次盤點在兩個 Repository 中未找到獨立測試專案或常見 `*.test.*` / `*.spec.*` 測試檔；目前驗證主力是 lint、build、API 請求與實際 UI 操作。
 
@@ -165,6 +182,30 @@ flowchart LR
 - Library Model / `DBContext` 定義資料表及欄位；Migration 記錄 schema 變更。
 - `AuthorizedController` 實際套用 `ApiFilter`；`AuthorizeFilter` 是保留中的另一套權限判斷，不能假設它目前生效。
 
+### 5.3 列表請求、狀態與競態控制
+
+通用列表的實際執行鏈不是「按下查詢就直接呼叫一次 API」，而是由 `CommonTable` 的查詢狀態與 effect 統一觸發：
+
+```text
+Page search state
+  └─ CommonTable.search(params)
+       └─ setCurrentSearchParams(params)
+            └─ useEffect
+                 └─ fetchList(page, currentSearchParams)
+                      └─ buildTableQuery(order/start/length/draw + search params)
+                           └─ POST [Controller]/GetList
+```
+
+- `CommonTable` 使用 `apiUrl` 模式時，`search()` 只更新查詢 state，不應在頁面另外直接呼叫 `getData()` 或自行發送同一筆列表請求。
+- `reload()` 會以目前頁碼與目前搜尋條件重新查詢；刪除成功、語言切換或需要重新整理列表時應優先使用此入口。
+- `fetchList` 以 `requestIdRef` 保存請求序號。新請求開始後，舊請求即使較晚回來，也不可覆蓋新資料、總筆數或 loading 狀態。
+- 新請求開始時會清除舊的 `data` 與 `totalRecords`；`isFetching` 時 `visibleData` 為空，避免畫面看起來已有資料但仍不能操作。
+- `post` 以 ref 保存，避免 `useAppApi` 每次 render 產生新的 function reference，造成 effect 重複執行。
+- `currentSearchParams`、`apiUrl`、`pageSize` 是查詢 effect 的核心依賴。若頁面把不穩定的物件或 function 直接放入依賴，會造成分類切換、搜尋或重整時重複 load。
+- 列表通常回傳 `draw`、`recordsTotal`、`recordsFiltered`、`data`；必須等資料與總筆數都完成更新後才顯示可操作的分頁資訊。
+- 發現列表「先有資料、不能操作、稍後才出現共 X 筆」時，先檢查 request 是否重複、舊請求是否覆蓋新請求、舊資料是否在 loading 期間被保留，而不是只修改 spinner 樣式。
+- 另有一種不同的短暫現象：`LanguageProvider` 初始翻譯 map 為空，且與 `CommonTable` 的列表請求平行載入；若列表先回傳，`CommonTable` 的總數列因未提供翻譯 fallback 會先渲染成裸數字（例如 `4`），待 `LanguageResource/GetTranslations` 完成後才變成「共 4 筆資料」。這是文字翻譯載入競態，不是列表 API 重複或資料筆數變動；修正時應集中處理翻譯載入完成條件或總數列 fallback。
+
 ## 6. 前端規格
 
 ### 6.1 App Router 與頁面
@@ -191,6 +232,19 @@ Route Group `(auth)` 與 `(main)` 不會出現在 URL。根 Layout 以 `ApiProvi
 | `/MaterialNotify` | `src/app/(main)/MaterialNotify/page.tsx` | 料號更新通知選取與發送 |
 | `/StatusQuery` | `src/app/(main)/StatusQuery/page.tsx` | 通知狀態明細查詢 |
 | `/NotifyStatusReport` | `src/app/(main)/NotifyStatusReport/page.tsx` | 通知狀態彙總報表 |
+| `/PcrTemplate`、`/PcrTemplate/Create`、`/PcrTemplate/Edit/?id={id}` | `src/app/(main)/PcrTemplate` | PCR 模板範本、分類頁籤與父子項目維護 |
+
+#### 6.1.1 PCR 模板頁面實作規則
+
+- `/PcrTemplate/` 使用四個頁籤對應 `PcrTemplateCategory`：`Material=0` 原料、`Process=1` 製程、`Transport=2` 運輸、`Waste=3` 廢棄。
+- 上次選取的分類保存於 `localStorage`，鍵名為 `pcrTemplate.lastCategory`；頁面初次 hydration 完成前不直接使用瀏覽器儲存值，避免 SSR/CSR 狀態不一致。
+- 切換頁籤只更新儲存的分類，分類變更 effect 再呼叫 `CommonTable.search()`；不要在 click handler 與 effect 各查詢一次。
+- 從某一分類按「新增」時，導向 `/PcrTemplate/Create?category={category}`，新增頁會以 query 的分類作為預設值。
+- 清除搜尋會將分類重設為原料、清空項目搜尋文字，並只觸發一次列表查詢。
+- 列表只顯示父項目；編輯與刪除按鈕依 `usePagePermissions()` 的 `Edit` / `Delete` 判斷，圖示分別使用編輯與垃圾桶圖示。
+- PCR 新增、編輯採 Supplier 風格的獨立 `/Create`、`/Edit` 頁面，不在列表中開啟大型 modal。
+- `Content.tsx` 同時呈現父項目與子項目輸入列；子項目可新增、修改、移除，父子資料一併提交。
+- 列表項目搜尋只針對父項目的多語言文字；子項目名稱是列表顯示欄位，不會因為子項目 JOIN 而變成獨立列表列。
 
 ### 6.2 前端狀態與權限
 
@@ -221,6 +275,65 @@ Route Group `(auth)` 與 `(main)` 不會出現在 URL。根 Layout 以 `ApiProvi
 - `packages/contexts/*`：API、Toast、Sidebar、Head Context。
 - `packages/hooks/*`：`useApi`、`useClickOutside`、`useConfirm`。
 - `packages/types/*` 與 `apps/CFP/src/types/*`：API response、表單搜尋、業務資料的 TypeScript 宣告；後端回傳欄位名稱多為 PascalCase，頁面實際取值須核對 API response 與型別。
+
+### 6.5 多語言系統：執行期載入與資料流
+
+本專案不是 `next-intl`、檔案式 `locales` 或 locale 路由；翻譯內容由後端資料庫管理，前端在執行期載入。語言切換只改變選取的 language code，不會改變 URL 路由。
+
+#### 6.5.1 資料模型與識別方式
+
+- `Language` 是語言設定，包含名稱、語言代碼、啟用狀態、排序與 `IsBaseLanguage`；目前預設語言代碼是 `zh-TW`，系統預期只能有一個啟用中的基礎語言。
+- `LanguageResource` 是一筆可翻譯資源，包含唯一 `SerialNumber` 與可選的 `AdminMenuId`；資源本身不再保存重複的 `SourceText`。
+- `LanguageResourceTranslation` 以 `LanguageResourceId + LanguageId` 識別每個語言的文字；`Language.IsBaseLanguage = 1` 的翻譯列就是唯一基礎內容。
+- 任何需要多語言名稱的資料表，欄位名稱使用 `{Name}LRID`（例如 `PcrTemplate.ItemLRID`）儲存 `LanguageResource.Id`。
+- `apps/CFP/src/config/languageKeys.ts` 只保存穩定資源代號，不是翻譯字典；畫面應以 `translate(key, fallbackText)` 取得文字並保留 fallback。
+
+#### 6.5.2 前端初始化與切換流程
+
+1. 根 Layout 以 `LanguageProvider` 包住登入頁與主畫面。
+2. `LanguageContext` 從 `localStorage.languageCode` 讀取目前語言；沒有值時使用 `zh-TW`。
+3. 登入後先從 `localStorage.languageTranslations:{languageCode}` 讀取完整翻譯字典；沒有有效快取時才呼叫 `LanguageResource/GetTranslations`，以 FormData 傳入 `languageCode`，建立 `serialNumber -> text` 與 `languageResourceId -> text` 查找表。
+4. 語言選擇器先呼叫 `LanguageResource/GetActiveLanguages`；選取語言時優先使用該語言快取，沒有快取才重新載入翻譯，成功才更新 language code。
+5. `useAppApi` 將目前語言放在每個請求的 `X-Language-Code` header；後端找不到翻譯時回退至基礎語言或內建 fallback。
+6. 前端會把包含兩種查找表的版本化翻譯結果寫入 `localStorage.languageTranslations:{languageCode}`；快取只在瀏覽器端使用，翻譯資源維護後若需要立即反映新內容，應清除對應語言快取或執行一次重新載入。
+
+`LanguageContext` 提供兩種查找方式：
+
+- `translate(serialNumber, fallbackText)`：一般 UI、按鈕、標籤與錯誤訊息。
+- `translateByLanguageResourceId(languageResourceId, fallbackText)`：後端動態選單帶回 `LanguageResourceId` 時優先使用。
+
+#### 6.5.3 動態選單與頁面標題
+
+- 登入回應的 `AdminMenus` 包含 `title`、`englishCode`、`languageResourceId` 與權限；登入後轉成 `MenuItem` 保存至 `localStorage.menus`。
+- `Aside` 與 `ActionBar` 先使用 `languageResourceId` 翻譯；沒有 ID 時才以 `englishCode` 對照 `apps/CFP/src/config/menus.ts` 的固定流水號映射。
+- `menus.ts` 的靜態 `menus` 目前是空陣列；新增功能時應在後端 AdminMenu 建立關聯 LanguageResource，不能只依賴中文 label。
+
+#### 6.5.4 後台維護流程
+
+- `/LanguageResource` 載入啟用中的語言與 AdminMenu，透過 `LanguageResource/GetList` 查詢資源。
+- 新增/編輯翻譯資源送出 `adminMenuId`、`status` 與 `translationList`；基礎語言列直接在翻譯清單編輯，後端依 `IsBaseLanguage` 驗證必填。
+- 沒有指定 AdminMenu 時，後端使用 `CM` 作為流水號前綴；有指定時使用 AdminMenu 的 `EnglishCode` 再產生四位數序號。流水號具唯一性。
+- 後端錯誤與 ModelState 訊息也使用 `LanguageResource` 資源代號；新增 `BackendMessageKeys` 時必須同步建立資源與 fallback。
+- `GetActiveLanguages`、`GetTranslations` 雖標記 `IgnoreAuthorize`，實際仍先經 `ApiFilter` 要求 token；不能只看 Attribute 判定為匿名 API。
+
+#### 6.5.5 多語言功能開發檢查清單
+
+1. 新增可見文字時，先在 `languageKeys.ts` 增加穩定代號，再在畫面使用 `translate`。
+2. 新增頁面標題或選單時，確認 ActionBar title、AdminMenu LanguageResourceId/EnglishCode、權限路由與翻譯資源是同一條資料鏈。
+3. 新增語言或資源時，確認基礎語言、所有啟用語言、資源狀態與缺翻譯時的回退文字。
+4. 修改 API 錯誤、驗證或 ModelState 時，保留 `X-Language-Code` 傳遞，不要只在前端覆蓋後端訊息。
+5. `formPost` 會把巢狀陣列展開成 `translationList[0][...]`，修改欄位前要核對 ASP.NET Model Binder。
+6. 至少驗證登入前/後切換語言、動態側欄/頁面標題、基礎語言 fallback、422/一般錯誤與登出後重新登入。
+
+#### 6.5.6 PCR 多語言資料規則
+
+- PCR 名稱不再保存於 `PcrTemplate.Item` 資料庫欄位；資料表使用 `ItemLRID` 指向 `LanguageResource`。
+- API / 表單上的 `Item` 仍代表使用者輸入或依目前語言解析後的顯示文字，不代表資料表欄位。
+- 新增或更新 PCR 時，`PcrTemplateService.ModelSave` 會建立或取得 PCR 專用資源，以 `Language.IsBaseLanguage = 1` 找出基礎語言，寫入基礎翻譯後將資源 Id 寫入 `ItemLRID`。
+- `LanguageResource.SourceText` 已移除；新的 PCR 或其他多語言欄位不可重新依賴 SourceText。
+- 編輯既有 PCR 時，後端會驗證 `ItemLRID` 資源屬於 PCR 選單；資源不存在或關聯錯誤時應回傳錯誤。
+- 列表與明細優先使用 `X-Language-Code` 指定語言，找不到有效文字時 fallback 到啟用中的基礎語言。
+- 子項目各自擁有獨立的 `ItemLRID`；固定欄位標籤則以 `languageKeys.ts` 加代號並透過 Migration 建立，例如「細項」使用 `PC0014`。
 
 ## 7. 後端規格
 
@@ -276,6 +389,7 @@ StandardController<DBModel, ViewModel, Search, List, ListData>
 | `MaterialNotifyController` | `MaterialNotifyService` / `MaterialNotify` | `AddNotify`、`test` |
 | `StatusQueryController` | `StatusQueryService` / `MaterialNotify` | 無，自用標準 CRUD |
 | `NotifyStatusReportController` | `NotifyStatusReportService` / `MaterialNotify` | 無，自用標準 CRUD |
+| `PcrTemplateController` | `PcrTemplateService` / `PcrTemplate` | 標準 CRUD；以 `Category` 篩選父項目，編輯時一併保存 `ChildList` |
 
 ### 7.4 驗證、授權與錯誤
 
@@ -293,6 +407,26 @@ StandardController<DBModel, ViewModel, Search, List, ListData>
 - `Insert` / `Update` 自動填入 `CreateDate`、`CreateUserId`、`UpdateDate`、`UpdateUserId`。
 - `DapperRepository` 以目前 request scope 的 connection/transaction 執行 SQL；`BaseService.TransactionFunc` 是需要多步寫入時的交易入口。
 - 多對多資料統一透過 `ManyToManyService` 寫入 `ManyToMany`，不要在頁面自行推導關聯表 SQL。
+
+### 7.6 Migration 與實際資料庫更新
+
+- 後端 Migration 位於相鄰 Repository 的 `HOP-CFP-Backend/Migrations`，目前開發資料庫是 SQL Server `CFPDev`；EF Core 只維護 schema 與 Migration，不代表每次 build 都會自動套用資料庫變更。
+- `dotnet-ef` 的 tool manifest 位於後端專案資料夾 `HOP-CFP-Backend/dotnet-tools.json`。執行 EF 指令前應先切到包含 manifest 的資料夾，再執行 `dotnet tool restore`。
+- 常用更新流程：
+
+  ```powershell
+  Set-Location C:\Users\s7514\source\repos\HOP-CFP-Backend\HOP-CFP-Backend
+  dotnet tool restore
+  dotnet build HOP-CFP-Backend.csproj --no-restore
+  dotnet ef database update --no-build
+  dotnet ef migrations list --no-build
+  ```
+
+- 新 Migration 的識別名稱必須排序在資料庫目前已套用的最後一筆之後。若資料庫已存在較晚日期的 Migration，卻新增一筆較早時間的檔名，EF 可能將資料庫視為已在較新版本，導致新 Migration 不會被套用；本次實際已確認此風險。
+- 手寫只含 `migrationBuilder.Sql(...)` 的 Migration，除了 `Up` / `Down`，仍要提供正確的 `[DbContext]`、`[Migration("migration-id")]` 與 `BuildTargetModel`，否則 `dotnet ef migrations list` 可能不會辨識該 Migration。
+- Migration 的 raw SQL 必須同時考慮既有資料、唯一流水號、基礎語言不存在、語言不存在與 rollback；新增固定翻譯資源時應以 `IF NOT EXISTS` 避免重複插入。
+- 後端正在執行時，`HOP-CFP-Backend.exe` 可能鎖住 build 輸出；建置失敗時先找出並停止明確的後端 PID，不能使用名稱式或廣泛終止程序。若只需編譯驗證，也可使用 `/p:UseAppHost=false`，但仍要注意執行中的 DLL 是否已載入新版本。
+- Migration 套用完成後仍需重新啟動後端，並以 Swagger 或實際 API 請求確認新的 SQL、欄位與資料已可被應用程式使用。
 
 ## 8. 前後端 API 契約
 
@@ -315,6 +449,8 @@ StandardController<DBModel, ViewModel, Search, List, ListData>
 | `SELLER_GET_MODEL/EDIT` | `Material/GetSellerCompareModel`, `Material/EditSellerCompareModel`（須以後端實際 Controller 再核對） |
 | `SELLER_IMPORT/IMPORT_TEMPLATE` | `SellerCompare/Import`, `SellerCompare/DownloadImportTemplate` |
 | `MATERIAL_NOTIFY_GET_LIST/ADD` | `MaterialNotify/GetList`, `MaterialNotify/AddNotify` |
+| `PCR_TEMPLATE_CREATE/EDIT/GET_MODEL/GET_LIST` | `PcrTemplate/Create`, `Edit`, `GetModel`, `GetList` |
+| `PCR_TEMPLATE_MST` | `PcrTemplate` 前綴，刪除使用 `/Delete`；Create/Edit 會處理 `ChildList` |
 
 目前已確認前端 Buyer/Seller 編輯頁的部分呼叫使用 `Material/*Compare*` 字串，而後端現存比對 Controller 是 `BuyerCompareController` / `SellerCompareController`。這是整合時的高風險交界，不能只依 `API_MAP` 名稱假設 endpoint 一定存在。
 
@@ -359,6 +495,27 @@ Login page
 
 忘記密碼流程：`ForgotPassword` 對不存在 Email 也回成功訊息以避免洩漏帳號；存在時在 cache 保存 30 分鐘 reset token 並由 `IMailSender` 寄出。`ResetPassword` 驗證 token 後更新 SHA256 密碼、更新 `LastPasswordChangeDate`、移除 reset token。
 
+### 8.4 PCR 模板 API 契約
+
+PCR 使用 Standard CRUD API，主要入口如下：
+
+| 方法 | Action | 用途 |
+|---|---|---|
+| `POST` | `PcrTemplate/GetList` | 依 `Category`、`Item`、`X-Language-Code` 查詢父項目列表 |
+| `POST` | `PcrTemplate/GetModel` | 取得父項目與 `ChildList` |
+| `POST` | `PcrTemplate/GetNewModel` | 取得新增預設資料 |
+| `POST` | `PcrTemplate/Create` | 新增父項目，並同步新增子項目 |
+| `POST` | `PcrTemplate/Edit` | 更新父項目，並同步新增、更新、軟刪除子項目 |
+| `POST` | `PcrTemplate/Delete` | 遞迴刪除父項目與子項目 |
+
+- `GetList` 的 `Category` 是 enum 整數，`Item` 是父項目搜尋文字；查詢語言由 `X-Language-Code` header 傳遞。
+- 列表 DTO 的 `Item` 與 `SubItems` 都是解析後的顯示文字，不是 `PcrTemplate` 的資料庫欄位；前端 response 會以 camelCase 使用 `item`、`subItems`。
+- `SubItems` 由後端一次 SQL 聚合子項目名稱，依 `Sequence`、`Id` 排序並使用 `、` 分隔，避免前端對每一列再發送子項目查詢。
+- `GetList` 由 `GetBaseWhere()` 強制加上 `main.Status != -1 AND main.ParentId IS NULL`，因此子項目不會單獨出現在父列表。
+- Create/Edit 的 `ChildList` 是巢狀 Model；前端 `formPost` 展開欄位時必須與 ASP.NET Model Binder 的集合命名一致。
+- 後端會重新把每個子項目的 `Category` 設成父項目分類，不信任前端送來的子項目分類。
+- 父項目與子項目都會做空白與同分類重複檢查；名稱比較使用基礎語言翻譯內容。
+
 ## 9. 資料模型與業務規則
 
 ### 9.1 基底欄位與狀態
@@ -380,6 +537,7 @@ Login page
 | 規格 | `MaterialSpec` | `MaterialCompareId`、`MaterialId`、`SpecNumber`、`Name` |
 | 比對 | `MaterialCompare` | `MaterialId`（賣方）與 `BuyerMaterialId`（買方） |
 | 通知 | `MaterialNotify` | `MaterialId`、`IsSend`、`IsUpdate` |
+| PCR 模板 | `PcrTemplate` | `Category`、`ParentId`、`ItemLRID`；父子自我關聯，名稱由 LanguageResourceTranslation 保存 |
 | 稽核 | `Log_ManagerLogin`、`Log_ManagerLoginFail`、`Log_ManagerWatch`、`Log_BackendPageRequest`、`DataChange` | 登入、失敗、瀏覽、請求與異動紀錄 |
 | 設定 | `SysConfig`、`KeyValueSetting` | 系統設定與可依類型/群組查詢的 key-value |
 
@@ -413,6 +571,19 @@ Login page
 - SellerCompare 匯入範本欄位：`料號`、`對照供應商統編`、`對照料號`；`ignoreErrors=true` 時跳過錯誤繼續，結果回傳總數、成功數、失敗數、錯誤清單。
 - `MaterialNotify.AddNotify` 對每個 Material 建立通知並嘗試寄信給 Supplier.Email；寄信與資料寫入是並行工作，修改時要注意交易與例外處理。
 - StatusQuery 依 `IsSend`、`IsUpdate`、更新日期篩選；NotifyStatusReport 依建立日期與供應商彙總寄送/更新數量。
+
+#### 9.3.1 PCR 模板父子資料與列表規則
+
+- `EPcrTemplateCategory` 固定值為 `0=原料`、`1=製程`、`2=運輸`、`3=廢棄`；父項目與子項目必須屬於同一分類。
+- `PcrTemplate.ParentId` 是自我關聯：`NULL` 代表父項目，有值代表子項目。`DBContext` 使用 Restrict delete，刪除流程由 `PcrTemplateService` 明確遞迴處理。
+- PCR 列表基底條件為 `Status != -1 AND ParentId IS NULL`，因此子項目不會單獨顯示；父項目編輯頁才載入 `ChildList`。
+- 建立或編輯父項目時，`ChildList` 支援新增、修改與移除。既有子項目依 Id 更新，新 Id 新增，未保留的子項目軟刪除。
+- 移除子項目時，同步刪除其 `LanguageResource`；刪除父項目時先遞迴處理所有有效子項目，再刪除父項目資源。
+- 後端會將子項目分類強制設為父項目分類；不可依賴前端送來的 child category。
+- 父項目與子項目會先 trim，空白值由 Controller 驗證拒絕；同一分類不可重複相同名稱，名稱比對以基礎語言翻譯內容為準。
+- 列表 `SubItems` 由後端一次聚合有效子項目名稱，依 `Sequence`、`Id` 排序，以 `、` 分隔；沒有子項目時回傳空值，前端顯示空白。
+- `SubItems` 的文字解析沿用目前語言 → 基礎語言 fallback；不可在前端針對每一個父項目再查詢子項目，避免 N+1 請求與列表載入延遲。
+- PCR 功能在目前 CFP 權限資料中只提供系統管理員使用；前端仍依頁面 `Create`、`Edit`、`Delete` 權限控制操作圖示，後端授權不可只靠隱藏按鈕。
 
 ### 9.4 ManyToMany 關聯設計與使用方式
 
@@ -591,6 +762,26 @@ await _lazy.ManyToManyService.Value.SaveById(
 
 同時確認範本檔欄位、Controller 的 `IFormFile` Binding、`ImportFileUtility` 解析、`ignoreErrors` 行為、資料權限篩選與回傳錯誤格式；至少要測試空檔、缺欄、必填缺漏、找不到關聯資料、重複資料與部分成功。
 
+### 10.5 新增或修改多語言
+
+1. 先判斷文字屬於前端固定 UI、動態 AdminMenu、LanguageResource 資源，還是後端 `BackendMessageKeys` 訊息，選擇正確的資源入口。
+2. 前端固定 UI：更新 `apps/CFP/src/config/languageKeys.ts`，在畫面使用 `translate`，並建立對應的 `LanguageResource` 與各語言翻譯。
+3. 動態選單：確認 AdminMenu 的 `LanguageResourceId` 或 `EnglishCode` 與 `menus.ts` 映射；同時驗證登入回應、`MenuContext`、`Aside`、`ActionBar`。
+4. 後端訊息：確認 `BackendMessageKeys`、`MessageLocalizationService`、`X-Language-Code` header 與資料庫資源/fallback。
+5. 多語言名稱欄位使用 `{Name}LRID`；新增資料時先建立基礎語言翻譯，不再把相同文字同時寫入 `SourceText`。
+6. 依 6.5.5 的清單測試切換、回退、錯誤訊息與重新登入；完成後同步更新本文件的 API、資料流或限制說明。
+
+### 10.6 修改 PCR 模板功能
+
+1. 先確認修改的是父項目、子項目、列表顯示、分類頁籤、翻譯資源或權限，不要直接修改共用套件或資料表外欄位。
+2. 前端先追 `PcrTemplate/page.tsx`、`Create/page.tsx`、`Edit/page.tsx`、`Content.tsx` 與 `src/types/pcrTemplate.ts`。
+3. 後端依序確認 `PcrTemplateController`、`PcrTemplateService`、`PcrTemplateModel`、`PcrTemplate`、`DBContext`；列表查詢要同時檢查 `GetBaseWhere()`、`GetListQueryString()` 與 `GetListQueryString_MainSQL()`。
+4. 修改父子資料時保留 `ParentId IS NULL` 的父列表規則、子項目分類繼承、差異同步、軟刪除與多語言資源清理。
+5. 修改列表欄位時，先確認 DTO 欄位名稱，再確認 SQL alias、後端 JSON 命名策略、前端 TypeScript 型別與 `CommonTable` column key 四者一致。
+6. 修改列表查詢時不得因子項目 JOIN 產生父項目重複列；需要顯示子項目時應使用一次聚合或明確的後端查詢。
+7. 修改完成後至少驗證四個分類、分類記憶、新增預設分類、搜尋、空白/重複驗證、父子新增/編輯/刪除、語言 fallback、權限與列表 loading 時序。
+8. 若新增固定 UI 文字，建立對應 LanguageResource Migration；Migration 套用後重啟後端，使用登入帳號在瀏覽器確認畫面與實際 API 回應。
+
 ## 11. 已確認的限制與注意事項
 
 - `apps/CFP/src/config/menus.ts` 的靜態 `menus` 目前是空陣列；實際側欄依登入回傳的 `AdminMenus` 動態建立，因此未登入或 localStorage 遺失時主頁可能沒有可用選單。
@@ -601,6 +792,13 @@ await _lazy.ManyToManyService.Value.SaveById(
 - `GetManagerSession`、Supplier/MaterialNotify 的 `test` 等端點存在但不一定被前端使用；`test` 端點涉及測試郵件或測試回應，修改/部署前要重新確認是否應保留。
 - 前端目前以 localStorage 保存 token；這是既有架構，修改認證時需評估 XSS、跨來源、CORS、Secure cookie 與登出失效策略的整體影響。
 - 後端連線字串使用外部 SQL Server；未啟動或無法連線資料庫時，前端 build 成功不代表登入、列表、匯入可用。
+- 後端 token 存在 `IMemoryCache`；後端程序重啟後原 token 可能失效，瀏覽器會收到 401 並回到登入頁，整合測試不能假設重啟前的登入狀態仍有效。
+- 本次工作區未找到獨立自動化測試專案或常見 `*.test.*` / `*.spec.*` 測試檔；目前主要驗證方式是 Problems、lint、build、Migration、Swagger/API 請求與瀏覽器操作。
+- 前端 lint 目前有既有 warnings；驗證時應區分「本次新增 error」與「既有 warning」，不能為了清除警告而擴大修改範圍。
+- 後端正在執行時可能鎖住 `HOP-CFP-Backend.exe`，導致一般 build 失敗或出現檔案鎖定 warning；應只處理明確的後端程序，不可使用廣泛程序終止指令。
+- `CommonTable` 的列表是否真的只請求一次、資料與總筆數是否同步完成，必須用瀏覽器 Network/console 或 API 請求觀察，不能只看畫面最後結果。
+- 多語言切換時要同時確認前端標籤、動態選單、API `X-Language-Code`、資料庫翻譯與基礎語言 fallback；只看到某一個畫面變更，不代表所有層都已切換。
+- PCR 的列表「細項」驗證曾以瀏覽器暫時新增第二個子項目確認 `CPU、GPU` 聚合，再清除測試資料；測試資料寫入外部 `CFPDev` 前必須記錄並清理。
 
 ## 12. 維護規則
 
@@ -609,5 +807,9 @@ await _lazy.ManyToManyService.Value.SaveById(
 - 前端 route、Page、Context、Hook、API 常數、環境變數與主要共用元件。
 - 後端 Controller / Action、Service、ViewModel、Library Model、Filter、Utility、Migration。
 - 認證 token、權限/選單結構、列表分頁契約、匯入欄位或資料篩選規則。
+- PCR 的 `EPcrTemplateCategory`、`ParentId`、`ItemLRID`、`ChildList`、列表 `SubItems`、分類記憶鍵與 `PC0014` 翻譯資源。
+- `CommonTable` 的查詢 effect、request sequence、loading 清除舊資料與 `search/reload` 行為；這些屬於共用元件的執行契約，變更時要重新驗證所有列表頁。
+- 每次 Migration 套用後的實際資料庫版本、Migration 排序與 rollback 行為；不能只更新檔案而不確認 `dotnet ef migrations list` 與資料庫狀態。
+- 每次功能完成後保留「程式檢查」「API 驗證」「瀏覽器驗證」「資料清理」的紀錄，並區分已確認結果與尚待驗證項目。
 
 更新索引時保留「實際已確認」與「尚待驗證」的區分；若發現 API_MAP、Route、型別或既有索引矛盾，先以可執行程式碼與實際 Network/API 結果為準，再修正文件與必要程式碼。

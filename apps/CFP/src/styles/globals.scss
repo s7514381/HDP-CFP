@@ -192,6 +192,14 @@ $badgeInfoBg: #429898ad;
   animation: cfp-language-modal-backdrop-fade-out .18s ease-in forwards;
 }
 
+.modal:has(.pcr-template-modal-title) {
+  z-index: 10001;
+}
+
+.modal:has(.pcr-template-modal-title) + .modal-backdrop {
+  z-index: 10000;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .modal:has(.cfp-language-selector-title) .modal-dialog,
   .modal:has(.cfp-language-selector-title) + .modal-backdrop {
