@@ -16,6 +16,7 @@
       - [6.5.5 多語言功能開發檢查清單](#655-多語言功能開發檢查清單)
       - [6.5.6 PCR 多語言資料規則](#656-pcr-多語言資料規則)
 7. [後端規格](#7-後端規格)
+   - [7.2.1 Entity Model 設定責任](#721-entity-model-設定責任)
    - [7.6 Migration 與實際資料庫更新](#76-migration-與實際資料庫更新)
 8. [前後端 API 契約](#8-前後端-api-契約)
    - [8.4 PCR 模板 API 契約](#84-pcr-模板-api-契約)
@@ -40,10 +41,11 @@
 ### 1.1 先讀哪裡
 
 1. 先讀本文件，依「快速定位表」找到責任層與入口檔。
-2. 前端問題先看 `apps/CFP/src/app` 的頁面，再追 `useAppApi`、`API_MAP` 與對應後端 Controller。
-3. 後端問題先看 `Controllers`，再追對應 `Services`、`ViewModels` 與 `HOP-CFP-Backend.Library/Models`。
-4. 若涉及資料表、欄位或 Migration，讀 `HOP-CFP-Backend.Library/Models/DBContext.cs`、對應 Model 及 `HOP-CFP-Backend/Migrations`。
-5. 後端專案已有較細的索引：[HOP-CFP-Backend/BACKEND_PROJECT_INDEX.md](../HOP-CFP-Backend/HOP-CFP-Backend/BACKEND_PROJECT_INDEX.md)；本文件負責補足前後端整合視角。
+2. 依目前任務先讀必要的章節與入口檔即可，不需要通讀整份文件；只有在資料流或責任邊界仍不清楚時，才擴大閱讀範圍。
+3. 前端問題先看 `apps/CFP/src/app` 的頁面，再追 `useAppApi`、`API_MAP` 與對應後端 Controller。
+4. 後端問題先看 `Controllers`，再追對應 `Services`、`ViewModels` 與 `HOP-CFP-Backend.Library/Models`。
+5. 若涉及資料表、欄位或 Migration，讀 `HOP-CFP-Backend.Library/Models/DBContext.cs`、對應 Model 及 `HOP-CFP-Backend/Migrations`。
+6. 後端專案已有較細的索引：[HOP-CFP-Backend/BACKEND_PROJECT_INDEX.md](../HOP-CFP-Backend/HOP-CFP-Backend/BACKEND_PROJECT_INDEX.md)；本文件負責補足前後端整合視角。
 
 ### 1.2 文件不取代的內容
 
@@ -87,6 +89,10 @@ HOP-CFP/
 
 HOP-CFP-Backend/
 ├─ HOP-CFP-Backend.Library/          Models、DBContext、Dapper Repository、Attributes
+│  └─ Models/
+│     ├─ DBContext.cs                全域 EF 設定、非 IdModelBase Entity 設定與共用掃描
+│     ├─ ModelBase.cs                IdModelBase 與 OnModelCreating 擴充入口
+│     └─ Carbon/、Manager/、System/  各 Entity 的 OnModelCreating 與資料欄位定義
 └─ HOP-CFP-Backend/                  Controllers、Services、ViewModels、Filters、Migrations
 ```
 
@@ -107,7 +113,10 @@ HOP-CFP-Backend/
 | 賣方比對匯入 | `src/app/(main)/SellerCompare/page.tsx` | `SellerCompareController.Import` → `SellerCompareService.ImportFromCsv` |
 | 通知建立/狀態 | `MaterialNotify/page.tsx`、`StatusQuery/page.tsx`、`NotifyStatusReport/page.tsx` | 三個對應 Controller / Service |
 | PCR 模板與父子項目 | `src/app/(main)/PcrTemplate/page.tsx`、`Content.tsx` | `PcrTemplateController` → `PcrTemplateService` → `PcrTemplate` / `LanguageResource` |
+| 產品次類別維護與 PCR 模板 | `src/app/(main)/ProductSubcategory/page.tsx`、`PcrPattern/*` | `ProductSubcategoryController` → `ProductSubcategoryService` / `PcrPatternService`；PCR 模板依目前帳號與 `ProductSubcategoryId` 隔離 |
+| PCR 模板資料維護（Legacy） | `src/app/(main)/PcrPattern/page.tsx`、`Content.tsx` | `PcrPatternController` → `PcrPatternService` → `PcrPattern`；欄位與父子流程對齊 `PcrTemplate`，但仍停用選單與權限 |
 | 資料表欄位與 Migration | `HOP-CFP-Backend.Library/Models/*`、`DBContext.cs` | `HOP-CFP-Backend/Migrations/*` |
+| Entity 關聯、索引與 EF 設定 | 對應 Model 的 `OnModelCreating` | `DBContext.cs` 的全域規則與 `IdModelBase` 掃描 |
 
 ## 4. 啟動、建置與環境
 
@@ -233,6 +242,9 @@ Route Group `(auth)` 與 `(main)` 不會出現在 URL。根 Layout 以 `ApiProvi
 | `/StatusQuery` | `src/app/(main)/StatusQuery/page.tsx` | 通知狀態明細查詢 |
 | `/NotifyStatusReport` | `src/app/(main)/NotifyStatusReport/page.tsx` | 通知狀態彙總報表 |
 | `/PcrTemplate`、`/PcrTemplate/Create`、`/PcrTemplate/Edit/?id={id}` | `src/app/(main)/PcrTemplate` | PCR 模板範本、分類頁籤與父子項目維護 |
+| `/ProductSubcategory`、`/ProductSubcategory/Create`、`/ProductSubcategory/Edit/?id={id}` | `src/app/(main)/ProductSubcategory` | 產品次類別維護；提供產品次類別搜尋、新增、編輯、刪除與 PCR 模板查看入口 |
+| `/ProductSubcategory/PcrPattern/?id={productSubcategoryId}`、`/Create`、`/Edit` | `src/app/(main)/ProductSubcategory/PcrPattern` | 產品次類別專屬 PCR 模板；首次查看依目前帳號複製 `PcrTemplate` 父子資料，並依 `X-Language-Code` 優先使用目前語系文字 |
+| `/PcrPattern`、`/PcrPattern/Create`、`/PcrPattern/Edit/?id={id}` | `src/app/(main)/PcrPattern` | Legacy PCR模板資料維護；使用 `ParentId`、`Category`、`Item` 與子項目，仍不掛載實際選單與權限 |
 
 #### 6.1.1 PCR 模板頁面實作規則
 
@@ -245,6 +257,14 @@ Route Group `(auth)` 與 `(main)` 不會出現在 URL。根 Layout 以 `ApiProvi
 - PCR 新增、編輯採 Supplier 風格的獨立 `/Create`、`/Edit` 頁面，不在列表中開啟大型 modal。
 - `Content.tsx` 同時呈現父項目與子項目輸入列；子項目可新增、修改、移除，父子資料一併提交。
 - 列表項目搜尋只針對父項目的多語言文字；子項目名稱是列表顯示欄位，不會因為子項目 JOIN 而變成獨立列表列。
+
+#### 6.1.2 產品次類別維護
+
+- `/ProductSubcategory/` 是獨立於 `/PcrTemplate/` 的功能，掛在「碳排資料維護」下；列表欄位為產品次類別、制定者、適用範圍、CCC code，另提供「PCR模板／查看」按鈕。
+- 產品次類別直接使用 `ProductSubcategory.Name` 儲存名稱，不建立多語言資料關聯；列表與搜尋直接查詢 `Name`。
+- `AdminFunction` 的 `ProductSubcategory/Index` 根功能直接提供查詢，不另建立查詢子功能；新增、修改、刪除為子功能，Migration 將選單與功能授予系統管理員角色。
+- `PcrPattern` 為獨立的 Legacy PCR 模板資料表，欄位與父子維護流程對齊 `PcrTemplate`；產品次類別入口先呼叫 `EnsurePcrPattern` 完成首次初始化，再由 `GetPcrPattern` 純查詢列表，並以帳號與 `ProductSubcategoryId` 隔離，原本的 PcrPattern 選單入口仍停用。
+- `EnsurePcrPattern` 初始化時由 request 的 `X-Language-Code` 選取 `PcrTemplate` 翻譯；指定語系沒有有效文字時 fallback 到基礎語言。初始化只在該帳號與產品次類別尚無 `PcrPattern` 時執行，不會覆蓋既有資料。
 
 ### 6.2 前端狀態與權限
 
@@ -329,9 +349,9 @@ Route Group `(auth)` 與 `(main)` 不會出現在 URL。根 Layout 以 `ApiProvi
 
 - PCR 名稱不再保存於 `PcrTemplate.Item` 資料庫欄位；資料表使用 `ItemLRID` 指向 `LanguageResource`。
 - API / 表單上的 `Item` 仍代表使用者輸入或依目前語言解析後的顯示文字，不代表資料表欄位。
-- 新增或更新 PCR 時，`PcrTemplateService.ModelSave` 會建立或取得 PCR 專用資源，以 `Language.IsBaseLanguage = 1` 找出基礎語言，寫入基礎翻譯後將資源 Id 寫入 `ItemLRID`。
+- 新增或更新 PCR 時，`PcrTemplateService.ModelSave` 會建立或取得資源，以 `Language.IsBaseLanguage = 1` 找出基礎語言，寫入基礎翻譯後將資源 Id 寫入 `ItemLRID`；不再以固定 PCR 選單 GUID 綁定或驗證 `AdminMenuId`。
 - `LanguageResource.SourceText` 已移除；新的 PCR 或其他多語言欄位不可重新依賴 SourceText。
-- 編輯既有 PCR 時，後端會驗證 `ItemLRID` 資源屬於 PCR 選單；資源不存在或關聯錯誤時應回傳錯誤。
+- 編輯既有 PCR 時，後端仍會驗證 `ItemLRID` 資源存在；既有資源的 `AdminMenuId` 保留，不再要求其必須屬於固定 PCR 選單。
 - 列表與明細優先使用 `X-Language-Code` 指定語言，找不到有效文字時 fallback 到啟用中的基礎語言。
 - 子項目各自擁有獨立的 `ItemLRID`；固定欄位標籤則以 `languageKeys.ts` 加代號並透過 Migration 建立，例如「細項」使用 `PC0014`。
 
@@ -373,6 +393,13 @@ StandardController<DBModel, ViewModel, Search, List, ListData>
 
 標準 URL 例：`POST https://localhost:7007/Supplier/GetList`。後端 Controller 本身沒有統一 `[Route("api/[controller]/[action]")]`，所以是否出現 `/api` 必須以部署反向代理與環境設定實際確認。
 
+### 7.2.1 Entity Model 設定責任
+
+- Entity 專屬的關聯、索引與 DeleteBehavior 必須放在該 Model 的 `OnModelCreating(ModelBuilder modelBuilder)`；例如 `PcrPattern` 負責 `ParentId` 與 `ProductSubcategoryId`，`PcrTemplate` 負責 `ItemLRID` 與 `ParentId`。
+- `DBContext.OnModelCreating` 只保留全域模型規則、反射掃描共用設定，以及不符合 `IdModelBase` Model 掃描條件的設定，例如 `Log_ManagerLogin.HasNoKey()`。
+- `DBContext` 會對 `IdModelBase` Entity 建立實例並呼叫其 `OnModelCreating`；新增 Entity 專屬 EF 設定前，先確認該 Model 是否繼承 `IdModelBase`。
+- 移動設定時必須保持原本的 ForeignKey、關聯方向、`WithMany()` 與 `DeleteBehavior`，並執行 Backend build 及 `dotnet ef migrations has-pending-model-changes`，確認沒有非預期的 schema 差異。
+
 ### 7.3 Controller 與自訂 Action
 
 | Controller | Service / Model | 自訂 Action |
@@ -390,6 +417,8 @@ StandardController<DBModel, ViewModel, Search, List, ListData>
 | `StatusQueryController` | `StatusQueryService` / `MaterialNotify` | 無，自用標準 CRUD |
 | `NotifyStatusReportController` | `NotifyStatusReportService` / `MaterialNotify` | 無，自用標準 CRUD |
 | `PcrTemplateController` | `PcrTemplateService` / `PcrTemplate` | 標準 CRUD；以 `Category` 篩選父項目，編輯時一併保存 `ChildList` |
+| `ProductSubcategoryController` | `ProductSubcategoryService` / `PcrPatternService` | 產品次類別 CRUD；以 `Name` 篩選並提供 PCR 模板初始化、查詢與父子 CRUD |
+| `PcrPatternController` | `PcrPatternService` / `PcrPattern` | Legacy PCR模板父子 CRUD；欄位為 `ParentId`、`Category`、`Item`，已停用選單與權限 |
 
 ### 7.4 驗證、授權與錯誤
 
@@ -406,6 +435,7 @@ StandardController<DBModel, ViewModel, Search, List, ListData>
 - `_ModelService` 統一取得 Model、SetModel、Insert、Update、Copy、Delete；`Delete` 預設是 `Status=-1` 軟刪除，並刪除 ManyToMany 關聯。
 - `Insert` / `Update` 自動填入 `CreateDate`、`CreateUserId`、`UpdateDate`、`UpdateUserId`。
 - `DapperRepository` 以目前 request scope 的 connection/transaction 執行 SQL；`BaseService.TransactionFunc` 是需要多步寫入時的交易入口。
+- 多語言列表與 PCR 初始化 SQL 的「指定語言 + 基礎語言 fallback」JOIN 由 `_StandardService.GetLanguageTranslationJoinSql` 統一產生；PcrTemplate 與 PcrPattern 初始化應共用此方法，ProductSubcategory 本身不使用多語言 JOIN。
 - 多對多資料統一透過 `ManyToManyService` 寫入 `ManyToMany`，不要在頁面自行推導關聯表 SQL。
 
 ### 7.6 Migration 與實際資料庫更新
@@ -451,6 +481,11 @@ StandardController<DBModel, ViewModel, Search, List, ListData>
 | `MATERIAL_NOTIFY_GET_LIST/ADD` | `MaterialNotify/GetList`, `MaterialNotify/AddNotify` |
 | `PCR_TEMPLATE_CREATE/EDIT/GET_MODEL/GET_LIST` | `PcrTemplate/Create`, `Edit`, `GetModel`, `GetList` |
 | `PCR_TEMPLATE_MST` | `PcrTemplate` 前綴，刪除使用 `/Delete`；Create/Edit 會處理 `ChildList` |
+| `PRODUCT_SUBCATEGORY_CREATE/EDIT/GET_MODEL/GET_LIST` | `ProductSubcategory/Create`, `Edit`, `GetModel`, `GetList` |
+| `PRODUCT_SUBCATEGORY_MST` | `ProductSubcategory` 前綴，刪除使用 `/Delete` |
+| `PRODUCT_SUBCATEGORY_*_PCR_PATTERN` | `ProductSubcategory/EnsurePcrPattern`、`GetPcrPattern*`、`CreatePcrPattern`、`EditPcrPattern`、`DeletePcrPattern` |
+| `PCR_PATTERN_CREATE/EDIT/GET_MODEL/GET_LIST` | Legacy `PcrPattern/Create`, `Edit`, `GetModel`, `GetList` |
+| `PCR_PATTERN_MST` | Legacy `PcrPattern` 前綴，刪除使用 `/Delete` |
 
 目前已確認前端 Buyer/Seller 編輯頁的部分呼叫使用 `Material/*Compare*` 字串，而後端現存比對 Controller 是 `BuyerCompareController` / `SellerCompareController`。這是整合時的高風險交界，不能只依 `API_MAP` 名稱假設 endpoint 一定存在。
 
@@ -538,6 +573,8 @@ PCR 使用 Standard CRUD API，主要入口如下：
 | 比對 | `MaterialCompare` | `MaterialId`（賣方）與 `BuyerMaterialId`（買方） |
 | 通知 | `MaterialNotify` | `MaterialId`、`IsSend`、`IsUpdate` |
 | PCR 模板 | `PcrTemplate` | `Category`、`ParentId`、`ItemLRID`；父子自我關聯，名稱由 LanguageResourceTranslation 保存 |
+| 產品次類別 | `ProductSubcategory` | `Name`、`Developer`、`ApplicableScope`、`CccCode`；名稱直接保存於 `Name` |
+| PCR模板資料（Legacy） | `PcrPattern` | `ParentId`、`Category`、`Item`；欄位與父子流程對齊 `PcrTemplate`，但名稱直接保存於 `Item` |
 | 稽核 | `Log_ManagerLogin`、`Log_ManagerLoginFail`、`Log_ManagerWatch`、`Log_BackendPageRequest`、`DataChange` | 登入、失敗、瀏覽、請求與異動紀錄 |
 | 設定 | `SysConfig`、`KeyValueSetting` | 系統設定與可依類型/群組查詢的 key-value |
 

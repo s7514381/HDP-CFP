@@ -22,9 +22,8 @@ import { appStorage, useStoredValue } from '@/lib/appStorage';
 import {
   isPcrTemplateCategory,
   PcrTemplateCategory,
-  PcrTemplateRow,
-  PCR_TEMPLATE_CATEGORY_STORAGE_KEY,
 } from '@/types/pcrTemplate';
+import { PcrPatternRow, PCR_PATTERN_CATEGORY_STORAGE_KEY } from '@/types/pcrPattern';
 
 const CATEGORY_OPTIONS = [
   { value: PcrTemplateCategory.Material, label: LANGUAGE_KEYS.pcrTemplate.material, fallback: '原料' },
@@ -33,7 +32,7 @@ const CATEGORY_OPTIONS = [
   { value: PcrTemplateCategory.Waste, label: LANGUAGE_KEYS.pcrTemplate.waste, fallback: '廢棄' },
 ];
 
-export default function PcrTemplatePage() {
+export default function PcrPatternPage() {
   const router = useRouter();
   const { formPost } = useAppApi();
   const { languageCode, translate } = useLanguage();
@@ -41,10 +40,10 @@ export default function PcrTemplatePage() {
   const { success, danger } = useToast();
   const { confirm } = useConfirm();
   const { Row, Col } = Grid;
-  const tableRef = React.useRef<CommonTableHandle<PcrTemplateRow>>(null);
+  const tableRef = React.useRef<CommonTableHandle<PcrPatternRow>>(null);
   const previousLanguageCode = React.useRef<string | null>(null);
   const previousStoredCategory = React.useRef<PcrTemplateCategory | null | undefined>(undefined);
-  const storedCategory = useStoredValue<PcrTemplateCategory | null>(PCR_TEMPLATE_CATEGORY_STORAGE_KEY, null);
+  const storedCategory = useStoredValue<PcrTemplateCategory | null>(PCR_PATTERN_CATEGORY_STORAGE_KEY, null);
   const [categoryReady, setCategoryReady] = useState(false);
   const category = !categoryReady
     ? null
@@ -93,32 +92,28 @@ export default function PcrTemplatePage() {
   };
 
   const selectCategory = (value: PcrTemplateCategory) => {
-    appStorage.set(PCR_TEMPLATE_CATEGORY_STORAGE_KEY, value);
+    appStorage.set(PCR_PATTERN_CATEGORY_STORAGE_KEY, value);
   };
 
   const handleClear = () => {
-    appStorage.set(PCR_TEMPLATE_CATEGORY_STORAGE_KEY, PcrTemplateCategory.Material);
+    appStorage.set(PCR_PATTERN_CATEGORY_STORAGE_KEY, PcrTemplateCategory.Material);
     setSearchItem('');
     tableRef.current?.search({ Category: PcrTemplateCategory.Material });
   };
 
-  const handleAdd = () => {
-    router.push(`/PcrTemplate/Create?category=${effectiveCategory}`);
-  };
-
   const handleDelete = async (id: string | number) => {
-    if (!await confirm(translate(LANGUAGE_KEYS.pcrTemplate.deleteConfirm, '確定要刪除此項目嗎？'))) return;
+    if (!await confirm(translate(LANGUAGE_KEYS.pcrPattern.deleteConfirm, '確定要刪除此項目嗎？'))) return;
 
-    const result = await formPost(`${API_MAP.PCR_TEMPLATE_MST}/Delete`, { id });
+    const result = await formPost(`${API_MAP.PCR_PATTERN_MST}/Delete`, { id });
     if (result.success) {
-      success({ message: <span>{translate(LANGUAGE_KEYS.common.deleteSuccess, '刪除成功！')}</span> });
+      success({ message: <span>{translate(LANGUAGE_KEYS.pcrPattern.deleted, '刪除成功！')}</span> });
       tableRef.current?.reload();
     } else {
       danger({ message: <span>{result.message || translate(LANGUAGE_KEYS.common.deleteFailed, '刪除失敗。')}</span> });
     }
   };
 
-  const columns: Column<PcrTemplateRow>[] = [
+  const columns: Column<PcrPatternRow>[] = [
     {
       header: translate(LANGUAGE_KEYS.pcrTemplate.item, '項目'),
       key: 'item',
@@ -139,7 +134,7 @@ export default function PcrTemplatePage() {
             <FontAwesome
               icon="fa-regular fa-pen-to-square"
               className="text-warning cursor-pointer"
-              onClick={() => router.push(`/PcrTemplate/Edit/?id=${row.id}`)}
+              onClick={() => router.push(`/PcrPattern/Edit/?id=${row.id}`)}
             />
           )}
           {hasPermission('Delete') && (
@@ -156,10 +151,10 @@ export default function PcrTemplatePage() {
 
   return (
     <>
-      <ActionBar title={LANGUAGE_KEYS.pcrTemplate.title} />
+      <ActionBar title={LANGUAGE_KEYS.pcrPattern.title} />
       <WrapContent className="p-3">
         <div className="border-bottom mb-3">
-          <div className="nav nav-tabs" role="tablist" aria-label={translate(LANGUAGE_KEYS.pcrTemplate.title, 'PCR 模板分類')}>
+          <div className="nav nav-tabs" role="tablist" aria-label={translate(LANGUAGE_KEYS.pcrPattern.title, 'PCR 模板分類')}>
             {CATEGORY_OPTIONS.map(option => {
               const isActive = category !== null && category === option.value;
               return (
@@ -209,13 +204,10 @@ export default function PcrTemplatePage() {
         <Container fluid className="mb-3">
           <div className="d-flex justify-content-end gap-2">
             {hasPermission('Create') && (
-              <Btn color="success" icon="add" outline={false} onClick={() => void handleAdd()}>
+              <Btn color="success" icon="add" outline={false} onClick={() => router.push('/PcrPattern/Create')}>
                 {translate(LANGUAGE_KEYS.common.add, '新增')}
               </Btn>
             )}
-            <Btn color="secondary" outline>
-              {translate(LANGUAGE_KEYS.pcrTemplate.description, 'PCR 範本說明')}
-            </Btn>
           </div>
         </Container>
 
@@ -228,7 +220,7 @@ export default function PcrTemplatePage() {
             <CommonTable
               ref={tableRef}
               columns={columns}
-              apiUrl={API_MAP.PCR_TEMPLATE_GET_LIST}
+              apiUrl={API_MAP.PCR_PATTERN_GET_LIST}
               searchParams={{ Category: category }}
               pageSize={10}
             />
