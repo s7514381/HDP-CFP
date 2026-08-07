@@ -74,6 +74,7 @@ export const API_MAP: Record<string, string> = {
   MATERIAL_EDIT: `${API_URL}/Material/Edit`,
   MATERIAL_GET_MODEL: `${API_URL}/Material/GetModel`,
   MATERIAL_GET_LIST: `${API_URL}/Material/GetList`,
+  MATERIAL_BIND_PCR: `${API_URL}/Material/BindPcr`,
   MATERIAL_IMPORT: `${API_URL}/Material/Import`,
   MATERIAL_IMPORT_TEMPLATE: `${API_URL}/Material/DownloadImportTemplate`,
   MATERIAL_MST: `${API_URL}/Material`,

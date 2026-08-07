@@ -34,6 +34,7 @@ const MENU_LANGUAGE_RESOURCE_SERIAL_NUMBERS: Record<string, string> = {
     CM: 'CM0115',
     CF: 'CF0001',
     PC: 'PC0001',
+    DM: 'PP0007',
 };
 
 export const getMenuLanguageResourceSerialNumber = (englishCode?: string) => {

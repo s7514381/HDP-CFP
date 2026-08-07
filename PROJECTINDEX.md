@@ -244,6 +244,7 @@ Route Group `(auth)` 與 `(main)` 不會出現在 URL。根 Layout 以 `ApiProvi
 | `/PcrTemplate`、`/PcrTemplate/Create`、`/PcrTemplate/Edit/?id={id}` | `src/app/(main)/PcrTemplate` | PCR 模板範本、分類頁籤與父子項目維護 |
 | `/ProductSubcategory`、`/ProductSubcategory/Create`、`/ProductSubcategory/Edit/?id={id}` | `src/app/(main)/ProductSubcategory` | 產品次類別維護；提供產品次類別搜尋、新增、編輯、刪除與 PCR 模板查看入口 |
 | `/ProductSubcategory/PcrPattern/?id={productSubcategoryId}`、`/Create`、`/Edit` | `src/app/(main)/ProductSubcategory/PcrPattern` | 產品次類別專屬 PCR 模板；首次查看依目前帳號複製 `PcrTemplate` 父子資料，並依 `X-Language-Code` 優先使用目前語系文字 |
+| `/DataMaintenance` | `src/app/(main)/DataMaintenance/page.tsx`、`src/components/common/PcrBindingModal.tsx` | 數據維護唯讀列表；直接重用 `Material/GetList`，不建立數據維護資料表；待建置固定顯示為 true，建置率、碳排係數、審查結果目前留空；PCR綁定開啟 Modal，以 `Name`、`CccCode`、`Developer` 關鍵字搜尋 ProductSubcategory，顯示 `Name`、`CccCode`、`Developer`、`ApplicableScope` 後選取 |
 | `/PcrPattern`、`/PcrPattern/Create`、`/PcrPattern/Edit/?id={id}` | `src/app/(main)/PcrPattern` | Legacy PCR模板資料維護；使用 `ParentId`、`Category`、`Item` 與子項目，仍不掛載實際選單與權限 |
 
 #### 6.1.1 PCR 模板頁面實作規則
@@ -265,6 +266,8 @@ Route Group `(auth)` 與 `(main)` 不會出現在 URL。根 Layout 以 `ApiProvi
 - `AdminFunction` 的 `ProductSubcategory/Index` 根功能直接提供查詢，不另建立查詢子功能；新增、修改、刪除為子功能，Migration 將選單與功能授予系統管理員角色。
 - `PcrPattern` 為獨立的 Legacy PCR 模板資料表，欄位與父子維護流程對齊 `PcrTemplate`；產品次類別入口先呼叫 `EnsurePcrPattern` 完成首次初始化，再由 `GetPcrPattern` 純查詢列表，並以帳號與 `ProductSubcategoryId` 隔離，原本的 PcrPattern 選單入口仍停用。
 - `EnsurePcrPattern` 初始化時由 request 的 `X-Language-Code` 選取 `PcrTemplate` 翻譯；指定語系沒有有效文字時 fallback 到基礎語言。初始化只在該帳號與產品次類別尚無 `PcrPattern` 時執行，不會覆蓋既有資料。
+- `/DataMaintenance` 不保存自己的資料；列表直接查詢既有 `Material`，只呈現目前可取得的群組、料號、產品名稱與供應商，待建置／建置率／碳排係數／審查結果為目前畫面的建置狀態欄位。
+- `/DataMaintenance` 的 PCR綁定呼叫 `POST /Material/BindPcr`，以 `Material.Id` 作為 Source、`ProductSubcategory.Id` 作為 Target，透過 `ManyToMany` 保存；業務規則為 Material 與 ProductSubcategory 有效關聯各自只能有一筆，新綁定會將來源或目標的既有有效關聯軟刪除。
 
 ### 6.2 前端狀態與權限
 
@@ -409,7 +412,7 @@ StandardController<DBModel, ViewModel, Search, List, ListData>
 | `AdminFunctionController` | `AdminFunctionService` / `AdminFunction` | `GetSelectListItems`（IgnoreAuthorize） |
 | `RoleController` | `RoleService` / `Role` | `GetRoleItems`、`GetSelectListItems`（IgnoreAuthorize） |
 | `SupplierController` | `SupplierService` / `Supplier` | `GetSelectListItems`、`test` |
-| `MaterialController` | `MaterialService` / `Material` | `GetSelectListItems`、`GetKeywordSelectListItems`、`DownloadImportTemplate`、`Import`（IgnoreAuthorize） |
+| `MaterialController` | `MaterialService` / `Material` | `GetSelectListItems`、`GetKeywordSelectListItems`、`BindPcr`、`DownloadImportTemplate`、`Import`（IgnoreAuthorize） |
 | `MaterialGroupController` | `MaterialGroupService` / `MaterialGroup` | 無，自用標準 CRUD |
 | `BuyerCompareController` | `BuyerCompareService` / `Material` | `GetBuyerMaterialList` |
 | `SellerCompareController` | `SellerCompareService` / `Material` | `DownloadImportTemplate`、`Import`（IgnoreAuthorize） |
@@ -754,7 +757,17 @@ await _lazy.ManyToManyService.Value.SaveById(
 - `ManyToManyService.GetTargetId<TTarget>` 只取第一筆；當資料模型允許多筆但呼叫端使用單值欄位時，結果不代表唯一正確關聯。Manager/Role 目前是「業務上預期單一 Role」，若未來要支援多角色，必須改 DTO、前端表單與讀寫流程，不能只把 SQL 改成回傳多列。
 - 共用表沒有強型別 Foreign Key；查不到目標資料、目標資料被軟刪除、`TargetTable` 拼寫大小寫或名稱不一致，都可能造成關聯存在但畫面讀不到。新增關聯時優先使用 `nameof(TargetModel)` 或 `CommonUtility.GetTableAttribute<TModel>()`，不要手寫易錯字串。
 
-#### 9.4.5 新增或除錯 ManyToMany 功能的檢查順序
+#### 9.4.5 單一關聯替換
+
+`ManyToManyService.SaveOneToOneAsync` 用於業務上要求雙方各只能有一筆有效關聯的情境，例如 `/DataMaintenance` 的 Material 與 ProductSubcategory PCR 綁定：
+
+1. 以固定的 `SourceTable`、`TargetTable`、`SourceId`、`TargetId` 找出來源或目標相同的有效關聯。
+2. 將既有關聯設為 `Status = -1`，保留歷史資料。
+3. 新增目前選取的關聯。
+
+Material 的 `/Material/BindPcr` 在交易內先驗證目前帳號可使用的 Material 與有效 ProductSubcategory，再呼叫此方法；前端選取時必須送出 ProductSubcategory GUID，不可使用非唯一的顯示文字代替。
+
+#### 9.4.6 新增或除錯 ManyToMany 功能的檢查順序
 
 1. 先確認 Source Model、Target Model、兩端主鍵欄位與實際 Table Attribute。
 2. 確認關聯方向：誰是擁有者就放 `Source`，被選取資料放 `Target`；不要因為 UI 欄位名稱而顛倒方向。

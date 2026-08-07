@@ -30,6 +30,7 @@ interface AdminMenuResponse {
   englishCode?: string;
   languageResourceId?: string;
   iconClass?: string;
+  url?: string;
   adminFunction?: AdminFunctionResponse;
   childList?: AdminMenuResponse[];
 }
@@ -68,7 +69,7 @@ export default function Login() {
       englishCode: menu.englishCode || undefined,
       languageResourceId: menu.languageResourceId || undefined,
       icon: menu.iconClass || undefined,
-      href: menu?.adminFunction ? `/${menu?.adminFunction?.controller}` : undefined,
+      href: menu.url || (menu.adminFunction ? `/${menu.adminFunction.controller}` : undefined),
       isNextJsApp: true,
       permissions: permissions,
       children: menu.childList && menu.childList.length > 0
