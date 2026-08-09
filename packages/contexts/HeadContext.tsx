@@ -21,7 +21,7 @@ const HeadContext = createContext<HeadContextType | null>(null);
 export function HeadProvider({ children }: { children: React.ReactNode }) {
 
   const [head, setHead] = useState<HeadState>({
-    title: "供應商平台 - aHOP",
+    title: "",
     description: ""
   });
 

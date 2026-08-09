@@ -1,5 +1,4 @@
 "use client";
-import { ApiError } from "@packages/components/ApiError";
 import { setApiEventHandler } from "@packages/lib/api";
 import { ApiContextConfig, ApiContextValue, ApiEvent } from "@packages/types/api";
 import { createContext, PropsWithChildren, useContext, useEffect, useMemo, useState } from "react";
@@ -19,11 +18,6 @@ export function ApiProvider({ children, initialConfig }: Readonly<PropsWithChild
   /** 是否使用轉跳的方式進行登出 */
   const [useRedirectLogout, setUseRedirectLogout] = useState<boolean>(initialConfig?.useRedirectLogout || false);
   
-  /**
-   * 關閉API錯誤訊息
-   */
-  const handleApiErrorClose = () => setApiEvent(null);
-
   /**
    * 初始化的時候註冊一個API事件的處理函數
    * 用來接收來自 apiRequest 發出的事件
@@ -56,7 +50,6 @@ export function ApiProvider({ children, initialConfig }: Readonly<PropsWithChild
 
   return (
     <ApiContext.Provider value={value}>
-      <ApiError apiEvent={apiEvent} onClose={handleApiErrorClose} />
       {children}
     </ApiContext.Provider>
   );

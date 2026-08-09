@@ -116,7 +116,10 @@ function ProductSubcategoryPcrPatternPageContent() {
         const name = result.success ? readProductSubcategoryName(result.data) : null;
 
         if (!name) {
-          throw new Error(result.message || '產品次類別載入失敗。');
+          throw new Error(result.message || translate(
+            LANGUAGE_KEYS.pcrPattern.productSubcategoryNameLoadFailed,
+            'Unable to load the product subcategory name. Please refresh.',
+          ));
         }
 
         if (!cancelled) {
@@ -124,7 +127,10 @@ function ProductSubcategoryPcrPatternPageContent() {
         }
       } catch {
         if (!cancelled) {
-          setProductSubcategoryNameError('產品次類別名稱載入失敗，請重新整理。');
+          setProductSubcategoryNameError(translate(
+            LANGUAGE_KEYS.pcrPattern.productSubcategoryNameLoadFailed,
+            'Unable to load the product subcategory name. Please refresh.',
+          ));
         }
       }
     };
@@ -139,7 +145,10 @@ function ProductSubcategoryPcrPatternPageContent() {
           { productSubcategoryId },
         );
         if (!ensureResult.success) {
-          throw new Error(ensureResult.message || 'PCR模板初始化失敗。');
+          throw new Error(ensureResult.message || translate(
+            LANGUAGE_KEYS.pcrPattern.initializationFailed,
+            'PCR pattern initialization failed.',
+          ));
         }
 
         if (!cancelled) {
@@ -147,7 +156,14 @@ function ProductSubcategoryPcrPatternPageContent() {
         }
       } catch {
         if (!cancelled) {
-          setPageLoad({ id: productSubcategoryId, status: 'error', message: 'PCR模板初始化失敗，請重新整理。' });
+          setPageLoad({
+            id: productSubcategoryId,
+            status: 'error',
+            message: translate(
+              LANGUAGE_KEYS.pcrPattern.initializationFailed,
+              'PCR pattern initialization failed. Please refresh.',
+            ),
+          });
         }
       }
     };
@@ -157,7 +173,7 @@ function ProductSubcategoryPcrPatternPageContent() {
     return () => {
       cancelled = true;
     };
-  }, [formPost, productSubcategoryId]);
+  }, [formPost, productSubcategoryId, translate]);
 
   React.useEffect(() => {
     if (!pageReady || category === null) return;
@@ -214,7 +230,12 @@ function ProductSubcategoryPcrPatternPageContent() {
   if (!productSubcategoryId) {
     return (
       <WrapContent className="p-3">
-        <div className="alert alert-danger">缺少產品次類別識別碼。</div>
+        <div className="alert alert-danger">
+          {translate(
+            LANGUAGE_KEYS.pcrPattern.missingProductSubcategoryId,
+            'Missing product subcategory identifier.',
+          )}
+        </div>
       </WrapContent>
     );
   }

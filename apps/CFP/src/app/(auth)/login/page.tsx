@@ -8,7 +8,6 @@ import { Btn } from "@packages/components/bootstrap5/Btn";
 import { useApi } from "@packages/hooks/useApi";
 import { API_MAP } from "@/lib/apiRoutes";
 import { useUser } from "@/contexts/UserContext";
-import { ApiError } from "@packages/components/ApiError";
 import { setLocalStorage } from "@packages/lib/localstorage";
 import { useToast } from '@packages/contexts/ToastContext';
 import { useMenu } from "@/contexts/MenuContext";
@@ -113,7 +112,6 @@ export default function Login() {
 
   return (
     <>
-      <ApiError />
       <button
         type="button"
         className="auth-language-trigger btn btn-outline-primary btn-sm"

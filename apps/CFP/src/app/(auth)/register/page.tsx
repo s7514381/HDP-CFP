@@ -8,7 +8,6 @@ import { Btn } from "@packages/components/bootstrap5/Btn";
 import { useApi } from "@packages/hooks/useApi";
 import { API_MAP } from "@/lib/apiRoutes";
 import { useToast } from '@packages/contexts/ToastContext';
-import { ApiError } from "@packages/components/ApiError";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { LANGUAGE_KEYS } from "@/config/languageKeys";
 
@@ -63,7 +62,6 @@ export default function Register() {
 
   return (
     <>
-      <ApiError />
       <h3 className="auth-title">{translate(LANGUAGE_KEYS.auth.registerAccount, '註冊帳號')}</h3>
       <form onSubmit={handleSubmit}>
         <div className="mb-3">

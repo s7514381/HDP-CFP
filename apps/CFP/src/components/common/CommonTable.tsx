@@ -23,6 +23,7 @@ export interface Column<T> {
 export interface CommonTableHandle<T extends object = object> {
   reload: () => void;
   search: (params: TableSearchParams) => void;
+  update: (predicate: (item: T) => boolean, updater: (item: T) => T) => void;
   getData: () => Promise<T[]>;
 }
 
@@ -122,6 +123,9 @@ function CommonTableInner<T extends object>(
     reload: () => { void fetchList(displayCurrentPage, currentSearchParams); },
     search: (params) => {
       setCurrentSearchParams(params);
+    },
+    update: (predicate, updater) => {
+      setData((currentData) => currentData.map((item) => predicate(item) ? updater(item) : item));
     },
     getData: () => Promise.resolve(visibleData),
   }), [currentSearchParams, displayCurrentPage, fetchList, visibleData]);

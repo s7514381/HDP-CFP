@@ -30,6 +30,17 @@ interface FormProps {
   statusItems: { value: string | number; label: string }[];
   onSearch: (data: FormData) => void;
   onCancel: () => void;
+  labels?: Partial<KeywordDateSearchFormLabels>;
+}
+
+interface KeywordDateSearchFormLabels {
+  status: string;
+  begin: string;
+  end: string;
+  keyword: string;
+  keywordPlaceholder: string;
+  search: string;
+  cancel: string;
 }
 
 /**
@@ -41,7 +52,18 @@ export const KeywordSearchForm = ({
   statusItems,
   onSearch,
   onCancel,
+  labels,
 }: FormProps) => {
+  const text: KeywordDateSearchFormLabels = {
+    status: 'Status',
+    begin: 'Start date',
+    end: 'End date',
+    keyword: 'Keyword',
+    keywordPlaceholder: 'Enter keyword',
+    search: 'Search',
+    cancel: 'Cancel',
+    ...labels,
+  };
   const handleSubmit = (data: FormData) => {
     onSearch?.(data);
   };
@@ -55,20 +77,20 @@ export const KeywordSearchForm = ({
     <Container fluid className="p-0 mb-3">
       <Form<FormData> ref={formRef} initialValues={initData} onSubmit={handleSubmit} className="row align-items-end">
         <Grid.Col col={`auto`}>
-          <Select name="status" options={statusItems} label={`狀態`} />
+          <Select name="status" options={statusItems} label={text.status} />
         </Grid.Col>
         <Grid.Col col={`auto`}>
-          <Input bsSize="sm" type="date" name="begin" label="開始日期" />
+          <Input bsSize="sm" type="date" name="begin" label={text.begin} />
         </Grid.Col>
         <Grid.Col col={`auto`}>
-          <Input bsSize="sm" type="date" name="end" label="結束日期" />
+          <Input bsSize="sm" type="date" name="end" label={text.end} />
         </Grid.Col>
         <Grid.Col col>
-          <Input bsSize="sm" name="keyword" label="關鍵字" placeholder="輸入關鍵字"/>
+          <Input bsSize="sm" name="keyword" label={text.keyword} placeholder={text.keywordPlaceholder}/>
         </Grid.Col>
         <Grid.Col col={`auto`}>
-          <Btn icon="search" type="submit" size="sm" color="primary">搜尋</Btn>
-          <Btn icon="cancel" type="button" size="sm" color="secondary" className="ms-2" onClick={handleCancel}>取消</Btn>
+          <Btn icon="search" type="submit" size="sm" color="primary">{text.search}</Btn>
+          <Btn icon="cancel" type="button" size="sm" color="secondary" className="ms-2" onClick={handleCancel}>{text.cancel}</Btn>
         </Grid.Col>
       </Form>
     </Container>

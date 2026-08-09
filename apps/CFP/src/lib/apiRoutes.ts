@@ -78,6 +78,11 @@ export const API_MAP: Record<string, string> = {
   MATERIAL_IMPORT: `${API_URL}/Material/Import`,
   MATERIAL_IMPORT_TEMPLATE: `${API_URL}/Material/DownloadImportTemplate`,
   MATERIAL_MST: `${API_URL}/Material`,
+  MATERIAL_MAINTENANCE_GET_MODEL: `${API_URL}/MaterialMaintenance/GetModel`,
+  MATERIAL_MAINTENANCE_ADD_YEAR: `${API_URL}/MaterialMaintenance/AddYear`,
+  MATERIAL_MAINTENANCE_ADD_SOURCE: `${API_URL}/MaterialMaintenance/AddSource`,
+  MATERIAL_MAINTENANCE_DELETE_YEAR: `${API_URL}/MaterialMaintenance/DeleteYear`,
+  MATERIAL_MAINTENANCE_DELETE_SOURCE: `${API_URL}/MaterialMaintenance/DeleteSource`,
 
   // ===== 群組管理 =====
   MATERIAL_GROUP_CREATE: `${API_URL}/MaterialGroup/Create`,

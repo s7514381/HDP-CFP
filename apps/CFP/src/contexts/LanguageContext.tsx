@@ -7,6 +7,7 @@ import { useUser } from '@/contexts/UserContext';
 import { appStorage, sessionStorageKeys, useStoredValue } from '@/lib/appStorage';
 
 const DEFAULT_LANGUAGE_CODE = 'zh-TW';
+const TRANSLATION_CACHE_VERSION = 3;
 const translationStorageKey = (languageCode: string) => `languageTranslations:${languageCode}`;
 
 interface LanguageResourceText {
@@ -29,7 +30,7 @@ interface TranslationState {
 }
 
 interface TranslationCache {
-  version: 1;
+  version: number;
   state: TranslationState;
 }
 
@@ -61,7 +62,7 @@ const buildTranslationState = (data: unknown): TranslationState | null => {
 
 const readCachedTranslations = (languageCode: string): TranslationState | null => {
   const cache = appStorage.get<unknown>(translationStorageKey(languageCode));
-  if (!isRecord(cache) || cache.version !== 1 || !isRecord(cache.state)) return null;
+  if (!isRecord(cache) || cache.version !== TRANSLATION_CACHE_VERSION || !isRecord(cache.state)) return null;
 
   const { translations, translationsById } = cache.state;
   if (!isStringRecord(translations) || !isStringRecord(translationsById)) return null;
@@ -70,7 +71,7 @@ const readCachedTranslations = (languageCode: string): TranslationState | null =
 };
 
 const writeCachedTranslations = (languageCode: string, state: TranslationState): void => {
-  const cache: TranslationCache = { version: 1, state };
+  const cache: TranslationCache = { version: TRANSLATION_CACHE_VERSION, state };
   appStorage.set(translationStorageKey(languageCode), cache);
 };
 

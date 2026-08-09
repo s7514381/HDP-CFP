@@ -1,4 +1,8 @@
 import React, { useEffect, useRef, useImperativeHandle, forwardRef, ReactNode } from 'react';
+import { createPortal } from 'react-dom';
+
+const MODAL_Z_INDEX = 11000;
+const MODAL_BACKDROP_Z_INDEX = MODAL_Z_INDEX - 10;
 
 interface ModalProps {
     show: boolean;
@@ -22,6 +26,7 @@ type ModalComponent = React.ForwardRefExoticComponent<ModalProps & React.RefAttr
 
 const Modal = forwardRef<ModalRef, ModalProps>(({ show, size, onClose, children }, ref) => {
     const modalRef = useRef<HTMLDivElement>(null);
+    const [mounted, setMounted] = React.useState(false);
     const _className = ['modal', 'fade', show ? 'show' : ''].join(' ').trim();
     const _dialogClass = ['modal-dialog', size ? `modal-${size}` : ''].join(' ').trim();
     useImperativeHandle(ref, () => ({
@@ -29,6 +34,10 @@ const Modal = forwardRef<ModalRef, ModalProps>(({ show, size, onClose, children 
             onClose();
         },
     }));
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     useEffect(() => {
         if (show) {
@@ -53,17 +62,18 @@ const Modal = forwardRef<ModalRef, ModalProps>(({ show, size, onClose, children 
         }
     };
 
-    if (!show) return null;
+    if (!show || !mounted) return null;
 
-    return (
+    return createPortal(
         <>
-        <div className={_className} style={{ display: 'block' }} ref={modalRef} onKeyDown={handleKeyDown} onClick={handleBackdropClick} aria-modal="true">
+        <div className={_className} style={{ display: 'block', zIndex: MODAL_Z_INDEX }} ref={modalRef} onKeyDown={handleKeyDown} onClick={handleBackdropClick} aria-modal="true">
             <div className={_dialogClass}>
                 <div className="modal-content">{children}</div>
             </div>
         </div>
-        <div className="modal-backdrop fade show" />
-        </>
+        <div className="modal-backdrop fade show" style={{ zIndex: MODAL_BACKDROP_Z_INDEX }} />
+        </>,
+        document.body,
     );
 }) as ModalComponent;
 

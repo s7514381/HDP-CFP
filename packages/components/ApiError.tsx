@@ -19,17 +19,61 @@ const ErrorProxy = ({title, message, onClose}: {title:string, message:string, on
   </Toast>;
 }
 
+export interface ApiErrorLabels {
+  noMessage: string;
+  loading: string;
+  badRequest: string;
+  forbidden: string;
+  notFound: string;
+  methodNotAllowed: string;
+  lengthRequired: string;
+  uriTooLong: string;
+  unsupportedMediaType: string;
+  tooManyRequests: string;
+  serverError: string;
+  badGateway: string;
+  serviceUnavailable: string;
+  gatewayTimeout: string;
+  unknown: string;
+}
+
+const DEFAULT_LABELS: ApiErrorLabels = {
+  noMessage: 'Request failed',
+  loading: 'Network error',
+  badRequest: 'Bad request',
+  forbidden: 'Insufficient permissions',
+  notFound: 'Resource not found',
+  methodNotAllowed: 'Method not allowed',
+  lengthRequired: 'Request length missing',
+  uriTooLong: 'URI too long',
+  unsupportedMediaType: 'Unsupported media type',
+  tooManyRequests: 'Too many requests',
+  serverError: 'Server error',
+  badGateway: 'Invalid server response',
+  serviceUnavailable: 'Service unavailable',
+  gatewayTimeout: 'Server response timed out',
+  unknown: 'Request error',
+};
+
 /**
  * 其中處理API錯誤訊息的元件，不含422的錯誤處理
  * @param param0 
  * @returns 
  */
-export const ApiError = ({ apiEvent, onClose}: {apiEvent?: ApiEvent | null, onClose?: () => void}) => {
+export const ApiError = ({
+  apiEvent,
+  onClose,
+  labels = DEFAULT_LABELS,
+}: {
+  apiEvent?: ApiEvent | null;
+  onClose?: () => void;
+  labels?: ApiErrorLabels;
+}) => {
   const router = useRouter();
   const api = useApi();
   const {userLoginUrl, userLogoutUrl, useRedirectLogout} = useApiContext();
   const httpCode = apiEvent?.status?.toString() || '0';
-  const message = `${apiEvent?.status} - ${apiEvent?.message || '請重新登入'}`;
+  const message = `${apiEvent?.status} - ${apiEvent?.message || labels.noMessage}`;
 
   /** 呼叫API登出用戶．避免傳統登入的cookie還在，但 api token生命週期已經結束 */
   const logoutUser = async () => {
@@ -63,41 +107,41 @@ export const ApiError = ({ apiEvent, onClose}: {apiEvent?: ApiEvent | null, onCl
 
   // 網路異常
   if(apiEvent?.loadingStatus === 'error'){
-    return <ErrorProxy title={`${httpCode} - 網路異常`} message={message} onClose={handleClose} />;
+    return <ErrorProxy title={`${httpCode} - ${labels.loading}`} message={message} onClose={handleClose} />;
   }
   
   // 解析需要統一處理的錯誤
   switch(apiEvent?.status){
     case 400:
-      return <ErrorProxy title={`${httpCode} - 錯誤的請求`} message={message} onClose={handleClose} />;
+      return <ErrorProxy title={`${httpCode} - ${labels.badRequest}`} message={message} onClose={handleClose} />;
     case 403:
-      return <ErrorProxy title={`${httpCode} - 權限不足`} message={message} onClose={handleClose} />;
+      return <ErrorProxy title={`${httpCode} - ${labels.forbidden}`} message={message} onClose={handleClose} />;
     case 404:
-      return <ErrorProxy title={`${httpCode} - 資源不存在`} message={message} onClose={handleClose} />;
+      return <ErrorProxy title={`${httpCode} - ${labels.notFound}`} message={message} onClose={handleClose} />;
     case 405:
-      return <ErrorProxy title={`${httpCode} - 錯誤的訪問方式`} message={message} onClose={handleClose} />;
+      return <ErrorProxy title={`${httpCode} - ${labels.methodNotAllowed}`} message={message} onClose={handleClose} />;
     case 411:
-      return <ErrorProxy title={`${httpCode} - 請求長度缺失`} message={message} onClose={handleClose} />;
+      return <ErrorProxy title={`${httpCode} - ${labels.lengthRequired}`} message={message} onClose={handleClose} />;
     case 414:
-      return <ErrorProxy title={`${httpCode} - 請求URI過長`} message={message} onClose={handleClose} />;
+      return <ErrorProxy title={`${httpCode} - ${labels.uriTooLong}`} message={message} onClose={handleClose} />;
     case 415:
-      return <ErrorProxy title={`${httpCode} - 不支援的媒體類型`} message={message} onClose={handleClose} />;
+      return <ErrorProxy title={`${httpCode} - ${labels.unsupportedMediaType}`} message={message} onClose={handleClose} />;
     case 429:
-      return <ErrorProxy title={`${httpCode} - 請求過於頻繁`} message={message} onClose={handleClose} />;
+      return <ErrorProxy title={`${httpCode} - ${labels.tooManyRequests}`} message={message} onClose={handleClose} />;
     case 500:
-      return <ErrorProxy title={`${httpCode} - 伺服器錯誤`} message={message} onClose={handleClose} />;
+      return <ErrorProxy title={`${httpCode} - ${labels.serverError}`} message={message} onClose={handleClose} />;
     case 502:
-      return <ErrorProxy title={`${httpCode} - 伺服器無效回應`} message={message} onClose={handleClose} />;
+      return <ErrorProxy title={`${httpCode} - ${labels.badGateway}`} message={message} onClose={handleClose} />;
     case 503:
-      return <ErrorProxy title={`${httpCode} - 服務不可用`} message={message} onClose={handleClose} />;
+      return <ErrorProxy title={`${httpCode} - ${labels.serviceUnavailable}`} message={message} onClose={handleClose} />;
     case 504:
-      return <ErrorProxy title={`${httpCode} - 伺服器回應超時`} message={message} onClose={handleClose} />;
+      return <ErrorProxy title={`${httpCode} - ${labels.gatewayTimeout}`} message={message} onClose={handleClose} />;
     default:
       break;
   }
   // 嘗試捕捉非預期的錯誤，排除422與401
   if(apiEvent?.status && apiEvent.status >= 400 && apiEvent.status < 600 && apiEvent.status !== 422){
-    return <ErrorProxy title={`${httpCode} - 發生錯誤`} message={message} onClose={handleClose} />;
+    return <ErrorProxy title={`${httpCode} - ${labels.unknown}`} message={message} onClose={handleClose} />;
   }
   return null;
 }

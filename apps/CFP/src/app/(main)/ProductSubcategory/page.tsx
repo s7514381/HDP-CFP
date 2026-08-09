@@ -86,7 +86,7 @@ export default function ProductSubcategoryPage() {
           outline
           onClick={() => router.push(`/ProductSubcategory/PcrPattern/?id=${row.id}`)}
         >
-          查看
+          {translate(LANGUAGE_KEYS.common.view, 'View')}
         </Btn>
       ),
     },

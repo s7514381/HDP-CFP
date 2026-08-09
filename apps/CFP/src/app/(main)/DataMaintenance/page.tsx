@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { Input } from '@packages/components/bootstrap5/Input';
 import { Btn } from '@packages/components/bootstrap5/Btn';
 import { useToast } from '@packages/contexts/ToastContext';
@@ -23,6 +24,8 @@ interface DataMaintenanceRow {
   materialNumber?: string;
   productName?: string;
   supplierName?: string;
+  pcrTemplateName?: string;
+  pcrTemplateId?: string | number | null;
 }
 
 interface DataMaintenanceSearch extends TableSearchParams {
@@ -38,13 +41,14 @@ const INITIAL_SEARCH: DataMaintenanceSearch = {
 };
 
 export default function DataMaintenancePage() {
+  const router = useRouter();
   const { translate } = useLanguage();
   const { Row, Col } = Grid;
   const { formPost } = useAppApi();
   const { success, danger } = useToast();
   const tableRef = React.useRef<CommonTableHandle<DataMaintenanceRow>>(null);
   const [searchValues, setSearchValues] = React.useState(INITIAL_SEARCH);
-  const [bindingMaterialId, setBindingMaterialId] = React.useState<string | number | null>(null);
+  const [bindingMaterial, setBindingMaterial] = React.useState<DataMaintenanceRow | null>(null);
 
   const updateSearchValue = (field: keyof DataMaintenanceSearch, value: string) => {
     setSearchValues((current) => ({ ...current, [field]: value }));
@@ -60,20 +64,26 @@ export default function DataMaintenancePage() {
   };
 
   const handlePcrBinding = async (row: PcrBindingRow) => {
-    if (bindingMaterialId === null) return false;
+    if (bindingMaterial === null) return false;
 
     const result = await formPost(API_MAP.MATERIAL_BIND_PCR, {
-      materialId: String(bindingMaterialId),
+      materialId: String(bindingMaterial.id),
       productSubcategoryId: String(row.id),
     });
 
     if (!result.success) {
-      danger({ message: <span>{result.message || 'PCR 綁定失敗。'}</span> });
+      danger({ message: <span>{result.message || translate(LANGUAGE_KEYS.dataMaintenance.bindFailed, 'PCR binding failed.')}</span> });
       return false;
     }
 
-    success({ message: <span>PCR 綁定成功。</span> });
-    tableRef.current?.reload();
+    success({ message: <span>{translate(LANGUAGE_KEYS.dataMaintenance.bindSucceeded, 'PCR binding succeeded.')}</span> });
+    tableRef.current?.update(
+      (item) => String(item.id) === String(bindingMaterial.id),
+      (item) => ({
+        ...item,
+        pcrTemplateName: row.name || translate(LANGUAGE_KEYS.dataMaintenance.bound, 'Bound'),
+      }),
+    );
     return true;
   };
 
@@ -85,7 +95,7 @@ export default function DataMaintenancePage() {
       render: (_, index) => index + 1,
     },
     {
-      header: '待建置',
+      header: translate(LANGUAGE_KEYS.dataMaintenance.pendingBuild, 'Pending build'),
       className: 'text-center',
       style: { width: '90px' },
       render: () => '✓',
@@ -107,34 +117,44 @@ export default function DataMaintenancePage() {
       key: 'supplierName',
     },
     {
-      header: '建置率',
+      header: translate(LANGUAGE_KEYS.pcrPattern.template, 'PCR template'),
+      key: 'pcrTemplateName',
+    },
+    {
+      header: translate(LANGUAGE_KEYS.dataMaintenance.buildRate, 'Build rate'),
       className: 'text-center',
       render: () => '',
     },
     {
-      header: '碳排係數',
+      header: translate(LANGUAGE_KEYS.dataMaintenance.carbonFactor, 'Carbon emission factor'),
       className: 'text-center',
       render: () => '',
     },
     {
-      header: '審查結果',
+      header: translate(LANGUAGE_KEYS.dataMaintenance.reviewResult, 'Review result'),
       className: 'text-center',
       render: () => '',
     },
     {
-      header: '功能',
+      header: translate(LANGUAGE_KEYS.common.actions, 'Actions'),
       className: 'text-center',
       style: { width: '170px' },
       render: (row) => (
         <div className="d-flex flex-column align-items-center gap-1">
-          <Btn type="button" color="secondary" size="sm" outline onClick={() => setBindingMaterialId(row.id)}>
-            PCR綁定
+          <Btn type="button" color="secondary" size="sm" outline onClick={() => setBindingMaterial(row)}>
+            {translate(LANGUAGE_KEYS.dataMaintenance.bindPcr, 'Bind PCR')}
+          </Btn>
+          <Btn
+            type="button"
+            color="secondary"
+            size="sm"
+            outline
+            onClick={() => router.push(`/DataMaintenance/MaterialMaintenance/?id=${encodeURIComponent(String(row.id))}`)}
+          >
+            {translate(LANGUAGE_KEYS.dataMaintenance.rawMaterialMaintenance, 'Material maintenance')}
           </Btn>
           <Btn type="button" color="secondary" size="sm" outline>
-            原料維護
-          </Btn>
-          <Btn type="button" color="secondary" size="sm" outline>
-            碳排訊息維護
+            {translate(LANGUAGE_KEYS.dataMaintenance.carbonInformationMaintenance, 'Carbon information maintenance')}
           </Btn>
         </div>
       ),
@@ -193,11 +213,12 @@ export default function DataMaintenancePage() {
           />
         </Container>
       </WrapContent>
-      {bindingMaterialId !== null && (
+      {bindingMaterial !== null && (
         <PcrBindingModal
           show
-          onClose={() => setBindingMaterialId(null)}
+          onClose={() => setBindingMaterial(null)}
           onConfirm={handlePcrBinding}
+          currentSelectedRowId={bindingMaterial.pcrTemplateId}
         />
       )}
     </>

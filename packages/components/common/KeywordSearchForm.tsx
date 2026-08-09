@@ -27,7 +27,16 @@ interface KeywordSearchFormProps {
   formRef?: RefObject<FormRef<KeywordSearchFormData> | null>
   onSearch: (data: KeywordSearchFormData) => void;
   onCancel: () => void;
-  setting?: FormSettings
+  setting?: FormSettings;
+  labels?: Partial<KeywordSearchFormLabels>;
+}
+
+interface KeywordSearchFormLabels {
+  status: string;
+  keyword: string;
+  keywordPlaceholder: string;
+  search: string;
+  cancel: string;
 }
 
 /**
@@ -40,8 +49,17 @@ export const KeywordSearchForm = ({
   onCancel,
   setting = {
     statusColumn: true
-  } as FormSettings
+  } as FormSettings,
+  labels,
 }: KeywordSearchFormProps) => {
+  const text: KeywordSearchFormLabels = {
+    status: 'Status',
+    keyword: 'Keyword',
+    keywordPlaceholder: 'Enter package number or name',
+    search: 'Search',
+    cancel: 'Cancel',
+    ...labels,
+  };
 
   const handleSubmit = (data: KeywordSearchFormData) => {
     onSearch?.(data);
@@ -58,15 +76,15 @@ export const KeywordSearchForm = ({
         {
           setting.statusColumn &&
           <Grid.Col col={`auto`}>
-            <StatusSelect name="status" label="狀態" bsSize="sm" />
+            <StatusSelect name="status" label={text.status} bsSize="sm" />
           </Grid.Col>
         }
         <Grid.Col col>
-          <Input bsSize="sm" name="keyword" label="關鍵字" placeholder="請輸入盤包編號或名稱" />
+          <Input bsSize="sm" name="keyword" label={text.keyword} placeholder={text.keywordPlaceholder} />
         </Grid.Col>
         <Grid.Col col={`auto`}>
-          <Btn icon="search" type="submit" size="sm" color="primary">搜尋</Btn>
-          <Btn icon="cancel" type="button" size="sm" color="secondary" className="ms-2" onClick={handleCancel}>取消</Btn>
+          <Btn icon="search" type="submit" size="sm" color="primary">{text.search}</Btn>
+          <Btn icon="cancel" type="button" size="sm" color="secondary" className="ms-2" onClick={handleCancel}>{text.cancel}</Btn>
         </Grid.Col>
       </Form>
     </Container>

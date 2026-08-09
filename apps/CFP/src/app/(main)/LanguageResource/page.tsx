@@ -44,6 +44,8 @@ interface AdminMenuData {
 }
 
 const COMMON_MENU_FILTER_VALUE = '__COMMON__';
+const COMMON_MENU_CODE = '__COMMON_MENU__';
+const UNCONFIGURED_MENU_CODE = '__UNCONFIGURED_MENU__';
 
 export default function LanguageResourcePage() {
   const router = useRouter();
@@ -95,7 +97,7 @@ export default function LanguageResourcePage() {
 
   const menuOptions = React.useMemo(() => {
     const options = [
-      { label: languageCode === 'en-US' ? 'All' : '全部', value: '' },
+      { label: translate(LANGUAGE_KEYS.common.all, 'All'), value: '' },
       { label: translate(LANGUAGE_KEYS.common.common, '通用'), value: COMMON_MENU_FILTER_VALUE },
     ];
     const flatten = (items: AdminMenuData[], depth = 0) => {
@@ -171,8 +173,8 @@ export default function LanguageResourcePage() {
       header: translate(LANGUAGE_KEYS.languageResource.menuCode, '英文代號'),
       render: item => {
         const menuCode = (item as LanguageResourceListItem).menuCode;
-        if (menuCode === '通用') return translate(LANGUAGE_KEYS.common.common, '通用');
-        if (menuCode === '未設定') return translate(LANGUAGE_KEYS.common.notConfigured, '未設定');
+        if (menuCode === COMMON_MENU_CODE) return translate(LANGUAGE_KEYS.common.common, 'Common');
+        if (menuCode === UNCONFIGURED_MENU_CODE) return translate(LANGUAGE_KEYS.common.notConfigured, 'Not configured');
         return menuCode || '';
       }
     },

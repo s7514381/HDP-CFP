@@ -47,6 +47,8 @@ export interface DataGridProps<T extends { readonly id: string | number }> {
   readonly columns: ColumnDef<T>[];
   /** 表格的標題 (可選) */
   readonly caption?: string;
+  /** 無資料時顯示的文字，應由應用層傳入翻譯後內容 */
+  readonly noDataMessage?: string;
   /** 是否顯示表頭，預設為 true */
   readonly showHeader?: boolean;
   /** 分頁輸入（在此明確為 number，避免 unknown 型別滲入） */
@@ -77,6 +79,7 @@ export function DataGrid<T extends { readonly id: string | number, [key: string]
   data,
   columns,
   caption,
+  noDataMessage = 'No data',
   showHeader = true,
   pagination,
   scroll = true,
@@ -141,7 +144,7 @@ export function DataGrid<T extends { readonly id: string | number, [key: string]
             // 無資料時的顯示訊息
             <Tr>
               <Td colSpan={columns.length} className="text-center text-muted">
-                無資料
+                {noDataMessage}
               </Td>
             </Tr>
           )}

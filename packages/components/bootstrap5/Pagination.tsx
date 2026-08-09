@@ -9,6 +9,8 @@ export interface PaginationProps {
   pageCount: number;
   // 頁碼變更回調函數
   onPageChange: (page: number) => void;
+  previousPageLabel?: string;
+  nextPageLabel?: string;
   [key: string]: number | ((page: number) => void) | undefined | string;
 }
 
@@ -19,7 +21,15 @@ export interface Links {
   next?: string;
 }
 
-export const Pagination = ({ currentPage, totalCount, pageCount, onPageChange, ...props }: PaginationProps): ReactElement => {
+export const Pagination = ({
+  currentPage,
+  totalCount,
+  pageCount,
+  onPageChange,
+  previousPageLabel = 'Previous page',
+  nextPageLabel = 'Next page',
+  ...props
+}: PaginationProps): ReactElement => {
 
   /**
    * 獲取可見的頁碼
@@ -51,7 +61,7 @@ export const Pagination = ({ currentPage, totalCount, pageCount, onPageChange, .
     <nav {...props}>
       <ul className="pagination">
         <li className={`page-item ${currentPage === 1 ? "disabled" : ""}`}>
-          <button title="上一頁" type="button" className="page-link" onClick={() => onPageChange(currentPage - 1)}>
+          <button title={previousPageLabel} type="button" className="page-link" onClick={() => onPageChange(currentPage - 1)}>
             <span aria-hidden="true">&laquo;</span>
           </button>
         </li>
@@ -70,7 +80,7 @@ export const Pagination = ({ currentPage, totalCount, pageCount, onPageChange, .
           )
         )}
         <li className={`page-item ${currentPage === pageCount ? "disabled" : ""}`}>
-          <button title="下一頁" type="button" className="page-link" onClick={() => onPageChange(currentPage + 1)}>
+          <button title={nextPageLabel} type="button" className="page-link" onClick={() => onPageChange(currentPage + 1)}>
             <span aria-hidden="true">&raquo;</span>
           </button>
         </li>

@@ -50,7 +50,7 @@ export const StatusIcon = ({ status, text }: StatusIconOptions) => {
     case 'A':
     case 1:
       return (
-        <span className="text-success" title={text || "啟用"}>
+        <span className="text-success" title={text || "Enabled"}>
           <FontAwesome icon="fa-solid fa-circle-check" />
           {text && <span className="ms-2">{text}</span>}
         </span>
@@ -58,7 +58,7 @@ export const StatusIcon = ({ status, text }: StatusIconOptions) => {
     case 'X':
     case 0:
       return (
-        <span className="text-danger" title={text || "停用"}>
+        <span className="text-danger" title={text || "Disabled"}>
           <FontAwesome icon="fa-solid fa-circle-xmark" />
           {text && <span className="ms-2">{text}</span>}
         </span>
@@ -74,30 +74,30 @@ export const OrderStatus = ({status, text}: StatusIconOptions) => {
   switch(status){
     case 1:
       return (
-        <span className="text-success" title={text || "已點收"}>
+        <span className="text-success" title={text || "Received"}>
           <FontAwesome icon="fa-solid fa-circle-check" />
-          {<small className="ms-2">{text || "已點收"}</small>}
+          {<small className="ms-2">{text || "Received"}</small>}
         </span>
       );
     case 0:
       return (
-        <span className="text-secondary" title={text || "取消"}>
+        <span className="text-secondary" title={text || "Cancelled"}>
           <FontAwesome icon="fa-solid fa-circle-xmark" />
-          {<small className="ms-2">{text || "已取消"}</small>}
+          {<small className="ms-2">{text || "Cancelled"}</small>}
         </span>
       );
     case 9:
       return (
-        <span className="text-warning-ahop" title={text || "未處理"}>
+        <span className="text-warning-ahop" title={text || "Unprocessed"}>
           <FontAwesome icon="fa-solid fa-envelope" />
-          {<small className="ms-2">{text || "未處理"}</small>}
+          {<small className="ms-2">{text || "Unprocessed"}</small>}
         </span>
       );
     case 8:
       return (
-        <span className="text-primary" title={text || "已讀取"}>
+        <span className="text-primary" title={text || "Read"}>
           <FontAwesome icon="fa-solid fa-envelope-open" />
-          {<small className="ms-2">{text || "已讀取"}</small>}
+          {<small className="ms-2">{text || "Read"}</small>}
         </span>
       );
     default:

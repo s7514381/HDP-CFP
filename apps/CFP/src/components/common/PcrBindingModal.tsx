@@ -8,6 +8,9 @@ import Container from '@packages/components/bootstrap5/Container';
 import { CommonTable, Column, CommonTableHandle } from '@/components/common/CommonTable';
 import { API_MAP } from '@/lib/apiRoutes';
 import { TableSearchParams } from '@/components/common/tableUtils';
+import { useToast } from '@packages/contexts/ToastContext';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { LANGUAGE_KEYS } from '@/config/languageKeys';
 
 export interface PcrBindingRow {
   id: string | number;
@@ -25,33 +28,54 @@ interface PcrBindingModalProps {
   show: boolean;
   onClose: () => void;
   onConfirm: (row: PcrBindingRow) => Promise<boolean>;
+  currentSelectedRowId?: string | number | null;
 }
 
 const INITIAL_SEARCH: PcrBindingSearch = { Keyword: '' };
+
+const isSameId = (left: string | number | null | undefined, right: string | number | null | undefined) =>
+  left != null && right != null && String(left) === String(right);
 
 export default function PcrBindingModal({
   show,
   onClose,
   onConfirm,
+  currentSelectedRowId = null,
 }: PcrBindingModalProps) {
   const tableRef = React.useRef<CommonTableHandle<PcrBindingRow>>(null);
   const [keyword, setKeyword] = useState('');
+  const [submittedKeyword, setSubmittedKeyword] = useState('');
+  const [hasSearched, setHasSearched] = useState(false);
   const [selectedRow, setSelectedRow] = useState<PcrBindingRow | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const { danger } = useToast();
+  const { translate } = useLanguage();
 
   const handleSearch = () => {
-    tableRef.current?.search({ Keyword: keyword.trim() });
+    const trimmedKeyword = keyword.trim();
+    if (trimmedKeyword.length < 2) {
+      danger({ message: <span>{translate(LANGUAGE_KEYS.dataMaintenance.keywordTooShort, 'Enter at least 2 characters.')}</span> });
+      return;
+    }
+
+    setSelectedRow(null);
+    setSubmittedKeyword(trimmedKeyword);
+    setHasSearched(true);
+    tableRef.current?.search({ Keyword: trimmedKeyword });
   };
 
   const handleClear = () => {
     setKeyword('');
+    setSubmittedKeyword('');
+    setHasSearched(false);
     setSelectedRow(null);
-    tableRef.current?.search(INITIAL_SEARCH);
   };
 
   const handleClose = () => {
     if (submitting) return;
     setKeyword('');
+    setSubmittedKeyword('');
+    setHasSearched(false);
     setSelectedRow(null);
     onClose();
   };
@@ -71,7 +95,7 @@ export default function PcrBindingModal({
 
   const columns: Column<PcrBindingRow>[] = [
     {
-      header: '產品次類別',
+      header: translate(LANGUAGE_KEYS.productSubcategory.productSubcategory, 'Product subcategory'),
       key: 'name',
     },
     {
@@ -79,39 +103,49 @@ export default function PcrBindingModal({
       key: 'cccCode',
     },
     {
-      header: '制定者',
+      header: translate(LANGUAGE_KEYS.pcrPattern.developer, 'Developer'),
       key: 'developer',
     },
     {
-      header: '適用範圍',
+      header: translate(LANGUAGE_KEYS.pcrPattern.applicableScope, 'Applicable scope'),
       key: 'applicableScope',
     },
     {
-      header: '選擇',
+      header: translate(LANGUAGE_KEYS.common.select, 'Select'),
       className: 'text-center',
       style: { width: '100px' },
-      render: (row) => (
-        <Btn
-          type="button"
-          color={selectedRow?.id === row.id ? 'primary' : 'secondary'}
-          size="sm"
-          outline={selectedRow?.id !== row.id}
-          onClick={() => setSelectedRow(row)}
-        >
-          {selectedRow?.id === row.id ? '已選擇' : '選擇'}
-        </Btn>
-      ),
+      render: (row) => {
+        const isSelected = selectedRow
+          ? isSameId(selectedRow.id, row.id)
+          : isSameId(currentSelectedRowId, row.id);
+
+        return (
+          <Btn
+            type="button"
+            color={isSelected ? 'primary' : 'secondary'}
+            size="sm"
+            outline={!isSelected}
+            onClick={() => setSelectedRow(row)}
+          >
+            {isSelected
+              ? translate(LANGUAGE_KEYS.dataMaintenance.selected, 'Selected')
+              : translate(LANGUAGE_KEYS.common.select, 'Select')}
+          </Btn>
+        );
+      },
     },
   ];
 
   return (
     <Modal show={show} size="xl" onClose={handleClose}>
-      <Modal.Title onClose={handleClose}>綁定 PCR 模板</Modal.Title>
+      <Modal.Title onClose={handleClose}>
+        {translate(LANGUAGE_KEYS.dataMaintenance.bindModalTitle, 'Bind PCR template')}
+      </Modal.Title>
       <Modal.Body>
         <div className="mb-3">
           <Input
-            label="關鍵字"
-            placeholder="產品次類別、CCC code 或制定者"
+            label={translate(LANGUAGE_KEYS.dataMaintenance.keyword, 'Keyword')}
+            placeholder={translate(LANGUAGE_KEYS.dataMaintenance.keywordPlaceholder, 'Product subcategory, CCC code, or developer')}
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
             onKeyDown={(event) => {
@@ -124,25 +158,26 @@ export default function PcrBindingModal({
         </div>
         <div className="d-flex justify-content-end gap-2 mb-3">
           <Btn type="button" color="success" outline icon="search" onClick={handleSearch}>
-            查詢
+            {translate(LANGUAGE_KEYS.common.search, 'Search')}
           </Btn>
           <Btn type="button" color="light" className="text-primary border" onClick={handleClear}>
-            清除
+            {translate(LANGUAGE_KEYS.common.clear, 'Clear')}
           </Btn>
         </div>
         <Container fluid>
           <CommonTable
+            key={hasSearched ? 'searched' : 'not-searched'}
             ref={tableRef}
             columns={columns}
-            apiUrl={API_MAP.PRODUCT_SUBCATEGORY_GET_LIST}
-            searchParams={INITIAL_SEARCH}
+            apiUrl={hasSearched ? API_MAP.PRODUCT_SUBCATEGORY_GET_LIST : undefined}
+            searchParams={hasSearched ? { Keyword: submittedKeyword } : INITIAL_SEARCH}
             pageSize={5}
             rowKey={(row) => row.id}
           />
         </Container>
         <div className="d-flex justify-content-end gap-2 mt-3">
           <Btn type="button" color="secondary" outline onClick={handleClose} disabled={submitting}>
-            取消
+            {translate(LANGUAGE_KEYS.common.cancel, 'Cancel')}
           </Btn>
           <Btn
             type="button"
@@ -151,7 +186,7 @@ export default function PcrBindingModal({
             disabled={!selectedRow || submitting}
             loading={submitting}
           >
-            確認
+            {translate(LANGUAGE_KEYS.common.confirm, 'Confirm')}
           </Btn>
         </div>
       </Modal.Body>

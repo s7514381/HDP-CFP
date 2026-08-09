@@ -93,7 +93,7 @@ export interface FileButtonProps extends Omit<React.InputHTMLAttributes<HTMLInpu
  * @param props 傳遞給input的屬性
  * @returns
  */
-export const FileBtn = forwardRef<HTMLInputElement, FileButtonProps>(({ label = "選擇檔案", className = "", btnProps = {}, onChange, ...props }, ref) => {
+export const FileBtn = forwardRef<HTMLInputElement, FileButtonProps>(({ label = "Select file", className = "", btnProps = {}, onChange, ...props }, ref) => {
     const inputRef = useRef<HTMLInputElement>(null);
     const _className = ["hidden-file-input", className].filter(Boolean).join(" ");
   const { style, ...inputProps } = props;
@@ -254,6 +254,7 @@ export interface DropdownInputProps extends Omit<InputProps, "type"> {
   onItemSelect?: (item: DropdownItem) => void;
   displayValue?: (item: DropdownItem) => string;
   clear?: boolean;
+  emptyMessage?: string;
 }
 
 /**
@@ -297,6 +298,7 @@ export function DropdownInput({
   onItemSelect,
   onChange,
   clear,
+  emptyMessage = 'No data',
   ...props
 }: Readonly<DropdownInputProps>) {
   const [inputValue, setInputValue] = useState("");
@@ -400,7 +402,7 @@ export function DropdownInput({
       {showDropdown && dropdownItems.length > 0 && (
         <ul className="list-group input-dropdown">
           {dropdownItems.length === 0 && (
-            <li className="list-group-item text-danger">沒有資料</li>
+            <li className="list-group-item text-danger">{emptyMessage}</li>
           )}
           {dropdownItems.map((item) => (
             <li key={item.value} className="pointer list-group-item" onMouseDown={() => handleSelect(item)} role="button">

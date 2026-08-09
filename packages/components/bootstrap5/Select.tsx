@@ -59,11 +59,23 @@ export const Select: React.FC<SelectProps> = ({
  * @param props 
  * @returns 
  */
-export const StatusSelect: React.FC<Omit<SelectProps, 'options'>> = (props) => {
+interface StatusSelectLabels {
+    prompt: string;
+    enabled: string;
+    disabled: string;
+}
+
+export const StatusSelect: React.FC<Omit<SelectProps, 'options'> & { labels?: Partial<StatusSelectLabels> }> = ({ labels, ...props }) => {
+    const resolvedLabels: StatusSelectLabels = {
+        prompt: 'Status',
+        enabled: 'Enabled',
+        disabled: 'Disabled',
+        ...labels,
+    };
     const statusOptions = [
-        { value: '', label: '狀態' },
-        { value: 1, label: '啟用' },
-        { value: 0, label: '停用' },
+        { value: '', label: resolvedLabels.prompt },
+        { value: 1, label: resolvedLabels.enabled },
+        { value: 0, label: resolvedLabels.disabled },
     ];
     return <Select options={statusOptions} {...props} />;
 }
