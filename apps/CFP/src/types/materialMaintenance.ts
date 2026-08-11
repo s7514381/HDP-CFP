@@ -4,6 +4,13 @@ export interface MaterialMaintenanceSource {
   supplierName: string;
   productName: string;
   allocationPercentage: number;
+  carbonFactor?: number | null;
+  thirdPartyCertification: boolean;
+  consultantApprovalCount: number;
+  buyerApprovalCount: number;
+  totalScore: number;
+  approvedQuantity: number;
+  isAccredited: boolean;
 }
 
 export interface MaterialMaintenanceYear {

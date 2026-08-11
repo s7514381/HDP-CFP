@@ -79,10 +79,13 @@ export const API_MAP: Record<string, string> = {
   MATERIAL_IMPORT_TEMPLATE: `${API_URL}/Material/DownloadImportTemplate`,
   MATERIAL_MST: `${API_URL}/Material`,
   MATERIAL_MAINTENANCE_GET_MODEL: `${API_URL}/MaterialMaintenance/GetModel`,
+  MATERIAL_MAINTENANCE_GET_SOURCE_SELECT_LIST: `${API_URL}/MaterialMaintenance/GetSourceSelectListItems`,
   MATERIAL_MAINTENANCE_ADD_YEAR: `${API_URL}/MaterialMaintenance/AddYear`,
   MATERIAL_MAINTENANCE_ADD_SOURCE: `${API_URL}/MaterialMaintenance/AddSource`,
   MATERIAL_MAINTENANCE_DELETE_YEAR: `${API_URL}/MaterialMaintenance/DeleteYear`,
   MATERIAL_MAINTENANCE_DELETE_SOURCE: `${API_URL}/MaterialMaintenance/DeleteSource`,
+  MATERIAL_MAINTENANCE_GET_SOURCE_ACCREDITATION_LEVEL: `${API_URL}/MaterialMaintenance/GetSourceAccreditationLevel`,
+  MATERIAL_MAINTENANCE_SET_SOURCE_ACCREDITED: `${API_URL}/MaterialMaintenance/SetSourceAccredited`,
 
   // ===== 群組管理 =====
   MATERIAL_GROUP_CREATE: `${API_URL}/MaterialGroup/Create`,
@@ -128,5 +131,10 @@ export const API_MAP: Record<string, string> = {
   PRODUCT_SUBCATEGORY_CREATE_PCR_PATTERN: `${API_URL}/ProductSubcategory/CreatePcrPattern`,
   PRODUCT_SUBCATEGORY_EDIT_PCR_PATTERN: `${API_URL}/ProductSubcategory/EditPcrPattern`,
   PRODUCT_SUBCATEGORY_DELETE_PCR_PATTERN: `${API_URL}/ProductSubcategory/DeletePcrPattern`,
+  BUYER_ACCREDITATION_LEVEL_CREATE: `${API_URL}/BuyerAccreditationLevel/Create`,
+  BUYER_ACCREDITATION_LEVEL_EDIT: `${API_URL}/BuyerAccreditationLevel/Edit`,
+  BUYER_ACCREDITATION_LEVEL_GET_MODEL: `${API_URL}/BuyerAccreditationLevel/GetModel`,
+  BUYER_ACCREDITATION_LEVEL_GET_LIST: `${API_URL}/BuyerAccreditationLevel/GetList`,
+  BUYER_ACCREDITATION_LEVEL_MST: `${API_URL}/BuyerAccreditationLevel`,
 
 };

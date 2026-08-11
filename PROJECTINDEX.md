@@ -17,6 +17,12 @@
       - [6.5.5 多語言功能開發檢查清單](#655-多語言功能開發檢查清單)
       - [6.5.6 PCR 多語言資料規則](#656-pcr-多語言資料規則)
       - [6.5.7 使用者介面硬編碼中文盤點規則](#657-使用者介面硬編碼中文盤點規則)
+   - [6.6 前端開發風格](#66-前端開發風格)
+      - [6.6.1 頁面與元件責任](#661-頁面與元件責任)
+      - [6.6.2 API 與資料流](#662-api-與資料流)
+      - [6.6.3 狀態、生命週期與非同步](#663-狀態生命週期與非同步)
+      - [6.6.4 UI、型別、多語言與權限](#664-ui型別多語言與權限)
+      - [6.6.5 命名、格式與驗證](#665-命名格式與驗證)
 7. [後端規格](#7-後端規格)
    - [7.2.1 Entity Model 設定責任](#721-entity-model-設定責任)
    - [7.6 Migration 與實際資料庫更新](#76-migration-與實際資料庫更新)
@@ -36,7 +42,7 @@
 
 # HOP-CFP 專案索引
 
-> 本文件是給 AI 與開發者使用的快速入口。內容依 2026-08-05 工作區原始碼、設定、Migration、資料庫與瀏覽器驗證整理；若本文件與程式碼不一致，以實際執行程式碼與 API 結果為準，並應在修改後同步更新本文件。
+> 本文件是給 AI 與開發者使用的快速入口。內容依 2026-08-10 工作區原始碼、設定、Migration、資料庫與瀏覽器驗證整理；若本文件與程式碼不一致，以實際執行程式碼與 API 結果為準，並應在修改後同步更新本文件。
 
 ## 1. 文件定位與使用方式
 
@@ -119,7 +125,8 @@ HOP-CFP-Backend/
 | 通知建立/狀態 | `MaterialNotify/page.tsx`、`StatusQuery/page.tsx`、`NotifyStatusReport/page.tsx` | 三個對應 Controller / Service |
 | PCR 模板與父子項目 | `src/app/(main)/PcrTemplate/page.tsx`、`Content.tsx` | `PcrTemplateController` → `PcrTemplateService` → `PcrTemplate` / `LanguageResource` |
 | 產品次類別維護與 PCR 模板 | `src/app/(main)/ProductSubcategory/page.tsx`、`PcrPattern/*` | `ProductSubcategoryController` → `ProductSubcategoryService` / `PcrPatternService`；PCR 模板依目前帳號與 `ProductSubcategoryId` 隔離 |
-| DataMaintenance 原料維護 | `src/app/(main)/DataMaintenance/MaterialMaintenance/page.tsx`、`src/types/materialMaintenance.ts` | `MaterialMaintenanceController` → `MaterialMaintenanceService`；只顯示 PCR 原料頁籤（`PcrPattern.Category=Material`）的 4 個根項目、細項、年份與供應來源 |
+| DataMaintenance 原料維護 | `src/app/(main)/DataMaintenance/MaterialMaintenance/page.tsx`、`src/types/materialMaintenance.ts` | `MaterialMaintenanceController` → `MaterialMaintenanceService`；只顯示 PCR 原料頁籤（`PcrPattern.Category=Material`）的 4 個根項目、細項、年份與供應來源，並提供 PM 欄位、BuyerAccreditation 等級判斷、認可保存與意見佔位按鈕 |
+| DataMaintenance 買方認可依據 | `src/app/(main)/DataMaintenance/BuyerAccreditation/*`、`src/types/buyerAccreditationLevel.ts` | 由每筆 Material 帶入 `materialId`，使用 `BuyerAccreditationLevelController` / `BuyerAccreditationLevelService` 維護該 Material 專屬的等級與認可數 |
 | PCR 模板資料維護（Legacy） | `src/app/(main)/PcrPattern/page.tsx`、`Content.tsx` | `PcrPatternController` → `PcrPatternService` → `PcrPattern`；欄位與父子流程對齊 `PcrTemplate`，但仍停用選單與權限 |
 | 資料表欄位與 Migration | `HOP-CFP-Backend.Library/Models/*`、`DBContext.cs` | `HOP-CFP-Backend/Migrations/*` |
 | Entity 關聯、索引與 EF 設定 | 對應 Model 的 `OnModelCreating` | `DBContext.cs` 的全域規則與 `IdModelBase` 掃描 |
@@ -250,7 +257,8 @@ Route Group `(auth)` 與 `(main)` 不會出現在 URL。根 Layout 以 `ApiProvi
 | `/PcrTemplate`、`/PcrTemplate/Create`、`/PcrTemplate/Edit/?id={id}` | `src/app/(main)/PcrTemplate` | PCR 模板範本、分類頁籤與父子項目維護 |
 | `/ProductSubcategory`、`/ProductSubcategory/Create`、`/ProductSubcategory/Edit/?id={id}` | `src/app/(main)/ProductSubcategory` | 產品次類別維護；提供產品次類別搜尋、新增、編輯、刪除與 PCR 模板查看入口 |
 | `/ProductSubcategory/PcrPattern/?id={productSubcategoryId}`、`/Create`、`/Edit` | `src/app/(main)/ProductSubcategory/PcrPattern` | 產品次類別專屬 PCR 模板；首次查看依目前帳號複製 `PcrTemplate` 父子資料，並依 `X-Language-Code` 優先使用目前語系文字 |
-| `/DataMaintenance`、`/DataMaintenance/MaterialMaintenance/?id={materialId}` | `src/app/(main)/DataMaintenance/page.tsx`、`src/app/(main)/DataMaintenance/MaterialMaintenance/page.tsx`、`src/components/common/PcrBindingModal.tsx` | 列表直接重用 `Material/GetList`；原料維護頁依 Material 綁定的 PCR 模板列出第一層、子項目、年份與供應來源，可新增/刪除年份及新增/刪除供應來源；資料保存於 `MaterialMaintenanceYear`、`MaterialMaintenanceSource`；固定文案使用 `DM0001`–`DM0015`、`RM0001`–`RM0032` 多語言資源 |
+| `/DataMaintenance`、`/DataMaintenance/MaterialMaintenance/?id={materialId}` | `src/app/(main)/DataMaintenance/page.tsx`、`src/app/(main)/DataMaintenance/MaterialMaintenance/page.tsx`、`src/components/common/PcrBindingModal.tsx` | 列表直接重用 `Material/GetList`；原料維護頁依 Material 綁定的 PCR 模板列出第一層、子項目、年份與供應來源，可新增/刪除年份及新增/刪除供應來源，來源列表包含碳排係數、第三方查證、核可數量與三個操作按鈕；資料保存於 `MaterialMaintenanceYear`、`MaterialMaintenanceSource`；固定文案使用 `DM0001`–`DM0015`、`RM0001`–`RM0053` 多語言資源 |
+| `/DataMaintenance/BuyerAccreditation/?materialId={materialId}`、`/Create/?materialId={materialId}`、`/Edit/?id={id}&materialId={materialId}` | `src/app/(main)/DataMaintenance/page.tsx`、`src/app/(main)/DataMaintenance/BuyerAccreditation` | 買方認可依據等級列表與 CRUD；每筆 Material 各自保存供應來源等級、第三方認證、顧問認可數、買方認可數及總分，使用 `BA0001`–`BA0012` 與 `ER0061`–`ER0064` 多語言資源；缺少 `materialId` 時不顯示共用資料並導回 DataMaintenance |
 | `/PcrPattern`、`/PcrPattern/Create`、`/PcrPattern/Edit/?id={id}` | `src/app/(main)/PcrPattern` | Legacy PCR模板資料維護；使用 `ParentId`、`Category`、`Item` 與子項目，仍不掛載實際選單與權限 |
 
 #### 6.1.1 PCR 模板頁面實作規則
@@ -272,7 +280,7 @@ Route Group `(auth)` 與 `(main)` 不會出現在 URL。根 Layout 以 `ApiProvi
 - `AdminFunction` 的 `ProductSubcategory/Index` 根功能直接提供查詢，不另建立查詢子功能；新增、修改、刪除為子功能，Migration 將選單與功能授予系統管理員角色。
 - `PcrPattern` 為獨立的 Legacy PCR 模板資料表，欄位與父子維護流程對齊 `PcrTemplate`；產品次類別入口先呼叫 `EnsurePcrPattern` 完成首次初始化，再由 `GetPcrPattern` 純查詢列表，並以帳號與 `ProductSubcategoryId` 隔離，原本的 PcrPattern 選單入口仍停用。
 - `EnsurePcrPattern` 初始化時由 request 的 `X-Language-Code` 選取 `PcrTemplate` 翻譯；指定語系沒有有效文字時 fallback 到基礎語言。初始化只在該帳號與產品次類別尚無 `PcrPattern` 時執行，不會覆蓋既有資料。
-- `/DataMaintenance` 列表仍直接查詢既有 `Material`；進入 `/DataMaintenance/MaterialMaintenance/?id={materialId}` 後，原料維護資料由 `MaterialMaintenanceYear`（Material + PcrPattern 子項目 + 年份）與 `MaterialMaintenanceSource`（年份 + Supplier + 產品名稱 + 佔比）保存。
+- `/DataMaintenance` 列表仍直接查詢既有 `Material`；進入 `/DataMaintenance/MaterialMaintenance/?id={materialId}` 後，原料維護資料由 `MaterialMaintenanceYear`（Material + PcrPattern 子項目 + 年份）與 `MaterialMaintenanceSource`（年份 + Supplier + 產品名稱 + 佔比 + 碳排係數 + 第三方查證 + 顧問/買方認可數 + 總分 + 是否認可）保存。
 - `/DataMaintenance` 的 PCR綁定呼叫 `POST /Material/BindPcr`，以 `Material.Id` 作為 Source、`ProductSubcategory.Id` 作為 Target，透過 `ManyToMany` 保存；業務規則為 Material 與 ProductSubcategory 有效關聯各自只能有一筆，新綁定會將來源或目標的既有有效關聯軟刪除。
 
 #### 6.1.3 DataMaintenance 原料維護
@@ -281,7 +289,8 @@ Route Group `(auth)` 與 `(main)` 不會出現在 URL。根 Layout 以 `ApiProvi
 - 顯示流程固定為 PCR 原料頁籤的 `PcrPattern.Category=Material` root → child item → year → supplier source，包含原料頁籤下的 4 個根項目及其細項；子項目卡片使用滿版欄位。頁面第一次載入會呼叫後端 `EnsureInitializedAsync`，沿用既有 PcrTemplate 多語言 fallback 初始化 PcrPattern，之後再查詢資料。
 - 前端原料維護頁以 `page.tsx` 作為組合層，API 路由與回應正規化集中在 `materialMaintenanceService.ts`，年份/來源規則集中在 `materialMaintenanceValidation.ts`，非同步狀態與操作流程由 `useMaterialMaintenance.ts` 管理，階層呈現與來源 Modal 分別由 `MaterialMaintenanceView.tsx`、`MaterialMaintenanceSourceModal.tsx` 負責；新增/刪除後採背景重新查詢，保留既有畫面避免整頁閃爍。
 - 年份限制為 1900–2100，同一 Material、PcrPattern 子項目不可重複有效年份；供應來源需屬於目前 Manager 可見的 Supplier，同一年份下 Supplier + ProductName 不可重複，且有效佔比總和不可超過 100%。
-- 目前先完成 PM 示意圖要求的年份與供應來源管理；碳排係數、審查結果、供應商審核/產品審核等後續欄位尚未加入，避免在資料模型尚未定義時預留不一致欄位。
+- 供應來源列表沿用既有表格與 Bootstrap 操作區，顯示佔比、碳排係數、第三方查證與核可數量；「判斷認可等級」依目前來源的四項認可資料，按照該 Material 的 BuyerAccreditation 排序逐筆精確比對，若多筆符合取第一筆；「認可/取消認可」以確認對話框保存 `IsAccredited`；「意見」先以停用按鈕保留位置，後續再實作意見流程。
+- DataMaintenance 每筆資料的操作區提供 `/DataMaintenance/BuyerAccreditation/?materialId={materialId}`，以標準列表/表單維護該 Material 專屬的買方認可依據等級；等級名稱只在同一 Material 內不可重複，認可數與總分不得為負數，後端 CRUD 端點沿用 Material 功能權限鏈並驗證 Material 所屬供應商。
 
 ### 6.2 前端狀態與權限
 
@@ -376,14 +385,53 @@ Route Group `(auth)` 與 `(main)` 不會出現在 URL。根 Layout 以 `ApiProvi
 
 - 使用者可見的標題、欄位、按鈕、提示、Toast、錯誤訊息與 `aria-label` 不得直接寫中文；應先在 `apps/CFP/src/config/languageKeys.ts` 建立代號，再以 `useLanguage().translate` 取值。
 - `/DataMaintenance` 與 `PcrBindingModal` 的固定文字使用 `DM0001`–`DM0015`；產品次分類 PCR 頁面的初始化/載入錯誤使用 `PP0015`–`PP0017`；產品次分類列表的「查看」使用 `CM0117`。
-- `/DataMaintenance/MaterialMaintenance` 的標題、第一層/子項目/年份/供應來源、操作結果與驗證 fallback 使用 `RM0001`–`RM0032`；後端年份/供應來源驗證錯誤使用 `ER0052`–`ER0060`。
+- `/DataMaintenance/MaterialMaintenance` 的標題、第一層/子項目/年份/供應來源、操作結果與驗證 fallback 使用 `RM0001`–`RM0053`；後端年份/供應來源驗證錯誤使用 `ER0052`–`ER0060`，來源認可資料錯誤使用 `ER0065`；買方認可依據的範圍錯誤使用 `ER0064`。
 - 上述固定文案與共用 API 錯誤標籤（`CM0119`–`CM0133`）由 `HOP-CFP-Backend/Migrations/20260807140000_LocalizeDataMaintenanceUi.cs` 建立繁中與英文翻譯，並補足既有 `CM0116` 的英文翻譯；`20260807143000_NormalizePcrPatternTranslations.cs`、`20260807150000_ActivatePcrPatternTranslations.cs` 會修正既有停用/異常的 `PP0015`–`PP0017`。`ApiError` 必須在 `LanguageProvider` 內由 `translate` 注入標籤。Migration 套用且資料庫查詢確認後，才可宣稱中英文資源完整。
 - 共用套件元件不得自行依賴繁中文字串；例如分頁與下拉輸入提供英文 fallback 或可覆寫的 label，實際畫面應由應用層傳入翻譯後文字。
 - `HeadContext` 的預設頁面標題由 `apps/CFP/src/app/layout.tsx` 在 `LanguageProvider` 內使用 `CM0030` 解析，並同步設定 `document.documentElement.lang`；`DataGrid` 的空資料訊息使用可覆寫的 `noDataMessage`，不可重新加入固定中文。
-- `translate` 的 fallback 文字可以保留作為載入失敗時的最後保底，但不得把 fallback 當成正常語言來源；新文案的 fallback 使用英文，避免新增中文字串重新散落在頁面程式碼。翻譯快取版本目前為 `2`，新增資源或修正 seed translation 時要同步升版，避免舊的 `localStorage.languageTranslations:*` 遮蔽新資源。
+- `translate` 的 fallback 文字可以保留作為載入失敗時的最後保底，但不得把 fallback 當成正常語言來源；新文案的 fallback 使用英文，避免新增中文字串重新散落在頁面程式碼。翻譯快取版本目前為 `5`（`LanguageContext.tsx`），新增資源或修正 seed translation 時要同步升版，避免舊的 `localStorage.languageTranslations:*` 遮蔽新資源。
 - 盤點時要區分註解、型別註解、資料庫欄位/領域資料與實際 UI 文案；前者不屬於使用者介面翻譯範圍。共用套件若需要顯示文字，應由呼叫端傳入已翻譯的 label，不能依賴中文預設值。
 
 - 後端 `BackendMessageKeys.Fallbacks` 僅作資料庫翻譯無法取得時的最後保底，統一維持可讀英文；正常繁中/英文回應仍由 `LanguageResource` 的 `ER0001`–`ER0060` 資源依 `X-Language-Code` 解析。新增後端錯誤代號時，必須同步建立啟用中的繁中與英文翻譯並確認 fallback 不含亂碼或硬編碼中文。
+
+### 6.6 前端開發風格
+
+以下是依 `apps/CFP` 目前原始碼整理出的既有開發風格與責任分界。它是新增功能時應優先延用的專案慣例，不是要求一次重排所有既有檔案的格式規則。
+
+#### 6.6.1 頁面與元件責任
+
+- App Router 以 `(auth)`、`(main)` Route Group 組織頁面；`page.tsx` 是路由入口與功能組合層，功能目錄通常使用 `Content.tsx` 承載表單或畫面內容。
+- 標準列表頁由 Page 管理搜尋、權限、導頁、Toast、匯入或刪除等功能操作，列表資料與分頁交給 `CommonTable`；不要在 Page 另外重複發送同一筆列表請求。
+- 標準新增/編輯頁優先使用 `FormPageWrapper`，由 Wrapper 管理 query id、模型載入、表單狀態、提交、成功導回與 loading；`Content.tsx` 專注欄位呈現與局部互動。
+- 複雜功能可依責任拆成 feature service、validation、hook、view 與 modal；`DataMaintenance/MaterialMaintenance` 是目前的完整範例。拆分應服務於資料流與生命週期，不為了檔案數量而抽象化。
+- UI 優先使用 `@packages/components` 的 Bootstrap 5 元件與 `@packages/components/layouts`；CFP 專用功能與樣式留在 `apps/CFP`，不要為單一 CFP 需求修改外層共用套件。
+
+#### 6.6.2 API 與資料流
+
+- API 路徑集中在 `src/lib/apiRoutes.ts` 的 `API_URL` / `API_MAP`；頁面不得散落自行拼接不同的根 URL。修改前要以後端 Controller 的實際 Route 核對，不只依常數名稱猜測。
+- 已登入的主功能頁優先使用 `useAppApi`，由它統一加入 `Authorization` 與 `X-Language-Code`，並在 401 時清除 session、導向 `/login`。現有公開認證頁仍有直接使用 `@packages/hooks/useApi` 的實作，除非任務要求，不要順手混合或搬移兩種流程。
+- 一般回應依 `{ success, message, data }` 消費；檔案下載或匯入範本要依 Blob/下載契約處理，不能把所有回應都當 JSON。含巢狀欄位或 `IFormCollection` 的端點使用 `formPost` / `FormData` 前，要核對 ASP.NET Model Binder 的欄位名稱。
+- `CommonTable` 的查詢參數由 `tableUtils` 組成 `order/start/length/draw` 與搜尋條件；搜尋透過 `search()` 更新狀態，重整使用 `reload()`，不要在頁面中重造列表分頁協定。
+
+#### 6.6.3 狀態、生命週期與非同步
+
+- 單頁局部狀態使用 `useState`；使用者、動態選單與語言等跨頁狀態分別由 `UserContext`、`MenuContext`、`LanguageContext` 管理，並與 `appStorage` 同步。
+- 對傳給 effect 或子元件的非同步函式、計算值與 API 操作，依實際依賴使用 `useCallback`、`useMemo`、`useRef`；effect 必須清理取消旗標或 request id，避免卸載後寫入狀態或舊請求覆蓋新結果。
+- 列表 loading 時清除舊資料與總筆數，並用 request sequence 防止競態；表單載入與提交則明確區分 `fetching` / `loading`，失敗時保留可理解的錯誤提示。
+- 使用者操作失敗以 Toast/Confirm 回饋；`console.error` 只記錄必要診斷資訊，不輸出 token、完整 QR/敏感資料或不必要的整包 response。
+
+#### 6.6.4 UI、型別、多語言與權限
+
+- 使用者可見文字、錯誤訊息與 `aria-label` 優先透過 `LANGUAGE_KEYS` 與 `useLanguage().translate` 取得；fallback 只作載入失敗保底，新文案的 fallback 使用英文。
+- 後端欄位可能保留 PascalCase，而前端頁面型別多採 camelCase；新增或修改欄位時，同時核對 API response、ViewModel、TypeScript 型別與 `CommonTable` 的 `Column.key`，必要時在邊界正規化。
+- 頁面按鈕可用 `usePagePermissions` 隱藏或停用，但這只是 UX 層；實際授權必須由後端 `ApiFilter` / action permission 再確認。不要把前端條件渲染當成安全邊界。
+- 樣式以 Bootstrap utility class、共用元件與 `globals.scss` 為主；單一元件的特殊寬度或狀態可用局部 style，但不要引入與既有視覺系統平行的樣式方案。
+
+#### 6.6.5 命名、格式與驗證
+
+- 路由功能目錄與 React 元件檔案多採 PascalCase，`page.tsx` 為路由入口；Hook 使用 `useXxx`，API 常數與翻譯 key 使用大寫命名空間，區域變數與函式使用 camelCase。
+- 目前原始碼仍可觀察到單引號/雙引號、型別宣告與 `var`/明確型別的混用；新增程式碼跟隨相鄰檔案即可，避免把無關檔案整批格式化造成噪音。
+- 工作區目前未找到獨立前端測試檔；最低驗證是 CFP lint/build，涉及互動流程時再以瀏覽器實際登入、操作頁面、Network 與 Console 確認。Build 通過不能代替權限、列表競態、匯入或多語言 runtime 驗證。
 
 ## 7. 後端規格
 
@@ -448,7 +496,7 @@ StandardController<DBModel, ViewModel, Search, List, ListData>
 | `NotifyStatusReportController` | `NotifyStatusReportService` / `MaterialNotify` | 無，自用標準 CRUD |
 | `PcrTemplateController` | `PcrTemplateService` / `PcrTemplate` | 標準 CRUD；以 `Category` 篩選父項目，編輯時一併保存 `ChildList` |
 | `ProductSubcategoryController` | `ProductSubcategoryService` / `PcrPatternService` | 產品次類別 CRUD；以 `Name` 篩選並提供 PCR 模板初始化、查詢與父子 CRUD |
-| `MaterialMaintenanceController` | `MaterialMaintenanceService` / `MaterialMaintenanceYear` / `MaterialMaintenanceSource` | 原料維護階層查詢、年份與供應來源新增/軟刪除；沿用 Material 的 Index/Edit 權限並驗證目前 Manager 可見範圍 |
+| `MaterialMaintenanceController` | `MaterialMaintenanceService` / `MaterialMaintenanceYear` / `MaterialMaintenanceSource` | 原料維護階層查詢、年份與供應來源新增/軟刪除、BuyerAccreditation 等級判斷與來源認可保存；沿用 Material 的 Index/Edit 權限並驗證目前 Manager 可見範圍 |
 | `PcrPatternController` | `PcrPatternService` / `PcrPattern` | Legacy PCR模板父子 CRUD；欄位為 `ParentId`、`Category`、`Item`，已停用選單與權限 |
 
 ### 7.4 驗證、授權與錯誤
@@ -488,7 +536,7 @@ StandardController<DBModel, ViewModel, Search, List, ListData>
 - Migration 的 raw SQL 必須同時考慮既有資料、唯一流水號、基礎語言不存在、語言不存在與 rollback；新增固定翻譯資源時應以 `IF NOT EXISTS` 避免重複插入。
 - 後端正在執行時，`HOP-CFP-Backend.exe` 可能鎖住 build 輸出；建置失敗時先找出並停止明確的後端 PID，不能使用名稱式或廣泛終止程序。若只需編譯驗證，也可使用 `/p:UseAppHost=false`，但仍要注意執行中的 DLL 是否已載入新版本。
 - Migration 套用完成後仍需重新啟動後端，並以 Swagger 或實際 API 請求確認新的 SQL、欄位與資料已可被應用程式使用。
-- 原料維護 schema 由 `20260807124857_MaterialMaintenanceSchema` 建立；`20260807160000_LocalizeMaterialMaintenance` 建立 `RM0001`–`RM0032` 與 `ER0052`–`ER0060` 的 zh-TW/en-US 資源。兩個 Migration 套用後，必須重新啟動後端再驗證 `/MaterialMaintenance/*` API。
+- 原料維護 schema 由 `20260807124857_MaterialMaintenanceSchema` 建立；`20260807160000_LocalizeMaterialMaintenance` 建立 `RM0001`–`RM0032` 與 `ER0052`–`ER0060` 的 zh-TW/en-US 資源；`20260810070536_AddMaterialMaintenanceSourceAccreditation` 新增來源認可欄位並建立 `RM0033`–`RM0053`、`ER0065` 資源。Migration 套用後，必須重新啟動後端再驗證 `/MaterialMaintenance/*` API。
 
 ## 8. 前後端 API 契約
 
@@ -519,6 +567,9 @@ StandardController<DBModel, ViewModel, Search, List, ListData>
 | `MATERIAL_MAINTENANCE_GET_MODEL` | `MaterialMaintenance/GetModel` |
 | `MATERIAL_MAINTENANCE_ADD_YEAR` / `DELETE_YEAR` | `MaterialMaintenance/AddYear`、`DeleteYear` |
 | `MATERIAL_MAINTENANCE_ADD_SOURCE` / `DELETE_SOURCE` | `MaterialMaintenance/AddSource`、`DeleteSource` |
+| `MATERIAL_MAINTENANCE_GET_SOURCE_ACCREDITATION_LEVEL` / `SET_SOURCE_ACCREDITED` | `MaterialMaintenance/GetSourceAccreditationLevel`、`SetSourceAccredited` |
+| `BUYER_ACCREDITATION_LEVEL_CREATE/EDIT/GET_MODEL/GET_LIST` | `BuyerAccreditationLevel/Create`, `Edit`, `GetModel`, `GetList`；列表與表單均需帶 `materialId` |
+| `BUYER_ACCREDITATION_LEVEL_MST` | `BuyerAccreditationLevel` 前綴，刪除使用 `/Delete`；端點沿用 Material 功能權限鏈，後端依 `materialId` 驗證資料範圍 |
 | `PCR_PATTERN_CREATE/EDIT/GET_MODEL/GET_LIST` | Legacy `PcrPattern/Create`, `Edit`, `GetModel`, `GetList` |
 | `PCR_PATTERN_MST` | Legacy `PcrPattern` 前綴，刪除使用 `/Delete` |
 
@@ -611,7 +662,8 @@ PCR 使用 Standard CRUD API，主要入口如下：
 | 產品次類別 | `ProductSubcategory` | `Name`、`Developer`、`ApplicableScope`、`CccCode`；名稱直接保存於 `Name` |
 | PCR模板資料（Legacy） | `PcrPattern` | `ParentId`、`Category`、`Item`；欄位與父子流程對齊 `PcrTemplate`，但名稱直接保存於 `Item` |
 | 原料維護年份 | `MaterialMaintenanceYear` | `MaterialId`、`PcrPatternId`、`Year`；外鍵限制刪除，索引 Material + 子項目 + 年份 |
-| 原料維護供應來源 | `MaterialMaintenanceSource` | `MaterialMaintenanceYearId`、`SupplierId`、`ProductName`、`AllocationPercentage`；佔比為 decimal(5,2) |
+| 原料維護供應來源 | `MaterialMaintenanceSource` | `MaterialMaintenanceYearId`、`SupplierId`、`ProductName`、`AllocationPercentage`、`CarbonFactor`、`ThirdPartyCertification`、`ConsultantApprovalCount`、`BuyerApprovalCount`、`TotalScore`、`IsAccredited`；佔比為 decimal(5,2)，碳排係數為 decimal(12,6) |
+| 買方認可依據等級 | `BuyerAccreditationLevel` | `MaterialId`、`Name`、`ThirdPartyCertification`、`ConsultantApprovalCount`、`BuyerApprovalCount`、`TotalScore`；有效資料以 Material + 名稱唯一，並以 Material 外鍵與目前供應商範圍隔離，認可數與總分不得為負數 |
 | 稽核 | `Log_ManagerLogin`、`Log_ManagerLoginFail`、`Log_ManagerWatch`、`Log_BackendPageRequest`、`DataChange` | 登入、失敗、瀏覽、請求與異動紀錄 |
 | 設定 | `SysConfig`、`KeyValueSetting` | 系統設定與可依類型/群組查詢的 key-value |
 

@@ -153,6 +153,15 @@ export default function DataMaintenancePage() {
           >
             {translate(LANGUAGE_KEYS.dataMaintenance.rawMaterialMaintenance, 'Material maintenance')}
           </Btn>
+          <Btn
+            type="button"
+            color="secondary"
+            size="sm"
+            outline
+            onClick={() => router.push(`/DataMaintenance/BuyerAccreditation/?materialId=${encodeURIComponent(String(row.id))}`)}
+          >
+            {translate(LANGUAGE_KEYS.buyerAccreditation.title, '買方認可依據')}
+          </Btn>
           <Btn type="button" color="secondary" size="sm" outline>
             {translate(LANGUAGE_KEYS.dataMaintenance.carbonInformationMaintenance, 'Carbon information maintenance')}
           </Btn>

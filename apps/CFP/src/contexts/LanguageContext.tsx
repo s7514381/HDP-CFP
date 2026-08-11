@@ -7,7 +7,7 @@ import { useUser } from '@/contexts/UserContext';
 import { appStorage, sessionStorageKeys, useStoredValue } from '@/lib/appStorage';
 
 const DEFAULT_LANGUAGE_CODE = 'zh-TW';
-const TRANSLATION_CACHE_VERSION = 3;
+const TRANSLATION_CACHE_VERSION = 5;
 const translationStorageKey = (languageCode: string) => `languageTranslations:${languageCode}`;
 
 interface LanguageResourceText {

@@ -1,5 +1,5 @@
 import { API_MAP } from '@/lib/apiRoutes';
-import { MaterialMaintenanceModel, SupplierOption } from '@/types/materialMaintenance';
+import { MaterialMaintenanceModel } from '@/types/materialMaintenance';
 import { UseApiResult } from '@packages/types/useApi';
 
 export interface AddYearRequest {
@@ -10,9 +10,23 @@ export interface AddYearRequest {
 
 export interface AddSourceRequest {
   materialMaintenanceYearId: string;
-  supplierId: string;
-  productName: string;
+  sourceMaterialId: string;
   allocationPercentage: number;
+  carbonFactor: number | null;
+  thirdPartyCertification: boolean;
+  consultantApprovalCount: number;
+  buyerApprovalCount: number;
+  totalScore: number;
+}
+
+export interface SourceSelectListItem {
+  value: string | number;
+  text?: string;
+}
+
+export interface SourceAccreditationLevel {
+  levelId?: string | null;
+  levelName?: string | null;
 }
 
 export interface ServiceResponse<T> {
@@ -23,9 +37,11 @@ export interface ServiceResponse<T> {
 
 export interface MaterialMaintenanceService {
   getModel(materialId: string): Promise<ServiceResponse<MaterialMaintenanceModel>>;
-  getSuppliers(): Promise<ServiceResponse<SupplierOption[]>>;
+  getSourceOptions(keyword: string): Promise<ServiceResponse<SourceSelectListItem[]>>;
   addYear(request: AddYearRequest): Promise<ServiceResponse<unknown>>;
   addSource(request: AddSourceRequest): Promise<ServiceResponse<unknown>>;
+  getAccreditationLevel(id: string): Promise<ServiceResponse<SourceAccreditationLevel>>;
+  setAccredited(id: string, isAccredited: boolean): Promise<ServiceResponse<unknown>>;
   deleteYear(id: string): Promise<ServiceResponse<unknown>>;
   deleteSource(id: string): Promise<ServiceResponse<unknown>>;
 }
@@ -59,9 +75,14 @@ export function createMaterialMaintenanceService(formPost: FormPost): MaterialMa
       API_MAP.MATERIAL_MAINTENANCE_GET_MODEL,
       { materialId },
     ),
-    getSuppliers: () => post<SupplierOption[]>(API_MAP.SUPPLIER_GET_SELECT_LIST, {}),
+    getSourceOptions: (keyword) => post<SourceSelectListItem[]>(
+      API_MAP.MATERIAL_MAINTENANCE_GET_SOURCE_SELECT_LIST,
+      { keyword },
+    ),
     addYear: (request) => post(API_MAP.MATERIAL_MAINTENANCE_ADD_YEAR, { ...request }),
     addSource: (request) => post(API_MAP.MATERIAL_MAINTENANCE_ADD_SOURCE, { ...request }),
+    getAccreditationLevel: (id) => post<SourceAccreditationLevel>(API_MAP.MATERIAL_MAINTENANCE_GET_SOURCE_ACCREDITATION_LEVEL, { id }),
+    setAccredited: (id, isAccredited) => post(API_MAP.MATERIAL_MAINTENANCE_SET_SOURCE_ACCREDITED, { id, isAccredited }),
     deleteYear: (id) => post(API_MAP.MATERIAL_MAINTENANCE_DELETE_YEAR, { id }),
     deleteSource: (id) => post(API_MAP.MATERIAL_MAINTENANCE_DELETE_SOURCE, { id }),
   };

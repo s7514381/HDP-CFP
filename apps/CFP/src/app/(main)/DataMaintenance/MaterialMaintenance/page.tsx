@@ -54,13 +54,20 @@ function MaterialMaintenancePageContent() {
     operationFailed: translate(LANGUAGE_KEYS.rawMaterialMaintenance.operationFailed, 'The operation failed.'),
     invalidYear: translate(LANGUAGE_KEYS.rawMaterialMaintenance.invalidYear, 'Enter a year between 1900 and 2100.'),
     allocationInvalid: translate(LANGUAGE_KEYS.rawMaterialMaintenance.allocationInvalid, 'Enter an allocation between 0 and 100 percent.'),
-    supplierLoadFailed: translate(LANGUAGE_KEYS.rawMaterialMaintenance.supplierLoadFailed, 'Unable to load suppliers.'),
+    accreditationInvalid: translate(LANGUAGE_KEYS.rawMaterialMaintenance.accreditationInvalid, 'Enter a valid carbon factor and non-negative whole-number accreditation values.'),
+    sourceLoadFailed: translate(LANGUAGE_KEYS.rawMaterialMaintenance.supplierLoadFailed, 'Unable to load supplier sources.'),
     yearAdded: translate(LANGUAGE_KEYS.rawMaterialMaintenance.yearAdded, 'Year added successfully.'),
     sourceAdded: translate(LANGUAGE_KEYS.rawMaterialMaintenance.sourceAdded, 'Supplier source added successfully.'),
     yearDeleted: translate(LANGUAGE_KEYS.rawMaterialMaintenance.yearDeleted, 'Year deleted successfully.'),
     sourceDeleted: translate(LANGUAGE_KEYS.rawMaterialMaintenance.sourceDeleted, 'Supplier source deleted successfully.'),
     deleteYearConfirm: translate(LANGUAGE_KEYS.rawMaterialMaintenance.deleteYearConfirm, 'Delete this year and its supplier sources?'),
     deleteSourceConfirm: translate(LANGUAGE_KEYS.rawMaterialMaintenance.deleteSourceConfirm, 'Delete this supplier source?'),
+    accreditationLevelFailed: translate(LANGUAGE_KEYS.rawMaterialMaintenance.accreditationLevelFailed, 'Unable to determine the buyer accreditation level.'),
+    accreditationLevelUnavailable: translate(LANGUAGE_KEYS.rawMaterialMaintenance.accreditationLevelUnavailable, 'No buyer accreditation level matches this source.'),
+    accreditationLevelFound: translate(LANGUAGE_KEYS.rawMaterialMaintenance.accreditationLevelFound, 'Buyer accreditation level: {level}.'),
+    accreditConfirm: translate(LANGUAGE_KEYS.rawMaterialMaintenance.accreditConfirm, 'Do you want to {action} this source?'),
+    accredited: translate(LANGUAGE_KEYS.rawMaterialMaintenance.accredited, 'approve'),
+    unaccredited: translate(LANGUAGE_KEYS.rawMaterialMaintenance.unaccredited, 'remove approval from'),
   }), [translate]);
   const notifier = useMemo<MaterialMaintenanceNotifier>(() => ({
     success: (message) => success({ message: <span>{message}</span> }),
@@ -92,13 +99,13 @@ function MaterialMaintenancePageContent() {
             <div aria-busy={controller.refreshing}>
               <MaterialMaintenanceView
                 model={controller.model}
-                yearDrafts={controller.yearDrafts}
                 submitting={controller.submitting}
-                onYearChange={controller.setYearDraft}
-                onAddYear={(itemId) => void controller.addYear(itemId)}
+                onAddYear={(itemId, year) => controller.addYear(itemId, year)}
                 onOpenSourceModal={(year) => void controller.openSourceModal(year)}
                 onDeleteYear={(year) => void controller.deleteYear(year)}
                 onDeleteSource={(sourceId) => void controller.deleteSource(sourceId)}
+                onCheckAccreditationLevel={(sourceId) => void controller.checkAccreditationLevel(sourceId)}
+                onSetAccredited={(sourceId, isAccredited) => void controller.setAccredited(sourceId, isAccredited)}
               />
             </div>
           )}
@@ -109,8 +116,10 @@ function MaterialMaintenancePageContent() {
         show={controller.showSourceModal}
         submitting={controller.submitting}
         sourceForm={controller.sourceForm}
-        supplierOptions={controller.supplierOptions}
+        sourceError={controller.sourceError}
+        fetchSourceOptions={controller.fetchSourceOptions}
         onClose={controller.closeSourceModal}
+        onDismissError={controller.dismissSourceError}
         onChange={controller.updateSourceForm}
         onSave={() => void controller.addSource()}
       />
