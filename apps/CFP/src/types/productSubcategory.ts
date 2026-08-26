@@ -14,3 +14,10 @@ export interface ProductSubcategoryFormData {
   cccCode: string;
   status: number;
 }
+
+export interface PcrPatternOwnerRow {
+  id: string | number;
+  account?: string;
+  name?: string;
+  patternCount?: number;
+}

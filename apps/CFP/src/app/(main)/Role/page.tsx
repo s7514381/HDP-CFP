@@ -52,34 +52,34 @@ export default function AdminFunctionPage() {
   };
 
   const handleDelete = async (id: number | string) => {
-    if (await confirm(translate(LANGUAGE_KEYS.common.confirm, '確定要刪除此角色嗎？'))) {
+    if (await confirm(translate(LANGUAGE_KEYS.common.confirm))) {
       try {
         await formPost(`${API_URL}/Role/Delete`, { id });
-        success({ message: <span>{translate(LANGUAGE_KEYS.common.deleteSuccess, '刪除成功！')}</span> });
+        success({ message: <span>{translate(LANGUAGE_KEYS.common.deleteSuccess)}</span> });
         tableRef.current?.reload();
       } catch {
-        danger({ message: <span>{translate(LANGUAGE_KEYS.common.deleteFailed, '刪除失敗。')}</span> });
+        danger({ message: <span>{translate(LANGUAGE_KEYS.common.deleteFailed)}</span> });
       }
     }
   };
 
   const columns: Column<RoleRow>[] = [
     {
-      header: translate(LANGUAGE_KEYS.common.rowNumber, '項次'),
+      header: translate(LANGUAGE_KEYS.common.rowNumber),
       className: "text-center",
       style: { width: '80px' },
       render: (_, index) => index + 1
     },
     {
-      header: translate(LANGUAGE_KEYS.role.name, '角色名稱'),
+      header: translate(LANGUAGE_KEYS.role.name),
       key: "name"
     },
     {
-      header: translate(LANGUAGE_KEYS.common.functionName, '功能名稱'),
+      header: translate(LANGUAGE_KEYS.common.functionName),
       key: "adminMenuName"
     },
     {
-      header: translate(LANGUAGE_KEYS.common.actions, '操作'),
+      header: translate(LANGUAGE_KEYS.common.actions),
       className: "text-center",
       style: { width: '120px' },
       render: (item) => (
@@ -129,7 +129,7 @@ export default function AdminFunctionPage() {
         <Container fluid className="mb-3">
             <div className="d-flex justify-content-end gap-2">
                 {hasPermission('Create') && (
-                  <Btn color="success" icon="add" outline={false} onClick={() => router.push('/Role/Create')}>{translate(LANGUAGE_KEYS.common.add, '新增')}</Btn>
+                  <Btn color="success" icon="add" outline={false} onClick={() => router.push('/Role/Create')}>{translate(LANGUAGE_KEYS.common.add)}</Btn>
                 )}
             </div>
         </Container>

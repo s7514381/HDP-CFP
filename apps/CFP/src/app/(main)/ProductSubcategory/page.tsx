@@ -18,7 +18,8 @@ import { usePagePermissions } from '@/hooks/usePagePermissions';
 import { useToast } from '@packages/contexts/ToastContext';
 import { useConfirm } from '@packages/hooks/useConfirm';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
-import { ProductSubcategoryRow } from '@/types/productSubcategory';
+import { PcrPatternOwnerRow, ProductSubcategoryRow } from '@/types/productSubcategory';
+import PcrPatternOwnerModal from './PcrPatternOwnerModal';
 
 export default function ProductSubcategoryPage() {
   const router = useRouter();
@@ -30,6 +31,7 @@ export default function ProductSubcategoryPage() {
   const { Row, Col } = Grid;
   const tableRef = React.useRef<CommonTableHandle<ProductSubcategoryRow>>(null);
   const [name, setName] = useState('');
+  const [ownerModalProduct, setOwnerModalProduct] = useState<ProductSubcategoryRow | null>(null);
 
   const handleSearch = () => {
     tableRef.current?.search({ Name: name.trim() });
@@ -41,53 +43,63 @@ export default function ProductSubcategoryPage() {
   };
 
   const handleDelete = async (id: string | number) => {
-    if (!await confirm(translate(LANGUAGE_KEYS.productSubcategory.deleteConfirm, '確定要刪除此產品次類別嗎？'))) return;
+    if (!await confirm(translate(LANGUAGE_KEYS.productSubcategory.deleteConfirm))) return;
 
     const result = await formPost(`${API_MAP.PRODUCT_SUBCATEGORY_MST}/Delete`, { id });
     if (result.success) {
-      success({ message: <span>{translate(LANGUAGE_KEYS.productSubcategory.deleted, '刪除成功！')}</span> });
+      success({ message: <span>{translate(LANGUAGE_KEYS.productSubcategory.deleted)}</span> });
       tableRef.current?.reload();
     } else {
-      danger({ message: <span>{result.message || translate(LANGUAGE_KEYS.common.deleteFailed, '刪除失敗。')}</span> });
+      danger({ message: <span>{result.message || translate(LANGUAGE_KEYS.common.deleteFailed)}</span> });
     }
   };
 
   const columns: Column<ProductSubcategoryRow>[] = [
     {
-      header: translate(LANGUAGE_KEYS.common.rowNumber, '項次'),
+      header: translate(LANGUAGE_KEYS.common.rowNumber),
       className: 'text-center',
       style: { width: '70px' },
       render: (_, index) => index + 1,
     },
     {
-      header: translate(LANGUAGE_KEYS.productSubcategory.productSubcategory, '產品次類別'),
+      header: translate(LANGUAGE_KEYS.productSubcategory.productSubcategory),
       key: 'name',
     },
     {
-      header: translate(LANGUAGE_KEYS.productSubcategory.developer, '制定者'),
+      header: translate(LANGUAGE_KEYS.productSubcategory.developer),
       key: 'developer',
     },
     {
-      header: translate(LANGUAGE_KEYS.productSubcategory.applicableScope, '適用範圍'),
+      header: translate(LANGUAGE_KEYS.productSubcategory.applicableScope),
       key: 'applicableScope',
     },
     {
-      header: translate(LANGUAGE_KEYS.productSubcategory.cccCode, 'CCC code'),
+      header: translate(LANGUAGE_KEYS.productSubcategory.cccCode),
       key: 'cccCode',
     },
     {
-      header: translate(LANGUAGE_KEYS.pcrPattern.template, 'PCR模板'),
+      header: translate(LANGUAGE_KEYS.pcrPattern.template),
       className: 'text-center',
-      style: { width: '110px' },
+      style: { width: '190px' },
       render: (row) => (
-        <Btn
-          color="primary"
-          size="sm"
-          outline
-          onClick={() => router.push(`/ProductSubcategory/PcrPattern/?id=${row.id}`)}
-        >
-          {translate(LANGUAGE_KEYS.common.view, 'View')}
-        </Btn>
+        <div className="d-flex flex-column align-items-center gap-1">
+          <Btn
+            color="primary"
+            size="sm"
+            outline
+            onClick={() => router.push(`/ProductSubcategory/PcrPattern/?id=${row.id}`)}
+          >
+            {translate(LANGUAGE_KEYS.common.view)}
+          </Btn>
+          <Btn
+            color="secondary"
+            size="sm"
+            outline
+            onClick={() => setOwnerModalProduct(row)}
+          >
+            {translate(LANGUAGE_KEYS.pcrPattern.viewOtherTemplates)}
+          </Btn>
+        </div>
       ),
     },
     {
@@ -117,14 +129,14 @@ export default function ProductSubcategoryPage() {
 
   return (
     <>
-      <ActionBar title={translate(LANGUAGE_KEYS.pcrPattern.template, 'PCR模板')} />
+      <ActionBar title={translate(LANGUAGE_KEYS.pcrPattern.template)} />
       <WrapContent className="p-3">
         <SearchBlock title="" icon="" className="mb-3">
           <Row align="center" gutter={3}>
             <Col md={8}>
               <Input
-                label={translate(LANGUAGE_KEYS.productSubcategory.productSubcategory, '產品次類別')}
-                placeholder={translate(LANGUAGE_KEYS.productSubcategory.productSubcategory, '產品次類別')}
+                label={translate(LANGUAGE_KEYS.productSubcategory.productSubcategory)}
+                placeholder={translate(LANGUAGE_KEYS.productSubcategory.productSubcategory)}
                 value={name}
                 onChange={(event) => setName(event.target.value)}
                 onKeyDown={(event) => {
@@ -137,10 +149,10 @@ export default function ProductSubcategoryPage() {
             </Col>
             <Col md={4} className="d-flex justify-content-end gap-2 align-items-end">
               <Btn color="success" outline className="bg-success-light text-success border-success" style={{ backgroundColor: '#d1e7dd' }} icon="search" onClick={handleSearch}>
-                {translate(LANGUAGE_KEYS.common.search, '查詢')}
+                {translate(LANGUAGE_KEYS.common.search)}
               </Btn>
               <Btn color="light" className="text-primary border" onClick={handleClear}>
-                {translate(LANGUAGE_KEYS.common.clear, '清除')}
+                {translate(LANGUAGE_KEYS.common.clear)}
               </Btn>
             </Col>
           </Row>
@@ -150,7 +162,7 @@ export default function ProductSubcategoryPage() {
           <div className="d-flex justify-content-end gap-2">
             {hasPermission('Create') && (
               <Btn color="success" icon="add" onClick={() => router.push('/ProductSubcategory/Create')}>
-                {translate(LANGUAGE_KEYS.common.add, '新增')}
+                {translate(LANGUAGE_KEYS.common.add)}
               </Btn>
             )}
           </div>
@@ -165,6 +177,20 @@ export default function ProductSubcategoryPage() {
           />
         </Container>
       </WrapContent>
+      {ownerModalProduct && (
+        <PcrPatternOwnerModal
+          show
+          productSubcategoryId={String(ownerModalProduct.id)}
+          onClose={() => setOwnerModalProduct(null)}
+          onView={(owner: PcrPatternOwnerRow) => {
+            const productId = String(ownerModalProduct.id);
+            setOwnerModalProduct(null);
+            router.push(
+              `/ProductSubcategory/PcrPattern/?id=${encodeURIComponent(productId)}&sourceManagerId=${encodeURIComponent(String(owner.id))}`,
+            );
+          }}
+        />
+      )}
     </>
   );
 }

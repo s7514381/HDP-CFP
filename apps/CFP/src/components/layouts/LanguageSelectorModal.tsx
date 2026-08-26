@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Modal from '@packages/components/bootstrap5/Modal';
 import { API_MAP } from '@/lib/apiRoutes';
 import { useAppApi } from '@/hooks/useAppApi';
@@ -25,31 +25,16 @@ const DEFAULT_LANGUAGES: LanguageItem[] = [
   { id: 'en-US', name: LANGUAGE_KEYS.common.english, code: 'en-US', isBaseLanguage: false },
 ];
 
-const CLOSE_ANIMATION_DURATION_MS = 180;
-
 export default function LanguageSelectorModal({ show, onClose }: LanguageSelectorModalProps) {
   const { formPost } = useAppApi();
   const { languageCode, setLanguage, translate } = useLanguage();
   const [languages, setLanguages] = useState<LanguageItem[]>([]);
   const [loading, setLoading] = useState(show);
   const [changingLanguage, setChangingLanguage] = useState(false);
-  const [isExiting, setIsExiting] = useState(false);
-  const closeTimerRef = useRef<number | null>(null);
 
   const handleClose = useCallback(() => {
-    if (isExiting) return;
-
-    setIsExiting(true);
-    closeTimerRef.current = window.setTimeout(() => {
-      closeTimerRef.current = null;
-      setIsExiting(false);
-      onClose();
-    }, CLOSE_ANIMATION_DURATION_MS);
-  }, [isExiting, onClose]);
-
-  useEffect(() => () => {
-    if (closeTimerRef.current !== null) window.clearTimeout(closeTimerRef.current);
-  }, []);
+    onClose();
+  }, [onClose]);
 
   useEffect(() => {
     if (!show) return;
@@ -88,14 +73,8 @@ export default function LanguageSelectorModal({ show, onClose }: LanguageSelecto
   };
 
   return (
-    <Modal show={show || isExiting} size="sm" onClose={handleClose}>
-      <Modal.Title
-        onClose={handleClose}
-      >
-        <span className={`cfp-language-selector-title${isExiting ? ' cfp-language-modal-exiting' : ''}`}>
-          {translate(LANGUAGE_KEYS.common.language)}
-        </span>
-      </Modal.Title>
+    <Modal show={show} size="sm" onClose={handleClose}>
+      <Modal.Title onClose={handleClose}>{translate(LANGUAGE_KEYS.common.language)}</Modal.Title>
       <Modal.Body>
         <div className="mb-3 text-muted">{translate(LANGUAGE_KEYS.common.selectLanguage)}</div>
         {loading ? (

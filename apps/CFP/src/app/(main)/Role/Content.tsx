@@ -2,13 +2,12 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Btn } from '@packages/components/bootstrap5/Btn';
 import { Input, Checkbox } from '@packages/components/bootstrap5/Input';
 import { Select } from '@packages/components/bootstrap5/Select';
 import Card from '@packages/components/bootstrap5/Card';
 import Grid from '@packages/components/bootstrap5/Grid';
 import { Container } from '@packages/components/bootstrap5/Container';
-import ActionBar from '@/components/layouts/ActionBar';
+import FormActionBar from '@/components/common/FormActionBar';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
 import { FormUpdate } from '@/components/common/formTypes';
@@ -222,17 +221,14 @@ export default function Content({ title, formData, onChange, updateForm, onSubmi
 
   return (
     <>
-      <form onSubmit={onSubmit}>
-        <ActionBar title={title}>
-          <div className="ms-auto">
-            <Btn color="secondary" outline onClick={() => router.back()} icon="cancel">
-              {translate(LANGUAGE_KEYS.common.backToList, '返回列表')}
-            </Btn>
-            <Btn className='ms-2' type="submit" color="primary" loading={loading} icon="save">
-              {submitLabel}
-            </Btn>
-          </div>
-        </ActionBar>
+      <form id="role-form" onSubmit={onSubmit}>
+        <FormActionBar
+          title={title}
+          formId="role-form"
+          submitLabel={submitLabel}
+          loading={loading}
+          onBack={() => router.back()}
+        />
 
         <Container className="py-4">
 
@@ -241,23 +237,23 @@ export default function Content({ title, formData, onChange, updateForm, onSubmi
               <Grid.Row className="g-3">
                 <Grid.Col md={6}>
                   <Input
-                    label={translate(LANGUAGE_KEYS.role.name, '角色名稱')}
+                    label={translate(LANGUAGE_KEYS.role.name)}
                     name="name"
                     value={formData?.name || ''}
                     onChange={onChange}
-                    placeholder={translate(LANGUAGE_KEYS.role.name, '請輸入角色名稱')}
+                    placeholder={translate(LANGUAGE_KEYS.role.name)}
                     required
                   />
                 </Grid.Col>
                 {/* <Grid.Col md={6}>
                   <Select
-                    label={translate(LANGUAGE_KEYS.common.status, '狀態')}
+                    label={translate(LANGUAGE_KEYS.common.status)}
                     name="status"
                     value={formData?.status || ''}
                     onChange={onChange}
                     options={[
-                      { label: translate(LANGUAGE_KEYS.common.enabled, '啟用'), value: '1' },
-                      { label: translate(LANGUAGE_KEYS.common.disabled, '停用'), value: '0' }
+                      { label: translate(LANGUAGE_KEYS.common.enabled), value: '1' },
+                      { label: translate(LANGUAGE_KEYS.common.disabled), value: '0' }
                     ]}
                   />
                 </Grid.Col> */}
@@ -266,11 +262,11 @@ export default function Content({ title, formData, onChange, updateForm, onSubmi
           </Card>
 
           <div className="mb-3 d-flex align-items-center gap-2">
-            <label className="fw-bold">{translate(LANGUAGE_KEYS.role.permissions, '權限*')}</label>
+            <label className="fw-bold">{translate(LANGUAGE_KEYS.role.permissions)}</label>
             <Checkbox
               id="select-all"
               name="select-all"
-              label={translate(LANGUAGE_KEYS.common.selectAll, '全選')}
+              label={translate(LANGUAGE_KEYS.common.selectAll)}
               checked={isAllChecked(allMenuFunctionIds)}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleCheckboxChange('', e.target.checked, allMenuFunctionIds)}
             />
@@ -375,14 +371,6 @@ export default function Content({ title, formData, onChange, updateForm, onSubmi
               </Card>
             );
           })}
-          <Grid.Col md={12} className="d-flex justify-content-end gap-2 mt-4">
-            <Btn type="button" color="secondary" outline onClick={() => router.push('/Role')}>
-              {translate(LANGUAGE_KEYS.common.cancel, '取消')}
-            </Btn>
-            <Btn type="submit" color="primary" loading={loading} icon="save">
-              {translate(submitLabel, submitLabel)}
-            </Btn>
-          </Grid.Col>
         </Container>
       </form>
     </>

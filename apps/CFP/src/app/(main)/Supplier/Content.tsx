@@ -2,13 +2,12 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { Btn } from '@packages/components/bootstrap5/Btn';
 import { Input } from '@packages/components/bootstrap5/Input';
 import { Select } from '@packages/components/bootstrap5/Select';
 import Card from '@packages/components/bootstrap5/Card';
 import Grid from '@packages/components/bootstrap5/Grid';
 import { Container } from '@packages/components/bootstrap5/Container';
-import ActionBar from '@/components/layouts/ActionBar';
+import FormActionBar from '@/components/common/FormActionBar';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
 
@@ -44,18 +43,18 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
 
   return (
     <>
-      <ActionBar title={displayTitle}>
-        <div className="ms-auto">
-          <Btn color="secondary" outline onClick={() => router.back()} icon="cancel">
-            {translate(LANGUAGE_KEYS.common.backToList)}
-          </Btn>
-        </div>
-      </ActionBar>
+      <FormActionBar
+        title={displayTitle}
+        formId="supplier-form"
+        submitLabel={submitLabel}
+        loading={loading}
+        onBack={() => router.back()}
+      />
 
       <Container className="py-4">
         <Card>
         <Card.Body>
-          <form onSubmit={onSubmit}>
+          <form id="supplier-form" onSubmit={onSubmit}>
             <Grid.Row className="g-3">
               <Grid.Col md={6}>
                 <Input
@@ -120,14 +119,6 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                 />
               </Grid.Col>
 
-              <Grid.Col md={12} className="d-flex justify-content-end gap-2 mt-4">
-                <Btn type="button" color="secondary" outline onClick={() => router.push('/Supplier')}>
-                  {translate(LANGUAGE_KEYS.common.cancel)}
-                </Btn>
-                <Btn type="submit" color="primary" loading={loading} icon="save">
-                  {translate(submitLabel)}
-                </Btn>
-              </Grid.Col>
             </Grid.Row>
           </form>
         </Card.Body>

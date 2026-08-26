@@ -103,11 +103,14 @@ function FormPageWrapperInner<T extends object>({
         success({ message: <span>{translate(successMessage)}</span> });
         router.push(redirectPath);
       } else {
-        danger({ message: <span>{translate(LANGUAGE_KEYS.common.saveFailed)}</span> });
+        danger({ message: <span>{result.message || translate(LANGUAGE_KEYS.common.saveFailed)}</span> });
       }
     } catch (error) {
       console.error('Submit error:', error);
-      danger({ message: <span>{translate(LANGUAGE_KEYS.common.saveError)}</span> });
+      const message = error instanceof Error && error.message
+        ? error.message
+        : translate(LANGUAGE_KEYS.common.saveError);
+      danger({ message: <span>{message}</span> });
     } finally {
       setLoading(false);
     }

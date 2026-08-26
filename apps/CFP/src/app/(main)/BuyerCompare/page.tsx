@@ -51,35 +51,35 @@ export default function MaterialPage() {
 
   const columns: Column<BuyerCompareRow>[] = [
     {
-      header: translate(LANGUAGE_KEYS.common.rowNumber, '項次'),
+      header: translate(LANGUAGE_KEYS.common.rowNumber),
       className: "text-center",
       style: { width: '80px' },
       render: (_, index) => index + 1
     },
     {
-      header: translate(LANGUAGE_KEYS.common.materialNumber, '料號'),
+      header: translate(LANGUAGE_KEYS.common.materialNumber),
       key: "materialNumber"
     },
     {
-      header: translate(LANGUAGE_KEYS.common.productModel, '產品型號'),
+      header: translate(LANGUAGE_KEYS.common.productModel),
       key: "productModel"
     },
     {
-      header: translate(LANGUAGE_KEYS.common.productName, '產品名稱'),
+      header: translate(LANGUAGE_KEYS.common.productName),
       key: "productName"
     },
     {
-      header: translate(LANGUAGE_KEYS.common.supplier, '供應商'),
+      header: translate(LANGUAGE_KEYS.common.supplier),
       key: "supplierName"
     },
     {
-      header: translate(LANGUAGE_KEYS.buyerCompare.specCount, '規格碼筆數'),
+      header: translate(LANGUAGE_KEYS.buyerCompare.specCount),
       className: "text-center",
       style: { width: '120px' },
       key: "specCount",
     },
     {
-      header: translate(LANGUAGE_KEYS.buyerCompare.unmappedCount, '未對照筆數'),
+      header: translate(LANGUAGE_KEYS.buyerCompare.unmappedCount),
       className: "text-center",
       style: { width: '120px' },
       key: "notCompareCount",
@@ -110,16 +110,16 @@ export default function MaterialPage() {
         <SearchBlock title="" icon="" className="mb-3">
           <Row align="center" gutter={3}>
             <Col md={4}>
-              <Input label={translate(LANGUAGE_KEYS.common.materialNumber, '料號')} placeholder={translate(LANGUAGE_KEYS.common.materialNumber, '料號')} value={searchMaterialNumber} onChange={(e) => setSearchMaterialNumber(e.target.value)} />
+              <Input label={translate(LANGUAGE_KEYS.common.materialNumber)} placeholder={translate(LANGUAGE_KEYS.common.materialNumber)} value={searchMaterialNumber} onChange={(e) => setSearchMaterialNumber(e.target.value)} />
             </Col>
             <Col md={4}>
-              <Input label={translate(LANGUAGE_KEYS.report.supplierName, '供應商名稱')} placeholder={translate(LANGUAGE_KEYS.report.supplierName, '供應商名稱')} value={searchSupplierName} onChange={(e) => setSearchSupplierName(e.target.value)} />
+              <Input label={translate(LANGUAGE_KEYS.report.supplierName)} placeholder={translate(LANGUAGE_KEYS.report.supplierName)} value={searchSupplierName} onChange={(e) => setSearchSupplierName(e.target.value)} />
             </Col>
             <Col md={4} className="d-flex justify-content-end gap-2 align-items-end">
               <Btn color="success" outline className="bg-success-light text-success border-success" style={{ backgroundColor: '#d1e7dd' }} icon="search" onClick={handleSearch}>
-                {translate(LANGUAGE_KEYS.common.search, '查詢')}
+                {translate(LANGUAGE_KEYS.common.search)}
               </Btn>
-              <Btn color="light" className="text-primary border" onClick={handleClear}>{translate(LANGUAGE_KEYS.common.clear, '清除')}</Btn>
+              <Btn color="light" className="text-primary border" onClick={handleClear}>{translate(LANGUAGE_KEYS.common.clear)}</Btn>
             </Col>
           </Row>
         </SearchBlock>

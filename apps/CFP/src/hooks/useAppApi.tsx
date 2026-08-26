@@ -2,16 +2,41 @@
 
 import { useApi } from "@packages/hooks/useApi";
 import { UseApiRequest, UseApiResult } from "@packages/types/useApi";
+import { ApiResponse } from "@packages/types/api";
 import { useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { appStorage, clearSession, sessionStorageKeys } from '@/lib/appStorage';
 import { toFormData } from '@/lib/formData';
 
+type AppApiResult = UseApiResult & {
+  formPostWithErrorDetails: UseApiResult['formPost'];
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function getResponseMessage(payload: unknown): string | null {
+  if (!isRecord(payload)) return null;
+
+  if (typeof payload.message === 'string' && payload.message.trim()) {
+    return payload.message;
+  }
+
+  const fieldMessages = Object.values(payload).flatMap((value) => (
+    Array.isArray(value)
+      ? value.filter((item): item is string => typeof item === 'string')
+      : []
+  ));
+
+  return fieldMessages.length > 0 ? fieldMessages.join(' ') : null;
+}
+
 /**
  * 繼承自 @packages/hooks/useApi 的 Hook
  * 自動在所有請求中加入 LocalStorage 的 token
  */
-export const useAppApi = (): UseApiResult => {
+export const useAppApi = (): AppApiResult => {
   const api = useApi();
   const router = useRouter();
 
@@ -108,6 +133,64 @@ export const useAppApi = (): UseApiResult => {
       });
     }, [appRequest]) as UseApiResult['formPost'];
 
+  const formPostWithErrorDetails = useCallback(async <TRes,>(
+    url: string,
+    data: Parameters<UseApiResult['formPost']>[1]
+  ): Promise<ApiResponse<TRes>> => {
+    if (!data) {
+      return {
+        success: false,
+        status: 0,
+        message: 'No data provided',
+        data: null,
+      };
+    }
+
+    const headers: Record<string, string> = {
+      Accept: 'application/json',
+    };
+    const token = appStorage.get<string>(sessionStorageKeys.token);
+    if (token) headers.Authorization = `${token}`;
+
+    const languageCode = appStorage.get<string>(sessionStorageKeys.languageCode);
+    if (languageCode) headers['X-Language-Code'] = languageCode;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: toFormData(data),
+    });
+
+    const responseText = await response.text();
+    let payload: unknown = null;
+    if (responseText) {
+      try {
+        payload = JSON.parse(responseText) as unknown;
+      } catch {
+        payload = responseText;
+      }
+    }
+
+    if (response.status === 401) {
+      clearSession();
+      router.push('/login');
+    }
+
+    const body = isRecord(payload) ? payload : null;
+    const status = typeof body?.status === 'number' ? body.status : response.status;
+    const success = typeof body?.success === 'boolean' ? body.success : response.ok;
+    const message = getResponseMessage(payload)
+      || (response.ok ? null : response.statusText || `HTTP ${response.status}`);
+    const dataValue = body && 'data' in body ? body.data : null;
+
+    return {
+      success,
+      status,
+      message,
+      data: dataValue as TRes | null,
+    };
+  }, [router]);
+
   return useMemo(
     () => ({
       ...api,
@@ -117,7 +200,8 @@ export const useAppApi = (): UseApiResult => {
       put,
       delete: del,
       formPost,
+      formPostWithErrorDetails,
     }),
-    [api, appRequest, get, post, put, del, formPost]
+    [api, appRequest, get, post, put, del, formPost, formPostWithErrorDetails]
   );
 };

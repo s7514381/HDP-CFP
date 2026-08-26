@@ -97,8 +97,8 @@ export default function LanguageResourcePage() {
 
   const menuOptions = React.useMemo(() => {
     const options = [
-      { label: translate(LANGUAGE_KEYS.common.all, 'All'), value: '' },
-      { label: translate(LANGUAGE_KEYS.common.common, '通用'), value: COMMON_MENU_FILTER_VALUE },
+      { label: translate(LANGUAGE_KEYS.common.all), value: '' },
+      { label: translate(LANGUAGE_KEYS.common.common), value: COMMON_MENU_FILTER_VALUE },
     ];
     const flatten = (items: AdminMenuData[], depth = 0) => {
       items.forEach(item => {
@@ -134,7 +134,7 @@ export default function LanguageResourcePage() {
     const code = rawCode.trim();
     const languageName = name.trim();
     if (!languageName || !/^[A-Za-z]{2,8}(?:-[A-Za-z]{2,8})?$/.test(code)) {
-      danger({ message: <span>{translate(LANGUAGE_KEYS.languageResource.invalidLanguageCode, '請輸入語言名稱及正確格式的語言代碼，例如 ja-JP。')}</span> });
+      danger({ message: <span>{translate(LANGUAGE_KEYS.languageResource.invalidLanguageCode)}</span> });
       return false;
     }
 
@@ -146,43 +146,43 @@ export default function LanguageResourcePage() {
       isBaseLanguage: false
     });
     if (!result.success) {
-      danger({ message: <span>{result.message || translate(LANGUAGE_KEYS.languageResource.addLanguageFailed, '新增語言失敗。')}</span> });
+      danger({ message: <span>{result.message || translate(LANGUAGE_KEYS.languageResource.addLanguageFailed)}</span> });
       return false;
     }
 
     await loadLanguages();
-    success({ message: <span>{translate(LANGUAGE_KEYS.languageResource.languageAdded, '語言新增成功！')}</span> });
+    success({ message: <span>{translate(LANGUAGE_KEYS.languageResource.languageAdded)}</span> });
     return true;
   };
 
   const handleDelete = async (id: string) => {
-    if (!await confirm(translate(LANGUAGE_KEYS.languageResource.deleteConfirm, '確定要刪除此多語言資料嗎？'))) return;
+    if (!await confirm(translate(LANGUAGE_KEYS.languageResource.deleteConfirm))) return;
     const result = await formPost(`${API_MAP.LANGUAGE_RESOURCE_MST}/Delete`, { id });
     if (result.success) {
-      success({ message: <span>{translate(LANGUAGE_KEYS.common.deleteSuccess, '刪除成功！')}</span> });
+      success({ message: <span>{translate(LANGUAGE_KEYS.common.deleteSuccess)}</span> });
       tableRef.current?.reload();
     } else {
-      danger({ message: <span>{result.message || translate(LANGUAGE_KEYS.common.deleteFailed, '刪除失敗。')}</span> });
+      danger({ message: <span>{result.message || translate(LANGUAGE_KEYS.common.deleteFailed)}</span> });
     }
   };
 
   const columns: Column<unknown>[] = [
-    { header: translate(LANGUAGE_KEYS.common.rowNumber, '項次'), className: 'text-center', style: { width: '70px' }, render: (_, index) => index + 1 },
-    { header: translate(LANGUAGE_KEYS.common.resourceCode, languageCode === 'en-US' ? 'Code' : '代號'), key: 'serialNumber' },
+    { header: translate(LANGUAGE_KEYS.common.rowNumber), className: 'text-center', style: { width: '70px' }, render: (_, index) => index + 1 },
+    { header: translate(LANGUAGE_KEYS.common.resourceCode), key: 'serialNumber' },
     {
-      header: translate(LANGUAGE_KEYS.languageResource.menuCode, '英文代號'),
+      header: translate(LANGUAGE_KEYS.languageResource.menuCode),
       render: item => {
         const menuCode = (item as LanguageResourceListItem).menuCode;
-        if (menuCode === COMMON_MENU_CODE) return translate(LANGUAGE_KEYS.common.common, 'Common');
-        if (menuCode === UNCONFIGURED_MENU_CODE) return translate(LANGUAGE_KEYS.common.notConfigured, 'Not configured');
+        if (menuCode === COMMON_MENU_CODE) return translate(LANGUAGE_KEYS.common.common);
+        if (menuCode === UNCONFIGURED_MENU_CODE) return translate(LANGUAGE_KEYS.common.notConfigured);
         return menuCode || '';
       }
     },
-    { header: translate(LANGUAGE_KEYS.common.functionName, '功能'), key: 'menuName' },
-    { header: translate(LANGUAGE_KEYS.common.baseLanguageContent, '基礎語言'), key: 'baseText' },
-    { header: translate(LANGUAGE_KEYS.common.status, '狀態'), render: item => (item as LanguageResourceListItem).status === 1 ? translate(LANGUAGE_KEYS.common.enabled, '啟用') : translate(LANGUAGE_KEYS.common.disabled, '停用') },
+    { header: translate(LANGUAGE_KEYS.common.functionName), key: 'menuName' },
+    { header: translate(LANGUAGE_KEYS.common.baseLanguageContent), key: 'baseText' },
+    { header: translate(LANGUAGE_KEYS.common.status), render: item => (item as LanguageResourceListItem).status === 1 ? translate(LANGUAGE_KEYS.common.enabled) : translate(LANGUAGE_KEYS.common.disabled) },
     {
-      header: translate(LANGUAGE_KEYS.common.actions, '操作'),
+      header: translate(LANGUAGE_KEYS.common.actions),
       className: 'text-center',
       style: { width: '110px' },
       render: item => (
@@ -200,16 +200,16 @@ export default function LanguageResourcePage() {
 
   return (
     <>
-      <ActionBar title={translate(LANGUAGE_KEYS.common.multilingualSettings, '多語言設定')} />
+      <ActionBar title={translate(LANGUAGE_KEYS.common.multilingualSettings)} />
       <WrapContent className="p-3">
         <SearchBlock title="" icon="" className="mb-3">
           <Row align="center" gutter={3}>
-            <Col md={3}><Input label={translate(LANGUAGE_KEYS.common.resourceCode, languageCode === 'en-US' ? 'Code' : '代號')} value={searchSerialNumber} onChange={event => setSearchSerialNumber(event.target.value)} /></Col>
-            <Col md={3}><Select label={translate(LANGUAGE_KEYS.common.functionName, '功能名稱')} options={menuOptions} value={searchMenuId} onChange={event => setSearchMenuId(event.target.value)} /></Col>
-            <Col md={3}><Input label={translate(LANGUAGE_KEYS.common.baseLanguageContent, '基礎語言內容')} value={searchBaseText} onChange={event => setSearchBaseText(event.target.value)} /></Col>
+            <Col md={3}><Input label={translate(LANGUAGE_KEYS.common.resourceCode)} value={searchSerialNumber} onChange={event => setSearchSerialNumber(event.target.value)} /></Col>
+            <Col md={3}><Select label={translate(LANGUAGE_KEYS.common.functionName)} options={menuOptions} value={searchMenuId} onChange={event => setSearchMenuId(event.target.value)} /></Col>
+            <Col md={3}><Input label={translate(LANGUAGE_KEYS.common.baseLanguageContent)} value={searchBaseText} onChange={event => setSearchBaseText(event.target.value)} /></Col>
             <Col md={3} className="d-flex justify-content-end gap-2 align-items-end">
-              <Btn color="success" outline className="bg-success-light text-success border-success" onClick={handleSearch}>{translate(LANGUAGE_KEYS.common.search, '查詢')}</Btn>
-              <Btn color="light" className="text-primary border" onClick={handleClear}>{translate(LANGUAGE_KEYS.common.clear, '清除')}</Btn>
+              <Btn color="success" outline className="bg-success-light text-success border-success" onClick={handleSearch}>{translate(LANGUAGE_KEYS.common.search)}</Btn>
+              <Btn color="light" className="text-primary border" onClick={handleClear}>{translate(LANGUAGE_KEYS.common.clear)}</Btn>
             </Col>
           </Row>
         </SearchBlock>
@@ -218,12 +218,12 @@ export default function LanguageResourcePage() {
           <div className="d-flex justify-content-end gap-2">
             {canAddLanguage && (
               <Btn type="button" color="primary" icon="add" onClick={() => setShowLanguageCreateModal(true)}>
-                {translate(LANGUAGE_KEYS.languageResource.addLanguage, '新增語言')}
+                {translate(LANGUAGE_KEYS.languageResource.addLanguage)}
               </Btn>
             )}
             {canAddTranslation && (
               <Btn color="success" icon="add" onClick={() => router.push('/LanguageResource/Create')}>
-                {translate(LANGUAGE_KEYS.languageResource.addTranslation, '新增翻譯資料')}
+                {translate(LANGUAGE_KEYS.languageResource.addTranslation)}
               </Btn>
             )}
           </div>

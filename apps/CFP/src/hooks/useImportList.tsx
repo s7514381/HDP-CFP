@@ -62,7 +62,7 @@ export function useImportList<TRow extends object, TSearch extends TableSearchPa
       return;
     }
 
-    danger({ message: <span>{translate(LANGUAGE_KEYS.common.operationFailed, '下載範本失敗。')}</span> });
+    danger({ message: <span>{translate(LANGUAGE_KEYS.common.operationFailed)}</span> });
   }, [config.templateFileName, config.templateUrl, danger, get, translate]);
 
   const importFile = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -79,29 +79,29 @@ export function useImportList<TRow extends object, TSearch extends TableSearchPa
       const summary = isImportSummary(result.data) ? result.data : null;
       if (result.success && summary) {
         if (summary.successCount > 0) {
-          success({ message: <span>{translate(LANGUAGE_KEYS.common.importCompleted, '匯入完成，成功 {count} 筆。').replace('{count}', String(summary.successCount))}</span> });
+          success({ message: <span>{translate(LANGUAGE_KEYS.common.importCompleted).replace('{count}', String(summary.successCount))}</span> });
           tableRef.current?.reload();
         }
 
         if (summary.failureCount > 0) {
-          const errorText = summary.errors.slice(0, 3).join('；') || translate(LANGUAGE_KEYS.common.partialImportFailed, '部分資料未成功。');
+          const errorText = summary.errors.slice(0, 3).join('；') || translate(LANGUAGE_KEYS.common.partialImportFailed);
           const message = summary.successCount > 0
-            ? translate(LANGUAGE_KEYS.common.partialImportFailed, '匯入部分失敗，{count} 筆未成功。{errors}')
-            : translate(LANGUAGE_KEYS.common.importFailed, '匯入失敗，{count} 筆未成功。{errors}');
+            ? translate(LANGUAGE_KEYS.common.partialImportFailed)
+            : translate(LANGUAGE_KEYS.common.importFailed);
           const toastMessage = message.replace('{count}', String(summary.failureCount)).replace('{errors}', errorText);
           (summary.successCount > 0 ? warning : danger)({ message: <span>{toastMessage}</span> });
         }
 
         if (summary.totalCount === 0) {
-          danger({ message: <span>{translate(LANGUAGE_KEYS.common.noImportData, '沒有可匯入的資料。')}</span> });
+          danger({ message: <span>{translate(LANGUAGE_KEYS.common.noImportData)}</span> });
         }
         return;
       }
 
-      danger({ message: <span>{result.message || translate(LANGUAGE_KEYS.common.importFailed, '匯入失敗，請確認檔案格式。')}</span> });
+      danger({ message: <span>{result.message || translate(LANGUAGE_KEYS.common.importFailed)}</span> });
     } catch (error) {
       console.error('Import failed', error);
-      danger({ message: <span>{translate(LANGUAGE_KEYS.common.importFailed, '匯入失敗，請確認檔案格式。')}</span> });
+      danger({ message: <span>{translate(LANGUAGE_KEYS.common.importFailed)}</span> });
     } finally {
       setImporting(false);
       event.target.value = '';

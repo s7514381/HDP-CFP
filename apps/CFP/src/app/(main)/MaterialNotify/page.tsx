@@ -72,7 +72,7 @@ export default function MaterialNotifyPage() {
 
   const handleAddNotify = async () => {
     if (selectedIds.size === 0) {
-      danger({ message: <span>{translate(LANGUAGE_KEYS.notify.check, '請至少勾選一項。')}</span> });
+      danger({ message: <span>{translate(LANGUAGE_KEYS.notify.check)}</span> });
       return;
     }
 
@@ -86,13 +86,13 @@ export default function MaterialNotifyPage() {
       });
 
       if (result.status === 200) {
-        success({ message: <span>{translate(LANGUAGE_KEYS.notify.addRecord, '已加入通知紀錄！')}</span> });
+        success({ message: <span>{translate(LANGUAGE_KEYS.notify.addRecord)}</span> });
         setSelectedIds(new Set());
       } else {
-        danger({ message: <span>{translate(LANGUAGE_KEYS.common.saveFailed, '加入通知紀錄失敗')}</span> });
+        danger({ message: <span>{translate(LANGUAGE_KEYS.common.saveFailed)}</span> });
       }
     } catch (error) {
-      danger({ message: <span>{translate(LANGUAGE_KEYS.common.saveFailed, '加入通知紀錄失敗')}</span> });
+      danger({ message: <span>{translate(LANGUAGE_KEYS.common.saveFailed)}</span> });
     }
   };
 
@@ -113,7 +113,7 @@ export default function MaterialNotifyPage() {
 
   const columns: Column<MaterialNotifyItem>[] = [
     {
-      header: translate(LANGUAGE_KEYS.notify.selectRecord, '勾選'),
+      header: translate(LANGUAGE_KEYS.notify.selectRecord),
       className: "text-center",
       style: { width: '60px' },
       render: (item) => (
@@ -123,11 +123,11 @@ export default function MaterialNotifyPage() {
         />
       )
     },
-    { header: translate(LANGUAGE_KEYS.notify.group, '群組'), key: "materialGroupName" },
-    { header: translate(LANGUAGE_KEYS.common.materialNumber, '料號'), key: "materialNumber" },
-    { header: translate(LANGUAGE_KEYS.common.productModel, '產品型號'), key: "productModel" },
-    { header: translate(LANGUAGE_KEYS.common.productName, '產品名稱'), key: "productName" },
-    { header: translate(LANGUAGE_KEYS.common.supplier, '供應商'), key: "supplierName" }
+    { header: translate(LANGUAGE_KEYS.notify.group), key: "materialGroupName" },
+    { header: translate(LANGUAGE_KEYS.common.materialNumber), key: "materialNumber" },
+    { header: translate(LANGUAGE_KEYS.common.productModel), key: "productModel" },
+    { header: translate(LANGUAGE_KEYS.common.productName), key: "productName" },
+    { header: translate(LANGUAGE_KEYS.common.supplier), key: "supplierName" }
   ];
 
   return (
@@ -140,7 +140,7 @@ export default function MaterialNotifyPage() {
             <Col md={3}>
               <Input
                 type="date"
-                label={translate(LANGUAGE_KEYS.notify.changeStart, '異動紀錄開始日期')}
+                label={translate(LANGUAGE_KEYS.notify.changeStart)}
                 name="updateDateFrom"
                 value={searchForm.updateDateFrom}
                 onChange={handleSearchChange}
@@ -149,7 +149,7 @@ export default function MaterialNotifyPage() {
             <Col md={3}>
               <Input
                 type="date"
-                label={translate(LANGUAGE_KEYS.notify.changeEnd, '異動紀錄結束日期')}
+                label={translate(LANGUAGE_KEYS.notify.changeEnd)}
                 name="updateDateTo"
                 value={searchForm.updateDateTo}
                 onChange={handleSearchChange}
@@ -157,7 +157,7 @@ export default function MaterialNotifyPage() {
             </Col>
             <Col md={1}>
               <Input
-                label={translate(LANGUAGE_KEYS.notify.group, '群組')}
+                label={translate(LANGUAGE_KEYS.notify.group)}
                 name="materialGroupName"
                 placeholder=""
                 value={searchForm.materialGroupName}
@@ -166,7 +166,7 @@ export default function MaterialNotifyPage() {
             </Col>
             <Col md={2}>
               <Input
-                label={translate(LANGUAGE_KEYS.common.productModel, '產品型號')}
+                label={translate(LANGUAGE_KEYS.common.productModel)}
                 name="productModel"
                 placeholder=""
                 value={searchForm.productModel}
@@ -175,7 +175,7 @@ export default function MaterialNotifyPage() {
             </Col>
             <Col md={1}>
               <Input
-                label={translate(LANGUAGE_KEYS.common.supplier, '供應商')}
+                label={translate(LANGUAGE_KEYS.common.supplier)}
                 name="supplierName"
                 placeholder=""
                 value={searchForm.supplierName}
@@ -184,9 +184,9 @@ export default function MaterialNotifyPage() {
             </Col>
             <Col md={2} className="d-flex justify-content-end gap-2 align-items-end">
               <Btn color="success" outline className="bg-success-light text-success border-success" style={{ backgroundColor: '#d1e7dd' }} icon="search" onClick={handleSearch}>
-                {translate(LANGUAGE_KEYS.common.filter, '篩選')}
+                {translate(LANGUAGE_KEYS.common.filter)}
               </Btn>
-              <Btn color="light" className="text-primary border" onClick={handleClear}>{translate(LANGUAGE_KEYS.common.clear, '清除')}</Btn>
+              <Btn color="light" className="text-primary border" onClick={handleClear}>{translate(LANGUAGE_KEYS.common.clear)}</Btn>
             </Col>
           </Row>
         </SearchBlock>
@@ -194,7 +194,7 @@ export default function MaterialNotifyPage() {
         <Container fluid className="mb-3">
             <div className="d-flex justify-content-start gap-2">
                 <Btn onClick={handleSelectAll}>
-                  {selectedIds.size > 0 ? translate(LANGUAGE_KEYS.common.deselectAll, '取消全選') : translate(LANGUAGE_KEYS.common.selectAll, '全選')}
+                  {selectedIds.size > 0 ? translate(LANGUAGE_KEYS.common.deselectAll) : translate(LANGUAGE_KEYS.common.selectAll)}
                 </Btn>
             </div>
         </Container>
@@ -211,7 +211,7 @@ export default function MaterialNotifyPage() {
         {hasPermission('Edit') && (
           <Container fluid className="mt-3 d-flex justify-content-end">
               <Btn color="success" outline className="bg-success-light text-success border-success" style={{ backgroundColor: '#d1e7dd' }} onClick={handleAddNotify}>
-                {translate(LANGUAGE_KEYS.notify.addRecord, '加入通知紀錄')}
+                {translate(LANGUAGE_KEYS.notify.addRecord)}
               </Btn>
           </Container>
         )}

@@ -54,7 +54,7 @@ export default function PcrBindingModal({
   const handleSearch = () => {
     const trimmedKeyword = keyword.trim();
     if (trimmedKeyword.length < 2) {
-      danger({ message: <span>{translate(LANGUAGE_KEYS.dataMaintenance.keywordTooShort, 'Enter at least 2 characters.')}</span> });
+      danger({ message: <span>{translate(LANGUAGE_KEYS.dataMaintenance.keywordTooShort)}</span> });
       return;
     }
 
@@ -95,7 +95,7 @@ export default function PcrBindingModal({
 
   const columns: Column<PcrBindingRow>[] = [
     {
-      header: translate(LANGUAGE_KEYS.productSubcategory.productSubcategory, 'Product subcategory'),
+      header: translate(LANGUAGE_KEYS.productSubcategory.productSubcategory),
       key: 'name',
     },
     {
@@ -103,15 +103,15 @@ export default function PcrBindingModal({
       key: 'cccCode',
     },
     {
-      header: translate(LANGUAGE_KEYS.pcrPattern.developer, 'Developer'),
+      header: translate(LANGUAGE_KEYS.pcrPattern.developer),
       key: 'developer',
     },
     {
-      header: translate(LANGUAGE_KEYS.pcrPattern.applicableScope, 'Applicable scope'),
+      header: translate(LANGUAGE_KEYS.pcrPattern.applicableScope),
       key: 'applicableScope',
     },
     {
-      header: translate(LANGUAGE_KEYS.common.select, 'Select'),
+      header: translate(LANGUAGE_KEYS.common.select),
       className: 'text-center',
       style: { width: '100px' },
       render: (row) => {
@@ -128,8 +128,8 @@ export default function PcrBindingModal({
             onClick={() => setSelectedRow(row)}
           >
             {isSelected
-              ? translate(LANGUAGE_KEYS.dataMaintenance.selected, 'Selected')
-              : translate(LANGUAGE_KEYS.common.select, 'Select')}
+              ? translate(LANGUAGE_KEYS.dataMaintenance.selected)
+              : translate(LANGUAGE_KEYS.common.select)}
           </Btn>
         );
       },
@@ -139,13 +139,13 @@ export default function PcrBindingModal({
   return (
     <Modal show={show} size="xl" onClose={handleClose}>
       <Modal.Title onClose={handleClose}>
-        {translate(LANGUAGE_KEYS.dataMaintenance.bindModalTitle, 'Bind PCR template')}
+        {translate(LANGUAGE_KEYS.dataMaintenance.bindModalTitle)}
       </Modal.Title>
       <Modal.Body>
         <div className="mb-3">
           <Input
-            label={translate(LANGUAGE_KEYS.dataMaintenance.keyword, 'Keyword')}
-            placeholder={translate(LANGUAGE_KEYS.dataMaintenance.keywordPlaceholder, 'Product subcategory, CCC code, or developer')}
+            label={translate(LANGUAGE_KEYS.dataMaintenance.keyword)}
+            placeholder={translate(LANGUAGE_KEYS.dataMaintenance.keywordPlaceholder)}
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
             onKeyDown={(event) => {
@@ -158,10 +158,10 @@ export default function PcrBindingModal({
         </div>
         <div className="d-flex justify-content-end gap-2 mb-3">
           <Btn type="button" color="success" outline icon="search" onClick={handleSearch}>
-            {translate(LANGUAGE_KEYS.common.search, 'Search')}
+            {translate(LANGUAGE_KEYS.common.search)}
           </Btn>
           <Btn type="button" color="light" className="text-primary border" onClick={handleClear}>
-            {translate(LANGUAGE_KEYS.common.clear, 'Clear')}
+            {translate(LANGUAGE_KEYS.common.clear)}
           </Btn>
         </div>
         <Container fluid>
@@ -169,7 +169,7 @@ export default function PcrBindingModal({
             key={hasSearched ? 'searched' : 'not-searched'}
             ref={tableRef}
             columns={columns}
-            apiUrl={hasSearched ? API_MAP.PRODUCT_SUBCATEGORY_GET_LIST : undefined}
+            apiUrl={hasSearched ? API_MAP.DATA_MAINTENANCE_GET_PCR_OPTIONS : undefined}
             searchParams={hasSearched ? { Keyword: submittedKeyword } : INITIAL_SEARCH}
             pageSize={5}
             rowKey={(row) => row.id}
@@ -177,7 +177,7 @@ export default function PcrBindingModal({
         </Container>
         <div className="d-flex justify-content-end gap-2 mt-3">
           <Btn type="button" color="secondary" outline onClick={handleClose} disabled={submitting}>
-            {translate(LANGUAGE_KEYS.common.cancel, 'Cancel')}
+            {translate(LANGUAGE_KEYS.common.cancel)}
           </Btn>
           <Btn
             type="button"
@@ -186,7 +186,7 @@ export default function PcrBindingModal({
             disabled={!selectedRow || submitting}
             loading={submitting}
           >
-            {translate(LANGUAGE_KEYS.common.confirm, 'Confirm')}
+            {translate(LANGUAGE_KEYS.common.confirm)}
           </Btn>
         </div>
       </Modal.Body>

@@ -1,6 +1,7 @@
 export interface BuyerAccreditationLevelRow {
   id: string | number;
   materialId?: string;
+  sequence?: number | string | null;
   name?: string;
   thirdPartyCertification?: boolean | string | number;
   consultantApprovalCount?: number | string;
@@ -11,6 +12,7 @@ export interface BuyerAccreditationLevelRow {
 export interface BuyerAccreditationLevelFormData {
   id?: string | number;
   materialId?: string;
+  sequence?: number | string | null;
   name: string;
   thirdPartyCertification: boolean | string;
   consultantApprovalCount: number | string;

@@ -8,7 +8,7 @@ import { Select } from '@packages/components/bootstrap5/Select';
 import Card from '@packages/components/bootstrap5/Card';
 import Grid from '@packages/components/bootstrap5/Grid';
 import { Container } from '@packages/components/bootstrap5/Container';
-import ActionBar from '@/components/layouts/ActionBar';
+import FormActionBar from '@/components/common/FormActionBar';
 import { API_URL } from '@/lib/apiRoutes';
 import { useAppApi } from '@/hooks/useAppApi';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -49,7 +49,7 @@ export default function Content({ title, formData, onChange, updateForm, onSubmi
   const router = useRouter();
   const { formPost } = useAppApi();
   const { translate } = useLanguage();
-  const [functionOptions, setFunctionOptions] = useState<{ label: string, value: string }[]>([{ label: translate(LANGUAGE_KEYS.common.noOption, '無'), value: '' }]);
+  const [functionOptions, setFunctionOptions] = useState<{ label: string, value: string }[]>([{ label: translate(LANGUAGE_KEYS.common.noOption), value: '' }]);
 
   useEffect(() => {
     // Fetch AdminFunctions for dropdown
@@ -62,7 +62,7 @@ export default function Content({ title, formData, onChange, updateForm, onSubmi
             value: String(item.value ?? '')
           }));
 
-          setFunctionOptions([{ label: translate(LANGUAGE_KEYS.common.noOption, '無'), value: '' }, ...options]);
+          setFunctionOptions([{ label: translate(LANGUAGE_KEYS.common.noOption), value: '' }, ...options]);
         }
       } catch (err) {
         console.error("Failed to load functions", err);
@@ -110,55 +110,55 @@ export default function Content({ title, formData, onChange, updateForm, onSubmi
 
   return (
     <>
-      <ActionBar title={title}>
-        <div className="ms-auto d-flex gap-2">
-          <Btn color="secondary" outline onClick={() => router.back()} icon="cancel" disabled={loading}>
-            {translate(LANGUAGE_KEYS.common.backToList, '返回列表')}
-          </Btn>
-        </div>
-      </ActionBar>
+      <FormActionBar
+        title={title}
+        formId="admin-menu-form"
+        submitLabel={submitLabel}
+        loading={loading}
+        onBack={() => router.back()}
+      />
 
       <Container className="py-4">
         <Card>
           <Card.Body>
-            <form onSubmit={onSubmit}>
+            <form id="admin-menu-form" onSubmit={onSubmit}>
               <Grid.Row className="g-3">
                 <Grid.Col md={6}>
                   <Input
-                    label={translate(LANGUAGE_KEYS.adminFunction.heading, '標題')}
+                    label={translate(LANGUAGE_KEYS.adminFunction.heading)}
                     name="title"
                     value={formData?.title || ''}
                     onChange={onChange}
-                    placeholder={translate(LANGUAGE_KEYS.adminMenu.title, '例如: 系統管理')}
+                    placeholder={translate(LANGUAGE_KEYS.adminMenu.title)}
                     required
                   />
                 </Grid.Col>
                 <Grid.Col md={6}>
                   <Input
-                    label={translate(LANGUAGE_KEYS.common.itemCode, '英文代號')}
+                    label={translate(LANGUAGE_KEYS.common.itemCode)}
                     name="englishCode"
                     value={formData?.englishCode || ''}
                     onChange={onChange}
-                    placeholder={translate(LANGUAGE_KEYS.common.itemCode, '例如：SP')}
+                    placeholder={translate(LANGUAGE_KEYS.common.itemCode)}
                     maxLength={2}
                   />
                 </Grid.Col>
                 <Grid.Col md={6}>
                   <Select
-                    label={translate(LANGUAGE_KEYS.common.status, '狀態')}
+                    label={translate(LANGUAGE_KEYS.common.status)}
                     name="status"
                     value={formData?.status?.toString() || ''}
                     onChange={onChange}
                     options={[
-                      { label: translate(LANGUAGE_KEYS.common.enabled, '啟用'), value: '1' },
-                      { label: translate(LANGUAGE_KEYS.common.disabled, '停用'), value: '0' }
+                      { label: translate(LANGUAGE_KEYS.common.enabled), value: '1' },
+                      { label: translate(LANGUAGE_KEYS.common.disabled), value: '0' }
                     ]}
                   />
                 </Grid.Col>
                 <Grid.Col md={6} className="d-flex align-items-end">
                   <Checkbox
                     name="isSystemSetting"
-                    label={translate(LANGUAGE_KEYS.adminMenu.systemSetting, '系統設定')}
+                    label={translate(LANGUAGE_KEYS.adminMenu.systemSetting)}
                     checked={Boolean(formData?.isSystemSetting)}
                     onChange={onChange}
                   />
@@ -166,7 +166,7 @@ export default function Content({ title, formData, onChange, updateForm, onSubmi
 
                 <Grid.Col md={6}>
                   <Select
-                    label={translate(LANGUAGE_KEYS.adminMenu.systemFunction, '系統功能')}
+                    label={translate(LANGUAGE_KEYS.adminMenu.systemFunction)}
                     name="adminFunctionId"
                     value={formData?.adminFunctionId || ''}
                     onChange={onChange}
@@ -175,7 +175,7 @@ export default function Content({ title, formData, onChange, updateForm, onSubmi
                 </Grid.Col>
                 <Grid.Col md={6}>
                   <Input
-                    label={translate(LANGUAGE_KEYS.adminMenu.order, '順序')}
+                    label={translate(LANGUAGE_KEYS.adminMenu.order)}
                     name="sequence"
                     type="number"
                     value={formData?.sequence?.toString() || '0'}
@@ -186,16 +186,16 @@ export default function Content({ title, formData, onChange, updateForm, onSubmi
 
                 <Grid.Col md={6}>
                   <Input
-                    label={translate(LANGUAGE_KEYS.adminMenu.iconClass, '圖示Class')}
+                    label={translate(LANGUAGE_KEYS.adminMenu.iconClass)}
                     name="iconClass"
                     value={formData?.iconClass || ''}
                     onChange={onChange}
-                    placeholder={translate(LANGUAGE_KEYS.adminMenu.iconClass, '例如: fas fa-cog')}
+                    placeholder={translate(LANGUAGE_KEYS.adminMenu.iconClass)}
                   />
                 </Grid.Col>
 
                 <Grid.Col md={12}>
-                  <label className="form-label fw-bold mt-3">{translate(LANGUAGE_KEYS.adminMenu.includeMenus, '包含選單')}</label>
+                  <label className="form-label fw-bold mt-3">{translate(LANGUAGE_KEYS.adminMenu.includeMenus)}</label>
                   <div className="d-flex flex-column gap-3">
                     {formData?.childList?.map((child, index) => (
                       <Card key={index} className="bg-light">
@@ -204,7 +204,7 @@ export default function Content({ title, formData, onChange, updateForm, onSubmi
                           <Grid.Row className="g-3 flex-grow-1 align-items-end">
                             <Grid.Col md={2}>
                               <Select
-                                label={translate(LANGUAGE_KEYS.adminMenu.systemFunction, '系統功能')}
+                                label={translate(LANGUAGE_KEYS.adminMenu.systemFunction)}
                                 value={child.adminFunctionId || ''}
                                 onChange={(e) => handleSubMenuChange(index, 'adminFunctionId', e.target.value)}
                                 options={functionOptions}
@@ -212,45 +212,45 @@ export default function Content({ title, formData, onChange, updateForm, onSubmi
                             </Grid.Col>
                             <Grid.Col md={2}>
                               <Input
-                                label={translate(LANGUAGE_KEYS.common.menuName, '選單名稱')}
+                                label={translate(LANGUAGE_KEYS.common.menuName)}
                                 value={child.title || ''}
                                 onChange={(e) => handleSubMenuChange(index, 'title', e.target.value)}
-                                placeholder={translate(LANGUAGE_KEYS.common.menuNamePlaceholder, '選單名稱')}
+                                placeholder={translate(LANGUAGE_KEYS.common.menuNamePlaceholder)}
                                 required
                               />
                             </Grid.Col>
                             <Grid.Col md={2}>
                               <Input
-                                label={translate(LANGUAGE_KEYS.common.itemCode, '英文代號')}
+                                label={translate(LANGUAGE_KEYS.common.itemCode)}
                                 value={child.englishCode || ''}
                                 onChange={(e) => handleSubMenuChange(index, 'englishCode', e.target.value.toUpperCase())}
-                                placeholder={translate(LANGUAGE_KEYS.common.itemCode, '例如：SP')}
+                                placeholder={translate(LANGUAGE_KEYS.common.itemCode)}
                                 maxLength={2}
                               />
                             </Grid.Col>
                             <Grid.Col md={2}>
                               <Input
-                                label={translate(LANGUAGE_KEYS.adminMenu.order, '順序')}
+                                label={translate(LANGUAGE_KEYS.adminMenu.order)}
                                 value={child.sequence?.toString() || '0'}
                                 onChange={(e) => handleSubMenuChange(index, 'sequence', e.target.value)}
-                                placeholder={translate(LANGUAGE_KEYS.adminMenu.order, '順序')}
+                                placeholder={translate(LANGUAGE_KEYS.adminMenu.order)}
                                 required
                               />
                             </Grid.Col>
                             <Grid.Col md={2}>
                               <Select
-                                label={translate(LANGUAGE_KEYS.common.status, '狀態')}
+                                label={translate(LANGUAGE_KEYS.common.status)}
                                 value={child.status?.toString() || ''}
                                 onChange={(e) => handleSubMenuChange(index, 'status', e.target.value)}
                                 options={[
-                                  { label: translate(LANGUAGE_KEYS.common.enabled, '啟用'), value: '1' },
-                                  { label: translate(LANGUAGE_KEYS.common.disabled, '停用'), value: '0' }
+                                  { label: translate(LANGUAGE_KEYS.common.enabled), value: '1' },
+                                  { label: translate(LANGUAGE_KEYS.common.disabled), value: '0' }
                                 ]}
                               />
                             </Grid.Col>
                             <Grid.Col md={2} className="text-end">
                               <Btn color="danger" onClick={() => handleRemoveSubMenu(index)}>
-                                {translate(LANGUAGE_KEYS.common.delete, '刪除')}
+                                {translate(LANGUAGE_KEYS.common.delete)}
                               </Btn>
                             </Grid.Col>
                           </Grid.Row>
@@ -260,20 +260,12 @@ export default function Content({ title, formData, onChange, updateForm, onSubmi
 
                     <div className="text-center mt-2">
                       <Btn color="primary" onClick={handleAddSubMenu} icon="add">
-                        {translate(LANGUAGE_KEYS.adminFunction.more, '更多')}
+                        {translate(LANGUAGE_KEYS.adminFunction.more)}
                       </Btn>
                     </div>
                   </div>
                 </Grid.Col>
 
-                <Grid.Col md={12} className="d-flex justify-content-end gap-2 mt-4">
-                  <Btn type="button" color="secondary" outline onClick={() => router.push('/AdminMenu')}>
-                    {translate(LANGUAGE_KEYS.common.cancel, '取消')}
-                  </Btn>
-                  <Btn type="submit" color="primary" loading={loading} icon="save">
-                    {translate(submitLabel, submitLabel)}
-                  </Btn>
-                </Grid.Col>
               </Grid.Row>
             </form>
           </Card.Body>

@@ -115,44 +115,44 @@ export default function Login() {
       <button
         type="button"
         className="auth-language-trigger btn btn-outline-primary btn-sm"
-        aria-label={translate(LANGUAGE_KEYS.common.language, '切換語言')}
-        title={translate(LANGUAGE_KEYS.common.language, '切換語言')}
+        aria-label={translate(LANGUAGE_KEYS.common.language)}
+        title={translate(LANGUAGE_KEYS.common.language)}
         onClick={() => setShowLanguageSelector(true)}
       >
         <FontAwesome icon="fa-solid fa-language" className="me-1" />
         {languageCode}
       </button>
-      <h3 className="auth-title">{translate(LANGUAGE_KEYS.auth.loginSystem, '登入系統')}</h3>
+      <h3 className="auth-title">{translate(LANGUAGE_KEYS.auth.loginSystem)}</h3>
       <form onSubmit={handleSubmit}>
         <div className="mb-3">
           <Input
-            label={translate(LANGUAGE_KEYS.auth.account, '帳號')}
+            label={translate(LANGUAGE_KEYS.auth.account)}
             name="Account"
-            placeholder={translate(LANGUAGE_KEYS.auth.accountPlaceholder, '請輸入帳號')}
+            placeholder={translate(LANGUAGE_KEYS.auth.accountPlaceholder)}
             required
           />
         </div>
         <div className="mb-4">
           <Input
-            label={translate(LANGUAGE_KEYS.auth.password, '密碼')}
+            label={translate(LANGUAGE_KEYS.auth.password)}
             name="Password"
             type="password"
-            placeholder={translate(LANGUAGE_KEYS.auth.passwordPlaceholder, '請輸入密碼')}
+            placeholder={translate(LANGUAGE_KEYS.auth.passwordPlaceholder)}
             required
           />
         </div>
         <div className="d-grid gap-2">
           <Btn type="submit" color="primary" outline={false} size="lg" loading={loading === 'loading'}>
-            {translate(LANGUAGE_KEYS.auth.login, '登入')}
+            {translate(LANGUAGE_KEYS.auth.login)}
           </Btn>
         </div>
       </form>
       <div className="auth-footer">
         <div className="mb-2">
-          <Link href="/forgot-password/">{translate(LANGUAGE_KEYS.auth.forgotPassword, '忘記密碼？')}</Link>
+          <Link href="/forgot-password/">{translate(LANGUAGE_KEYS.auth.forgotPassword)}</Link>
         </div>
         <div>
-          {translate(LANGUAGE_KEYS.auth.noAccount, '還沒有帳號？')} <Link href="/register/">{translate(LANGUAGE_KEYS.auth.registerNow, '立即註冊')}</Link>
+          {translate(LANGUAGE_KEYS.auth.noAccount)} <Link href="/register/">{translate(LANGUAGE_KEYS.auth.registerNow)}</Link>
         </div>
       </div>
       <LanguageSelectorModal show={showLanguageSelector} onClose={() => setShowLanguageSelector(false)} />

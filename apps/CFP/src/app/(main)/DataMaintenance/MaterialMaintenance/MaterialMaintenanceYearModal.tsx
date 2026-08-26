@@ -39,15 +39,15 @@ export function MaterialMaintenanceYearModal({
   return (
     <Modal show={show} size="sm" onClose={handleClose}>
       <Modal.Title onClose={handleClose}>
-        {translate(LANGUAGE_KEYS.rawMaterialMaintenance.addYearTitle, 'Add year')}
+        {translate(LANGUAGE_KEYS.rawMaterialMaintenance.addYearTitle)}
       </Modal.Title>
       <Modal.Body>
         <form onSubmit={handleSubmit}>
           <div className="mb-3">
             <Input
               type="number"
-              label={translate(LANGUAGE_KEYS.rawMaterialMaintenance.addYear, 'Add year')}
-              placeholder={translate(LANGUAGE_KEYS.rawMaterialMaintenance.yearPlaceholder, 'e.g. 2025')}
+              label={translate(LANGUAGE_KEYS.rawMaterialMaintenance.addYear)}
+              placeholder={translate(LANGUAGE_KEYS.rawMaterialMaintenance.yearPlaceholder)}
               min={1900}
               max={2100}
               value={year}
@@ -58,10 +58,10 @@ export function MaterialMaintenanceYearModal({
           </div>
           <div className="d-flex justify-content-end gap-2">
             <Btn type="button" color="secondary" outline onClick={handleClose} disabled={submitting}>
-              {translate(LANGUAGE_KEYS.common.cancel, 'Cancel')}
+              {translate(LANGUAGE_KEYS.common.cancel)}
             </Btn>
             <Btn type="submit" color="primary" icon="add" loading={submitting}>
-              {translate(LANGUAGE_KEYS.common.add, 'Add')}
+              {translate(LANGUAGE_KEYS.common.add)}
             </Btn>
           </div>
         </form>

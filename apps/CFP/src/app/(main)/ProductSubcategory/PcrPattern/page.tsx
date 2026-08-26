@@ -4,7 +4,7 @@ import React, { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import FontAwesome from '@packages/components/FontAwsome';
 import { Btn } from '@packages/components/bootstrap5/Btn';
-import { Input } from '@packages/components/bootstrap5/Input';
+import { FileBtn, Input } from '@packages/components/bootstrap5/Input';
 import Container from '@packages/components/bootstrap5/Container';
 import Grid from '@packages/components/bootstrap5/Grid';
 import ActionBar from '@/components/layouts/ActionBar';
@@ -24,6 +24,7 @@ import {
   PcrTemplateCategory,
 } from '@/types/pcrTemplate';
 import { PcrPatternRow, PCR_PATTERN_CATEGORY_STORAGE_KEY } from '@/types/pcrPattern';
+import { downloadFile } from '@packages/lib/downloadFlie';
 
 const CATEGORY_OPTIONS = [
   { value: PcrTemplateCategory.Material, label: LANGUAGE_KEYS.pcrTemplate.material, fallback: '原料' },
@@ -37,6 +38,22 @@ type PageLoadState = {
   status: 'loading' | 'ready' | 'error';
   message?: string;
 };
+
+interface PcrPatternImportResult {
+  totalCount: number;
+  successCount: number;
+  failureCount: number;
+  errors: string[];
+}
+
+async function isValidXlsxBlob(blob: Blob): Promise<boolean> {
+  const header = new Uint8Array(await blob.slice(0, 4).arrayBuffer());
+  return header.length === 4
+    && header[0] === 0x50
+    && header[1] === 0x4B
+    && header[2] === 0x03
+    && header[3] === 0x04;
+}
 
 function readProductSubcategoryName(data: unknown): string | null {
   if (typeof data !== 'object' || data === null || !('name' in data)) return null;
@@ -52,7 +69,9 @@ function ProductSubcategoryPcrPatternPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const productSubcategoryId = searchParams.get('id');
-  const { formPost } = useAppApi();
+  const sourceManagerId = searchParams.get('sourceManagerId');
+  const isSharedView = Boolean(sourceManagerId);
+  const { formPost, get, post } = useAppApi();
   const { translate } = useLanguage();
   const { hasPermission } = usePagePermissions('/ProductSubcategory');
   const { success, danger } = useToast();
@@ -66,6 +85,8 @@ function ProductSubcategoryPcrPatternPageContent() {
   const [productSubcategoryName, setProductSubcategoryName] = useState<string | null>(null);
   const [productSubcategoryNameError, setProductSubcategoryNameError] = useState<string | null>(null);
   const [pageLoad, setPageLoad] = useState<PageLoadState>({ id: null, status: 'loading' });
+  const [importing, setImporting] = useState(false);
+  const [importErrors, setImportErrors] = useState<string[]>([]);
   const category = !categoryReady
     ? null
     : isPcrTemplateCategory(storedCategory)
@@ -86,8 +107,9 @@ function ProductSubcategoryPcrPatternPageContent() {
       ProductSubcategoryId: productSubcategoryId,
       Category: effectiveCategory,
       Item: searchItem.trim(),
+      ...(isSharedView ? { SourceManagerId: sourceManagerId } : {}),
     }),
-    [effectiveCategory, productSubcategoryId, searchItem],
+    [effectiveCategory, isSharedView, productSubcategoryId, searchItem, sourceManagerId],
   );
 
   React.useEffect(() => {
@@ -118,7 +140,6 @@ function ProductSubcategoryPcrPatternPageContent() {
         if (!name) {
           throw new Error(result.message || translate(
             LANGUAGE_KEYS.pcrPattern.productSubcategoryNameLoadFailed,
-            'Unable to load the product subcategory name. Please refresh.',
           ));
         }
 
@@ -129,7 +150,6 @@ function ProductSubcategoryPcrPatternPageContent() {
         if (!cancelled) {
           setProductSubcategoryNameError(translate(
             LANGUAGE_KEYS.pcrPattern.productSubcategoryNameLoadFailed,
-            'Unable to load the product subcategory name. Please refresh.',
           ));
         }
       }
@@ -140,6 +160,11 @@ function ProductSubcategoryPcrPatternPageContent() {
         await Promise.resolve();
         if (cancelled) return;
 
+        if (isSharedView) {
+          setPageLoad({ id: productSubcategoryId, status: 'ready' });
+          return;
+        }
+
         const ensureResult = await formPost(
           API_MAP.PRODUCT_SUBCATEGORY_ENSURE_PCR_PATTERN,
           { productSubcategoryId },
@@ -147,7 +172,6 @@ function ProductSubcategoryPcrPatternPageContent() {
         if (!ensureResult.success) {
           throw new Error(ensureResult.message || translate(
             LANGUAGE_KEYS.pcrPattern.initializationFailed,
-            'PCR pattern initialization failed.',
           ));
         }
 
@@ -161,7 +185,6 @@ function ProductSubcategoryPcrPatternPageContent() {
             status: 'error',
             message: translate(
               LANGUAGE_KEYS.pcrPattern.initializationFailed,
-              'PCR pattern initialization failed. Please refresh.',
             ),
           });
         }
@@ -173,7 +196,7 @@ function ProductSubcategoryPcrPatternPageContent() {
     return () => {
       cancelled = true;
     };
-  }, [formPost, productSubcategoryId, translate]);
+  }, [formPost, isSharedView, productSubcategoryId, translate]);
 
   React.useEffect(() => {
     if (!pageReady || category === null) return;
@@ -203,27 +226,101 @@ function ProductSubcategoryPcrPatternPageContent() {
         ProductSubcategoryId: productSubcategoryId,
         Category: PcrTemplateCategory.Material,
         Item: '',
+        ...(isSharedView ? { SourceManagerId: sourceManagerId } : {}),
       });
     }
   };
 
   const handleAdd = () => {
+    if (isSharedView) return;
     router.push(`/ProductSubcategory/PcrPattern/Create/?productSubcategoryId=${productSubcategoryId}&category=${effectiveCategory}`);
   };
 
   const handleDelete = async (id: string | number) => {
-    if (!productSubcategoryId) return;
-    if (!await confirm(translate(LANGUAGE_KEYS.pcrPattern.deleteConfirm, '確定要刪除此項目嗎？'))) return;
+    if (!productSubcategoryId || isSharedView) return;
+    if (!await confirm(translate(LANGUAGE_KEYS.pcrPattern.deleteConfirm))) return;
 
     const result = await formPost(API_MAP.PRODUCT_SUBCATEGORY_DELETE_PCR_PATTERN, {
       id,
       productSubcategoryId,
     });
     if (result.success) {
-      success({ message: <span>{translate(LANGUAGE_KEYS.pcrPattern.deleted, '刪除成功！')}</span> });
+      success({ message: <span>{translate(LANGUAGE_KEYS.pcrPattern.deleted)}</span> });
       tableRef.current?.reload();
     } else {
-      danger({ message: <span>{result.message || translate(LANGUAGE_KEYS.common.deleteFailed, '刪除失敗。')}</span> });
+      danger({ message: <span>{result.message || translate(LANGUAGE_KEYS.common.deleteFailed)}</span> });
+    }
+  };
+
+  const handleSync = async () => {
+    if (!productSubcategoryId || !sourceManagerId) return;
+    if (!await confirm(translate(LANGUAGE_KEYS.pcrPattern.syncTemplateConfirm))) return;
+
+    const result = await formPost(API_MAP.PRODUCT_SUBCATEGORY_SYNC_PCR_PATTERN, {
+      productSubcategoryId,
+      sourceManagerId,
+    });
+    if (!result.success) {
+      danger({ message: <span>{result.message || translate(LANGUAGE_KEYS.pcrPattern.syncTemplateFailed)}</span> });
+      return;
+    }
+
+    success({ message: <span>{translate(LANGUAGE_KEYS.pcrPattern.syncTemplateSucceeded)}</span> });
+    router.replace(`/ProductSubcategory/PcrPattern/?id=${encodeURIComponent(productSubcategoryId)}`);
+  };
+
+  const handleDownloadTemplate = async () => {
+    const response = await get<Blob>(API_MAP.PRODUCT_SUBCATEGORY_PCR_PATTERN_IMPORT_TEMPLATE, {
+      responseType: 'blob',
+    });
+
+    if (response.success && response.data instanceof Blob && await isValidXlsxBlob(response.data)) {
+      downloadFile({
+        blob: response.data,
+        defaultFileName: 'PcrPatternImportTemplate.xlsx',
+      });
+      return;
+    }
+
+    danger({ message: <span>下載 PCR 範本失敗。</span> });
+  };
+
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !productSubcategoryId) return;
+
+    setImporting(true);
+    setImportErrors([]);
+
+    try {
+      const formData = new FormData();
+      formData.append('productSubcategoryId', productSubcategoryId);
+      formData.append('file', file);
+
+      const response = await post<PcrPatternImportResult, FormData>(
+        API_MAP.PRODUCT_SUBCATEGORY_PCR_PATTERN_IMPORT,
+        { body: formData },
+      );
+      const summary = response.data;
+
+      if (response.success && summary) {
+        if (summary.failureCount > 0 || summary.errors.length > 0) {
+          setImportErrors(summary.errors);
+          danger({ message: <span>匯入失敗，既有 PCR 模板未變更。</span> });
+        } else {
+          success({ message: <span>已成功匯入 {summary.successCount} 筆 PCR 項目。</span> });
+          tableRef.current?.reload();
+        }
+        return;
+      }
+
+      danger({ message: <span>{response.message || '匯入 PCR 範本失敗。'}</span> });
+    } catch (error) {
+      console.error('PCR pattern import failed', error);
+      danger({ message: <span>匯入 PCR 範本失敗。</span> });
+    } finally {
+      setImporting(false);
+      event.target.value = '';
     }
   };
 
@@ -233,7 +330,6 @@ function ProductSubcategoryPcrPatternPageContent() {
         <div className="alert alert-danger">
           {translate(
             LANGUAGE_KEYS.pcrPattern.missingProductSubcategoryId,
-            'Missing product subcategory identifier.',
           )}
         </div>
       </WrapContent>
@@ -242,12 +338,12 @@ function ProductSubcategoryPcrPatternPageContent() {
 
   const columns: Column<PcrPatternRow>[] = [
     {
-      header: translate(LANGUAGE_KEYS.pcrTemplate.item, '項目'),
+      header: translate(LANGUAGE_KEYS.pcrTemplate.item),
       key: 'item',
       render: (row) => row.item,
     },
     {
-      header: translate(LANGUAGE_KEYS.pcrTemplate.subItems, '細項'),
+      header: translate(LANGUAGE_KEYS.pcrTemplate.subItems),
       key: 'subItems',
       render: (row) => row.subItems || '',
     },
@@ -257,14 +353,14 @@ function ProductSubcategoryPcrPatternPageContent() {
       style: { width: '120px' },
       render: (row) => (
         <div className="d-flex justify-content-center gap-2">
-          {hasPermission('Edit') && (
+          {!isSharedView && hasPermission('Edit') && (
             <FontAwesome
               icon="fa-regular fa-pen-to-square"
               className="text-warning cursor-pointer"
               onClick={() => router.push(`/ProductSubcategory/PcrPattern/Edit/?id=${row.id}&productSubcategoryId=${productSubcategoryId}`)}
             />
           )}
-          {hasPermission('Delete') && (
+          {!isSharedView && hasPermission('Delete') && (
             <FontAwesome
               icon="fa-regular fa-trash-can"
               className="text-danger cursor-pointer"
@@ -279,11 +375,16 @@ function ProductSubcategoryPcrPatternPageContent() {
   return (
     <>
       <ActionBar
-        title={`${translate(LANGUAGE_KEYS.pcrPattern.template, 'PCR模板')}${pageLoad.id === productSubcategoryId && productSubcategoryName ? ` - ${productSubcategoryName}` : ''}`}
+        title={`${translate(LANGUAGE_KEYS.pcrPattern.template)}${pageLoad.id === productSubcategoryId && productSubcategoryName ? ` - ${productSubcategoryName}` : ''}`}
       >
-        <div className="ms-auto">
+        <div className="ms-auto d-flex gap-2">
+          {isSharedView && hasPermission('Create') && (
+            <Btn color="success" outline onClick={() => void handleSync()} icon="check">
+              {translate(LANGUAGE_KEYS.pcrPattern.syncTemplate)}
+            </Btn>
+          )}
           <Btn color="secondary" outline onClick={() => router.push('/ProductSubcategory')} icon="cancel">
-            {translate(LANGUAGE_KEYS.common.backToList, '返回列表')}
+            {translate(LANGUAGE_KEYS.common.backToList)}
           </Btn>
         </div>
       </ActionBar>
@@ -292,7 +393,7 @@ function ProductSubcategoryPcrPatternPageContent() {
           <div className="alert alert-warning">{productSubcategoryNameError}</div>
         )}
         <div className="border-bottom mb-3">
-          <div className="nav nav-tabs" role="tablist" aria-label={translate(LANGUAGE_KEYS.pcrTemplate.title, 'PCR模板分類')}>
+          <div className="nav nav-tabs" role="tablist" aria-label={translate(LANGUAGE_KEYS.pcrTemplate.title)}>
             {CATEGORY_OPTIONS.map(option => {
               const isActive = category !== null && category === option.value;
               return (
@@ -304,7 +405,7 @@ function ProductSubcategoryPcrPatternPageContent() {
                     className={`nav-link w-100 ${isActive ? 'active fw-semibold' : 'text-secondary'}`}
                     onClick={() => selectCategory(option.value)}
                   >
-                    {translate(option.label, option.fallback)}
+                    {translate(option.label)}
                   </button>
                 </div>
               );
@@ -315,8 +416,8 @@ function ProductSubcategoryPcrPatternPageContent() {
           <Row align="center" gutter={3}>
             <Col md={8}>
               <Input
-                label={translate(LANGUAGE_KEYS.pcrTemplate.item, '項目')}
-                placeholder={translate(LANGUAGE_KEYS.pcrTemplate.item, '項目')}
+                label={translate(LANGUAGE_KEYS.pcrTemplate.item)}
+                placeholder={translate(LANGUAGE_KEYS.pcrTemplate.item)}
                 value={searchItem}
                 onChange={(event) => setSearchItem(event.target.value)}
                 onKeyDown={(event) => {
@@ -329,27 +430,48 @@ function ProductSubcategoryPcrPatternPageContent() {
             </Col>
             <Col md={4} className="d-flex justify-content-end gap-2 align-items-end">
               <Btn color="success" outline className="bg-success-light text-success border-success" style={{ backgroundColor: '#d1e7dd' }} icon="search" onClick={handleSearch}>
-                {translate(LANGUAGE_KEYS.common.search, '查詢')}
+                {translate(LANGUAGE_KEYS.common.search)}
               </Btn>
               <Btn color="light" className="text-primary border" onClick={handleClear}>
-                {translate(LANGUAGE_KEYS.common.clear, '清除')}
+                {translate(LANGUAGE_KEYS.common.clear)}
               </Btn>
             </Col>
           </Row>
         </SearchBlock>
         <Container fluid className="mb-3">
           <div className="d-flex justify-content-end gap-2">
-            {hasPermission('Create') && (
-              <Btn
-                color="success"
-                icon="add"
-                onClick={handleAdd}
-              >
-                {translate(LANGUAGE_KEYS.common.add, '新增')}
-              </Btn>
+            {!isSharedView && hasPermission('Create') && (
+              <>
+                <Btn color="secondary" outline onClick={() => void handleDownloadTemplate()}>
+                  {translate(LANGUAGE_KEYS.pcrPattern.importTemplate) || '下載 PCR 範本'}
+                </Btn>
+                <FileBtn
+                  label={importing
+                    ? (translate(LANGUAGE_KEYS.common.importing) || '匯入中...')
+                    : (translate(LANGUAGE_KEYS.pcrPattern.import) || '匯入 PCR 範本')}
+                  accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                  onChange={handleImport}
+                  btnProps={{ color: 'primary', disabled: importing }}
+                />
+                <Btn color="success" icon="add" onClick={handleAdd}>
+                  {translate(LANGUAGE_KEYS.common.add)}
+                </Btn>
+              </>
             )}
           </div>
         </Container>
+        {importErrors.length > 0 && (
+          <Container fluid className="mb-3">
+            <div className="alert alert-danger mb-0" role="alert">
+              <div className="fw-semibold mb-2">匯入失敗，請修正以下列號後重新匯入：</div>
+              <ul className="mb-0 ps-3">
+                {importErrors.map((error, index) => (
+                  <li key={`${error}-${index}`}>{error}</li>
+                ))}
+              </ul>
+            </div>
+          </Container>
+        )}
         <Container fluid>
           {pageError ? (
             <div className="alert alert-danger">{pageError}</div>
@@ -361,7 +483,9 @@ function ProductSubcategoryPcrPatternPageContent() {
             <CommonTable
               ref={tableRef}
               columns={columns}
-              apiUrl={API_MAP.PRODUCT_SUBCATEGORY_GET_PCR_PATTERN}
+              apiUrl={isSharedView
+                ? API_MAP.PRODUCT_SUBCATEGORY_GET_SHARED_PCR_PATTERN
+                : API_MAP.PRODUCT_SUBCATEGORY_GET_PCR_PATTERN}
               searchParams={initialSearchParams}
               pageSize={10}
             />

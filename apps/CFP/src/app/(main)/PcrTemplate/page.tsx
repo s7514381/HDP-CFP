@@ -107,25 +107,25 @@ export default function PcrTemplatePage() {
   };
 
   const handleDelete = async (id: string | number) => {
-    if (!await confirm(translate(LANGUAGE_KEYS.pcrTemplate.deleteConfirm, '確定要刪除此項目嗎？'))) return;
+    if (!await confirm(translate(LANGUAGE_KEYS.pcrTemplate.deleteConfirm))) return;
 
     const result = await formPost(`${API_MAP.PCR_TEMPLATE_MST}/Delete`, { id });
     if (result.success) {
-      success({ message: <span>{translate(LANGUAGE_KEYS.common.deleteSuccess, '刪除成功！')}</span> });
+      success({ message: <span>{translate(LANGUAGE_KEYS.common.deleteSuccess)}</span> });
       tableRef.current?.reload();
     } else {
-      danger({ message: <span>{result.message || translate(LANGUAGE_KEYS.common.deleteFailed, '刪除失敗。')}</span> });
+      danger({ message: <span>{result.message || translate(LANGUAGE_KEYS.common.deleteFailed)}</span> });
     }
   };
 
   const columns: Column<PcrTemplateRow>[] = [
     {
-      header: translate(LANGUAGE_KEYS.pcrTemplate.item, '項目'),
+      header: translate(LANGUAGE_KEYS.pcrTemplate.item),
       key: 'item',
       render: (row) => row.item,
     },
     {
-      header: translate(LANGUAGE_KEYS.pcrTemplate.subItems, '細項'),
+      header: translate(LANGUAGE_KEYS.pcrTemplate.subItems),
       key: 'subItems',
       render: (row) => row.subItems || '',
     },
@@ -159,7 +159,7 @@ export default function PcrTemplatePage() {
       <ActionBar title={LANGUAGE_KEYS.pcrTemplate.title} />
       <WrapContent className="p-3">
         <div className="border-bottom mb-3">
-          <div className="nav nav-tabs" role="tablist" aria-label={translate(LANGUAGE_KEYS.pcrTemplate.title, 'PCR 模板分類')}>
+          <div className="nav nav-tabs" role="tablist" aria-label={translate(LANGUAGE_KEYS.pcrTemplate.title)}>
             {CATEGORY_OPTIONS.map(option => {
               const isActive = category !== null && category === option.value;
               return (
@@ -171,7 +171,7 @@ export default function PcrTemplatePage() {
                     className={`nav-link w-100 ${isActive ? 'active fw-semibold' : 'text-secondary'}`}
                     onClick={() => selectCategory(option.value)}
                   >
-                    {translate(option.label, option.fallback)}
+                    {translate(option.label)}
                   </button>
                 </div>
               );
@@ -183,8 +183,8 @@ export default function PcrTemplatePage() {
           <Row align="center" gutter={3}>
             <Col md={8}>
               <Input
-                label={translate(LANGUAGE_KEYS.pcrTemplate.item, '項目')}
-                placeholder={translate(LANGUAGE_KEYS.pcrTemplate.item, '項目')}
+                label={translate(LANGUAGE_KEYS.pcrTemplate.item)}
+                placeholder={translate(LANGUAGE_KEYS.pcrTemplate.item)}
                 value={searchItem}
                 onChange={(event) => setSearchItem(event.target.value)}
                 onKeyDown={(event) => {
@@ -197,10 +197,10 @@ export default function PcrTemplatePage() {
             </Col>
             <Col md={4} className="d-flex justify-content-end gap-2 align-items-end">
               <Btn color="success" outline className="bg-success-light text-success border-success" style={{ backgroundColor: '#d1e7dd' }} icon="search" onClick={handleSearch}>
-                {translate(LANGUAGE_KEYS.common.search, '查詢')}
+                {translate(LANGUAGE_KEYS.common.search)}
               </Btn>
               <Btn color="light" className="text-primary border" onClick={handleClear}>
-                {translate(LANGUAGE_KEYS.common.clear, '清除')}
+                {translate(LANGUAGE_KEYS.common.clear)}
               </Btn>
             </Col>
           </Row>
@@ -210,11 +210,11 @@ export default function PcrTemplatePage() {
           <div className="d-flex justify-content-end gap-2">
             {hasPermission('Create') && (
               <Btn color="success" icon="add" outline={false} onClick={() => void handleAdd()}>
-                {translate(LANGUAGE_KEYS.common.add, '新增')}
+                {translate(LANGUAGE_KEYS.common.add)}
               </Btn>
             )}
             <Btn color="secondary" outline>
-              {translate(LANGUAGE_KEYS.pcrTemplate.description, 'PCR 範本說明')}
+              {translate(LANGUAGE_KEYS.pcrTemplate.description)}
             </Btn>
           </div>
         </Container>

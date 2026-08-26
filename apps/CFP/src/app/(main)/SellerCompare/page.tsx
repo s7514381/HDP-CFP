@@ -58,29 +58,29 @@ export default function MaterialPage() {
 
   const columns: Column<SellerCompareRow>[] = [
     {
-      header: translate(LANGUAGE_KEYS.common.rowNumber, '項次'),
+      header: translate(LANGUAGE_KEYS.common.rowNumber),
       className: "text-center",
       style: { width: '80px' },
       render: (_, index) => index + 1
     },
     {
-      header: translate(LANGUAGE_KEYS.common.materialNumber, '料號'),
+      header: translate(LANGUAGE_KEYS.common.materialNumber),
       key: "materialNumber"
     },
     {
-      header: translate(LANGUAGE_KEYS.common.productModel, '產品型號'),
+      header: translate(LANGUAGE_KEYS.common.productModel),
       key: "productModel"
     },
     {
-      header: translate(LANGUAGE_KEYS.common.productName, '產品名稱'),
+      header: translate(LANGUAGE_KEYS.common.productName),
       key: "productName"
     },
     {
-      header: translate(LANGUAGE_KEYS.common.supplier, '供應商'),
+      header: translate(LANGUAGE_KEYS.common.supplier),
       key: "supplierName"
     },
     {
-      header: translate(LANGUAGE_KEYS.sellerCompare.buyer, '買方'),
+      header: translate(LANGUAGE_KEYS.sellerCompare.buyer),
       key: "buyerName"
     },
     {
@@ -109,16 +109,16 @@ export default function MaterialPage() {
         <SearchBlock title="" icon="" className="mb-3">
           <Row align="center" gutter={3}>
             <Col md={4}>
-              <Input label={translate(LANGUAGE_KEYS.common.materialNumber, '料號')} placeholder={translate(LANGUAGE_KEYS.common.materialNumber, '料號')} value={importList.searchValues.MaterialNumber} onChange={(e) => importList.updateSearchValue('MaterialNumber', e.target.value)} />
+              <Input label={translate(LANGUAGE_KEYS.common.materialNumber)} placeholder={translate(LANGUAGE_KEYS.common.materialNumber)} value={importList.searchValues.MaterialNumber} onChange={(e) => importList.updateSearchValue('MaterialNumber', e.target.value)} />
             </Col>
             <Col md={4}>
-              <Input label={translate(LANGUAGE_KEYS.report.supplierName, '供應商名稱')} placeholder={translate(LANGUAGE_KEYS.report.supplierName, '供應商名稱')} value={importList.searchValues.SupplierName} onChange={(e) => importList.updateSearchValue('SupplierName', e.target.value)} />
+              <Input label={translate(LANGUAGE_KEYS.report.supplierName)} placeholder={translate(LANGUAGE_KEYS.report.supplierName)} value={importList.searchValues.SupplierName} onChange={(e) => importList.updateSearchValue('SupplierName', e.target.value)} />
             </Col>
             <Col md={4} className="d-flex justify-content-end gap-2 align-items-end">
               <Btn color="success" outline className="bg-success-light text-success border-success" style={{ backgroundColor: '#d1e7dd' }} icon="search" onClick={handleSearch}>
-                {translate(LANGUAGE_KEYS.common.search, '查詢')}
+                {translate(LANGUAGE_KEYS.common.search)}
               </Btn>
-              <Btn color="light" className="text-primary border" onClick={handleClear}>{translate(LANGUAGE_KEYS.common.clear, '清除')}</Btn>
+              <Btn color="light" className="text-primary border" onClick={handleClear}>{translate(LANGUAGE_KEYS.common.clear)}</Btn>
             </Col>
           </Row>
         </SearchBlock>
@@ -127,9 +127,9 @@ export default function MaterialPage() {
             <div className="d-flex justify-content-end gap-2 flex-wrap">
                 {hasPermission('Create') && (
                   <>
-                    <Btn color="secondary" outline onClick={importList.downloadTemplate}>{translate(LANGUAGE_KEYS.common.downloadTemplate, '下載範本')}</Btn>
+                    <Btn color="secondary" outline onClick={importList.downloadTemplate}>{translate(LANGUAGE_KEYS.common.downloadTemplate)}</Btn>
                     <FileBtn
-                      label={importList.importing ? translate(LANGUAGE_KEYS.common.importing, '匯入中...') : translate(LANGUAGE_KEYS.common.import, '匯入')}
+                      label={importList.importing ? translate(LANGUAGE_KEYS.common.importing) : translate(LANGUAGE_KEYS.common.import)}
                       accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
                       onChange={importList.importFile}
                       btnProps={{ color: 'primary', disabled: importList.importing }}

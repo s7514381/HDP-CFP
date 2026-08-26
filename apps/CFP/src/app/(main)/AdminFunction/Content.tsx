@@ -8,7 +8,7 @@ import { Select } from '@packages/components/bootstrap5/Select';
 import Card from '@packages/components/bootstrap5/Card';
 import Grid from '@packages/components/bootstrap5/Grid';
 import { Container } from '@packages/components/bootstrap5/Container';
-import ActionBar from '@/components/layouts/ActionBar';
+import FormActionBar from '@/components/common/FormActionBar';
 import FontAwesome from '@packages/components/FontAwsome';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
@@ -63,85 +63,85 @@ export default function Content({ title, formData, onChange, updateForm, onSubmi
   const handleSetDefaultFunctions = () => {
     const controller = formData.controller || '';
     const defaultFunctions: AdminFunctionData[] = [
-      { title: translate(LANGUAGE_KEYS.common.add, '新增'), controller: controller, action: 'Create', parameter: '', actionFunctionSN: 0, status: '1', childList: [] },
-      { title: translate(LANGUAGE_KEYS.common.edit, '編輯'), controller: controller, action: 'Edit', parameter: '', actionFunctionSN: 0, status: '1', childList: [] },
-      { title: translate(LANGUAGE_KEYS.common.delete, '刪除'), controller: controller, action: 'Delete', parameter: '', actionFunctionSN: 0, status: '1', childList: [] }
+      { title: translate(LANGUAGE_KEYS.common.add), controller: controller, action: 'Create', parameter: '', actionFunctionSN: 0, status: '1', childList: [] },
+      { title: translate(LANGUAGE_KEYS.common.edit), controller: controller, action: 'Edit', parameter: '', actionFunctionSN: 0, status: '1', childList: [] },
+      { title: translate(LANGUAGE_KEYS.common.delete), controller: controller, action: 'Delete', parameter: '', actionFunctionSN: 0, status: '1', childList: [] }
     ];
     updateForm({ childList: defaultFunctions });
   };
 
   return (
     <>
-      <ActionBar title={title}>
-        <div className="ms-auto">
-          <Btn color="secondary" outline onClick={() => router.back()} icon="cancel">
-            {translate(LANGUAGE_KEYS.common.backToList, '返回列表')}
-          </Btn>
-        </div>
-      </ActionBar>
+      <FormActionBar
+        title={title}
+        formId="admin-function-form"
+        submitLabel={submitLabel}
+        loading={loading}
+        onBack={() => router.back()}
+      />
 
       <Container className="py-4">
         <Card>
           <Card.Body>
-            <form onSubmit={onSubmit}>
+            <form id="admin-function-form" onSubmit={onSubmit}>
               <Grid.Row className="g-3">
                 <Grid.Col md={6}>
                   <Input
-                    label={translate(LANGUAGE_KEYS.adminFunction.heading, '標題')}
+                    label={translate(LANGUAGE_KEYS.adminFunction.heading)}
                     name="title"
                     value={formData?.title || ''}
                     onChange={onChange}
-                    placeholder={translate(LANGUAGE_KEYS.adminFunction.heading, '請輸入功能標題')}
+                    placeholder={translate(LANGUAGE_KEYS.adminFunction.heading)}
                     required
                   />
                 </Grid.Col>
                 <Grid.Col md={6}>
                   <Select
-                    label={translate(LANGUAGE_KEYS.common.status, '狀態')}
+                    label={translate(LANGUAGE_KEYS.common.status)}
                     name="status"
                     value={formData?.status || ''}
                     onChange={onChange}
                     options={[
-                      { label: translate(LANGUAGE_KEYS.common.enabled, '啟用'), value: '1' },
-                      { label: translate(LANGUAGE_KEYS.common.disabled, '停用'), value: '0' }
+                      { label: translate(LANGUAGE_KEYS.common.enabled), value: '1' },
+                      { label: translate(LANGUAGE_KEYS.common.disabled), value: '0' }
                     ]}
                   />
                 </Grid.Col>
 
                 <Grid.Col md={6}>
                   <Input
-                    label={translate(LANGUAGE_KEYS.common.controller, 'Controller')}
+                    label={translate(LANGUAGE_KEYS.common.controller)}
                     name="controller"
                     value={formData?.controller || ''}
                     onChange={onChange}
-                    placeholder={translate(LANGUAGE_KEYS.common.controllerExample, '例如: Companies')}
+                    placeholder={translate(LANGUAGE_KEYS.common.controllerExample)}
                     required
                   />
                 </Grid.Col>
                 <Grid.Col md={6}>
                   <Input
-                    label={translate(LANGUAGE_KEYS.common.action, 'Action')}
+                    label={translate(LANGUAGE_KEYS.common.action)}
                     name="action"
                     value={formData?.action || ''}
                     onChange={onChange}
-                    placeholder={translate(LANGUAGE_KEYS.common.actionExample, '例如: Index')}
+                    placeholder={translate(LANGUAGE_KEYS.common.actionExample)}
                   />
                 </Grid.Col>
 
                 <Grid.Col md={12}>
                   <Input
-                    label={translate(LANGUAGE_KEYS.adminFunction.parameter, '參數')}
+                    label={translate(LANGUAGE_KEYS.adminFunction.parameter)}
                     name="parameter"
                     value={formData?.parameter || ''}
                     onChange={onChange}
-                    placeholder={translate(LANGUAGE_KEYS.adminFunction.parameter, '請輸入參數')}
+                    placeholder={translate(LANGUAGE_KEYS.adminFunction.parameter)}
                   />
                 </Grid.Col>
 
                 {/* 包含功能 (明細) */}
                 <Grid.Col md={12}>
                   <div className="mt-4 mb-2 d-flex">
-                    <h5 className="fw-bold mb-0">{translate(LANGUAGE_KEYS.adminFunction.includeFunctions, '包含功能')}</h5>
+                    <h5 className="fw-bold mb-0">{translate(LANGUAGE_KEYS.adminFunction.includeFunctions)}</h5>
                     <Btn
                       className="ms-3"
                       type="button"
@@ -150,7 +150,7 @@ export default function Content({ title, formData, onChange, updateForm, onSubmi
                       size="sm"
                       onClick={handleSetDefaultFunctions}
                     >
-                      {translate(LANGUAGE_KEYS.adminFunction.defaultFunction, '預設功能')}
+                      {translate(LANGUAGE_KEYS.adminFunction.defaultFunction)}
                     </Btn>
                   </div>
 
@@ -163,29 +163,29 @@ export default function Content({ title, formData, onChange, updateForm, onSubmi
                             <Grid.Row className="g-3">
                               <Grid.Col md={4}>
                                 <Input
-                                  label={translate(LANGUAGE_KEYS.common.functionName, '功能名稱')}
+                                  label={translate(LANGUAGE_KEYS.common.functionName)}
                                   required
                                   value={sub.title}
                                   onChange={(e) => handleSubFunctionChange(index, 'title', e.target.value)}
-                                  placeholder={translate(LANGUAGE_KEYS.common.functionName, '例如: 新增')}
+                                  placeholder={translate(LANGUAGE_KEYS.common.functionName)}
                                 />
                               </Grid.Col>
                               <Grid.Col md={4}>
                                 <Input
-                                  label={translate(LANGUAGE_KEYS.common.controller, 'Controller')}
+                                  label={translate(LANGUAGE_KEYS.common.controller)}
                                   required
                                   value={sub.controller}
                                   onChange={(e) => handleSubFunctionChange(index, 'controller', e.target.value)}
-                                  placeholder={translate(LANGUAGE_KEYS.common.controllerExample, '例如: Companies')}
+                                  placeholder={translate(LANGUAGE_KEYS.common.controllerExample)}
                                 />
                               </Grid.Col>
                               <Grid.Col md={4}>
                                 <Input
-                                  label={translate(LANGUAGE_KEYS.common.action, 'Action')}
+                                  label={translate(LANGUAGE_KEYS.common.action)}
                                   required
                                   value={sub.action}
                                   onChange={(e) => handleSubFunctionChange(index, 'action', e.target.value)}
-                                  placeholder={translate(LANGUAGE_KEYS.common.actionExample, '例如: Create')}
+                                  placeholder={translate(LANGUAGE_KEYS.common.actionExample)}
                                 />
                               </Grid.Col>
                             </Grid.Row>
@@ -198,7 +198,7 @@ export default function Content({ title, formData, onChange, updateForm, onSubmi
                               size="sm"
                               onClick={() => handleRemoveSubFunction(index)}
                             >
-                              {translate(LANGUAGE_KEYS.common.delete, '刪除')}
+                              {translate(LANGUAGE_KEYS.common.delete)}
                             </Btn>
                           </div>
                         </div>
@@ -213,19 +213,11 @@ export default function Content({ title, formData, onChange, updateForm, onSubmi
                       icon="add"
                       onClick={handleAddSubFunction}
                     >
-                      {translate(LANGUAGE_KEYS.adminFunction.more, '更多')}
+                      {translate(LANGUAGE_KEYS.adminFunction.more)}
                     </Btn>
                   </div>
                 </Grid.Col>
 
-                <Grid.Col md={12} className="d-flex justify-content-end gap-2 mt-4">
-                  <Btn type="button" color="secondary" outline onClick={() => router.push('/AdminFunction')}>
-                    {translate(LANGUAGE_KEYS.common.cancel, '取消')}
-                  </Btn>
-                  <Btn type="submit" color="primary" loading={loading} icon="save">
-                    {translate(submitLabel, submitLabel)}
-                  </Btn>
-                </Grid.Col>
               </Grid.Row>
             </form>
           </Card.Body>

@@ -8,7 +8,7 @@ import { Select } from '@packages/components/bootstrap5/Select';
 import Card from '@packages/components/bootstrap5/Card';
 import Grid from '@packages/components/bootstrap5/Grid';
 import { Container } from '@packages/components/bootstrap5/Container';
-import ActionBar from '@/components/layouts/ActionBar';
+import FormActionBar from '@/components/common/FormActionBar';
 import { useAppApi } from '@/hooks/useAppApi';
 import { API_URL } from '@/lib/apiRoutes';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -152,18 +152,18 @@ export default function Content({ title, formData, updateForm, onSubmit, loading
 
   return (
     <>
-      <ActionBar title={title}>
-        <div className="ms-auto">
-          <Btn color="secondary" outline onClick={() => router.back()} icon="cancel">
-            {translate(LANGUAGE_KEYS.common.backToList, '返回列表')}
-          </Btn>
-        </div>
-      </ActionBar>
+      <FormActionBar
+        title={title}
+        formId="seller-compare-form"
+        submitLabel={submitLabel}
+        loading={loading}
+        onBack={() => router.back()}
+      />
 
       <Container className="py-4">
         <Card>
           <Card.Body>
-            <form onSubmit={onSubmit}>
+            <form id="seller-compare-form" onSubmit={onSubmit}>
               <Grid.Row className="g-3">
 
                 <Grid.Col md={12}>
@@ -171,8 +171,8 @@ export default function Content({ title, formData, updateForm, onSubmit, loading
                     <Card.Body>
                       <div className="mb-3">
                         <DropdownInput
-                          label={translate(LANGUAGE_KEYS.sellerCompare.selectSupplierMaterial, '選擇供應商/料號')}
-                          placeholder={translate(LANGUAGE_KEYS.common.materialNumber, '輸入統編、料號或名稱關鍵字搜尋...')}
+                          label={translate(LANGUAGE_KEYS.sellerCompare.selectSupplierMaterial)}
+                          placeholder={translate(LANGUAGE_KEYS.common.materialNumber)}
                           fetchItems={async (input: string) => {
                             const res = await api.post<KeywordSelectItem[]>(`${API_URL}/Material/GetKeywordSelectListItems`, {
                               params: { keyword: input || "" }
@@ -192,7 +192,7 @@ export default function Content({ title, formData, updateForm, onSubmit, loading
 
                       {displayedSuppliers.length > 0 && (
                         <div className="mt-3">
-                          <label className="form-label fw-bold">{translate(LANGUAGE_KEYS.common.selectedItems, '已選取料號')} ({displayedSuppliers.length})</label>
+                          <label className="form-label fw-bold">{translate(LANGUAGE_KEYS.common.selectedItems)} ({displayedSuppliers.length})</label>
                           <div className="border rounded p-3 bg-white">
                             {displayedSuppliers.map((supplier) => (
                               <div
@@ -212,7 +212,7 @@ export default function Content({ title, formData, updateForm, onSubmit, loading
                                   icon="delete"
                                   onClick={() => handleRemoveSupplier(supplier.id)}
                                 >
-                                  {translate(LANGUAGE_KEYS.common.delete, '刪除')}
+                                  {translate(LANGUAGE_KEYS.common.delete)}
                                 </Btn>
                               </div>
                             ))}
@@ -223,14 +223,6 @@ export default function Content({ title, formData, updateForm, onSubmit, loading
                   </Card>
                 </Grid.Col>
 
-                <Grid.Col md={12} className="col-md-12 d-flex justify-content-end gap-2 mt-4">
-
-                  <div className="d-flex justify-content-end gap-2">
-                    <Btn type="submit" color="primary" loading={loading} icon="save">
-                      {translate(submitLabel, submitLabel)}
-                    </Btn>
-                  </div>
-                </Grid.Col>
               </Grid.Row>
             </form>
           </Card.Body>

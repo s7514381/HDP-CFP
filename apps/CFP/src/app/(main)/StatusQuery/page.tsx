@@ -82,35 +82,35 @@ export default function MaterialNotifyPage() {
 
   const columns: Column<StatusRow>[] = [
     {
-      header: translate(LANGUAGE_KEYS.statusQuery.sendStatus, '是否發送'),
+      header: translate(LANGUAGE_KEYS.statusQuery.sendStatus),
       key: "isSend",
       render: (item) => (
         <span
           className={`btn btn-sm ${item.isSend ? 'btn-success' : 'btn-danger'}`}
           style={{ pointerEvents: 'none', opacity: 0.85 }}
         >
-          {item.isSend ? translate(LANGUAGE_KEYS.common.sent, '已發送') : translate(LANGUAGE_KEYS.common.notSent, '未發送')}
+          {item.isSend ? translate(LANGUAGE_KEYS.common.sent) : translate(LANGUAGE_KEYS.common.notSent)}
         </span>
       )
     },
     {
-      header: translate(LANGUAGE_KEYS.statusQuery.updateStatus, '是否更新'),
+      header: translate(LANGUAGE_KEYS.statusQuery.updateStatus),
       key: "isUpdate",
       render: (item) => (
         <span
           className={`btn btn-sm ${item.isUpdate ? 'btn-success' : 'btn-danger'}`}
           style={{ pointerEvents: 'none', opacity: 0.85 }}
         >
-          {item.isUpdate ? translate(LANGUAGE_KEYS.common.dataUpdated, '資料已更新') : translate(LANGUAGE_KEYS.common.dataNotUpdated, '資料未更新')}
+          {item.isUpdate ? translate(LANGUAGE_KEYS.common.dataUpdated) : translate(LANGUAGE_KEYS.common.dataNotUpdated)}
         </span>
       )
     },
-    { header: translate(LANGUAGE_KEYS.common.sendTime, '寄送時間'), key: "strCreateDate" },
-    { header: translate(LANGUAGE_KEYS.common.updateTime, '更新時間'), key: "strUpdateDate" },
-    { header: translate(LANGUAGE_KEYS.common.materialNumber, '料號'), key: "materialNumber" },
-    { header: translate(LANGUAGE_KEYS.common.productModel, '產品型號'), key: "productModel" },
-    { header: translate(LANGUAGE_KEYS.common.productName, '產品名稱'), key: "productName" },
-    { header: translate(LANGUAGE_KEYS.common.supplier, '供應商'), key: "supplierName" }
+    { header: translate(LANGUAGE_KEYS.common.sendTime), key: "strCreateDate" },
+    { header: translate(LANGUAGE_KEYS.common.updateTime), key: "strUpdateDate" },
+    { header: translate(LANGUAGE_KEYS.common.materialNumber), key: "materialNumber" },
+    { header: translate(LANGUAGE_KEYS.common.productModel), key: "productModel" },
+    { header: translate(LANGUAGE_KEYS.common.productName), key: "productName" },
+    { header: translate(LANGUAGE_KEYS.common.supplier), key: "supplierName" }
   ];
 
   return (
@@ -121,9 +121,9 @@ export default function MaterialNotifyPage() {
         <SearchBlock title="" icon="" className="mb-3">
           <Row align="center" gutter={3}>
             <Col md={2}>
-              <label className="form-label d-block">{translate(LANGUAGE_KEYS.statusQuery.sendStatus, '發送狀態')}</label>
+              <label className="form-label d-block">{translate(LANGUAGE_KEYS.statusQuery.sendStatus)}</label>
               <Radio
-                label={translate(LANGUAGE_KEYS.common.sent, '已發送')}
+                label={translate(LANGUAGE_KEYS.common.sent)}
                 name="isSend"
                 value="true"
                 checked={searchForm.isSend === true}
@@ -132,7 +132,7 @@ export default function MaterialNotifyPage() {
                 inline
               />
               <Radio
-                label={translate(LANGUAGE_KEYS.common.notSent, '未發送')}
+                label={translate(LANGUAGE_KEYS.common.notSent)}
                 name="isSend"
                 value="false"
                 checked={searchForm.isSend === false}
@@ -142,9 +142,9 @@ export default function MaterialNotifyPage() {
               />
             </Col>
             <Col md={2}>
-              <label className="form-label d-block">{translate(LANGUAGE_KEYS.statusQuery.updateStatus, '更新狀態')}</label>
+              <label className="form-label d-block">{translate(LANGUAGE_KEYS.statusQuery.updateStatus)}</label>
               <Radio
-                label={translate(LANGUAGE_KEYS.common.dataUpdated, '資料已更新')}
+                label={translate(LANGUAGE_KEYS.common.dataUpdated)}
                 name="isUpdate"
                 value="true"
                 checked={searchForm.isUpdate === true}
@@ -153,7 +153,7 @@ export default function MaterialNotifyPage() {
                 inline
               />
               <Radio
-                label={translate(LANGUAGE_KEYS.common.dataNotUpdated, '資料未更新')}
+                label={translate(LANGUAGE_KEYS.common.dataNotUpdated)}
                 name="isUpdate"
                 value="false"
                 checked={searchForm.isUpdate === false}
@@ -165,7 +165,7 @@ export default function MaterialNotifyPage() {
             <Col md={3}>
               <Input
                 type="date"
-                label={translate(LANGUAGE_KEYS.common.startDate, '異動開始')}
+                label={translate(LANGUAGE_KEYS.common.startDate)}
                 name="updateDateFrom"
                 value={searchForm.updateDateFrom}
                 onChange={handleSearchChange}
@@ -174,7 +174,7 @@ export default function MaterialNotifyPage() {
             <Col md={3}>
               <Input
                 type="date"
-                label={translate(LANGUAGE_KEYS.common.endDate, '異動結束')}
+                label={translate(LANGUAGE_KEYS.common.endDate)}
                 name="updateDateTo"
                 value={searchForm.updateDateTo}
                 onChange={handleSearchChange}
@@ -183,9 +183,9 @@ export default function MaterialNotifyPage() {
 
             <Col md={2} className="d-flex justify-content-end gap-2 align-items-end">
               <Btn color="success" outline className="bg-success-light text-success border-success" style={{ backgroundColor: '#d1e7dd' }} icon="search" onClick={handleSearch}>
-                {translate(LANGUAGE_KEYS.common.filter, '篩選')}
+                {translate(LANGUAGE_KEYS.common.filter)}
               </Btn>
-              <Btn color="light" className="text-primary border" onClick={handleClear}>{translate(LANGUAGE_KEYS.common.clear, '清除')}</Btn>
+              <Btn color="light" className="text-primary border" onClick={handleClear}>{translate(LANGUAGE_KEYS.common.clear)}</Btn>
             </Col>
           </Row>
         </SearchBlock>

@@ -35,14 +35,14 @@ export function MaterialMaintenanceSourceModal({
   return (
     <Modal show={show} size="lg" onClose={onClose}>
       <Modal.Title onClose={onClose}>
-        {translate(LANGUAGE_KEYS.rawMaterialMaintenance.addSourceTitle, 'Add supplier source')} · {sourceForm.year}
+        {translate(LANGUAGE_KEYS.rawMaterialMaintenance.addSourceTitle)} · {sourceForm.year}
       </Modal.Title>
       <Modal.Body>
         <Grid.Row className="g-3">
           <Grid.Col md={12}>
             <DropdownInput
-              label={translate(LANGUAGE_KEYS.sellerCompare.selectSupplierMaterial, '選擇供應商/料號')}
-              placeholder={translate(LANGUAGE_KEYS.common.materialNumber, '輸入統編、料號或名稱關鍵字搜尋...')}
+              label={translate(LANGUAGE_KEYS.sellerCompare.selectSupplierMaterial)}
+              placeholder={translate(LANGUAGE_KEYS.common.materialNumber)}
               fetchItems={async (keyword) => {
                 const options = await fetchSourceOptions(keyword);
                 return options.map((option) => ({
@@ -50,7 +50,7 @@ export function MaterialMaintenanceSourceModal({
                   label: option.text || String(option.value),
                 }));
               }}
-              onItemSelect={(item) => onChange({ sourceMaterialId: item.value })}
+              onItemSelect={(item) => onChange({ materialId: item.value })}
               debounce={300}
               clear={!show}
             />
@@ -58,8 +58,8 @@ export function MaterialMaintenanceSourceModal({
           <Grid.Col md={12}>
             <Input
               type="number"
-              label={translate(LANGUAGE_KEYS.rawMaterialMaintenance.allocation, 'Allocation (%)')}
-              placeholder={translate(LANGUAGE_KEYS.rawMaterialMaintenance.allocationPlaceholder, 'e.g. 50')}
+              label={translate(LANGUAGE_KEYS.rawMaterialMaintenance.allocation)}
+              placeholder={translate(LANGUAGE_KEYS.rawMaterialMaintenance.allocationPlaceholder)}
               min={0.01}
               max={100}
               step={0.01}
@@ -67,21 +67,10 @@ export function MaterialMaintenanceSourceModal({
               onChange={(event) => onChange({ allocationPercentage: event.target.value })}
             />
           </Grid.Col>
-          <Grid.Col md={6}>
-            <Input
-              type="number"
-              label={translate(LANGUAGE_KEYS.rawMaterialMaintenance.carbonFactor, 'Carbon factor (kg CO₂e)')}
-              placeholder={translate(LANGUAGE_KEYS.rawMaterialMaintenance.carbonFactorPlaceholder, 'e.g. 1.81')}
-              min={0}
-              step={0.000001}
-              value={sourceForm.carbonFactor}
-              onChange={(event) => onChange({ carbonFactor: event.target.value })}
-            />
-          </Grid.Col>
-          <Grid.Col md={6} className="d-flex align-items-end pb-2">
+          <Grid.Col md={12} className="d-flex align-items-end pb-2">
             <Checkbox
               name="thirdPartyCertification"
-              label={translate(LANGUAGE_KEYS.rawMaterialMaintenance.thirdPartyCertification, 'Third-party certification')}
+              label={translate(LANGUAGE_KEYS.rawMaterialMaintenance.thirdPartyCertification)}
               checked={sourceForm.thirdPartyCertification}
               onChange={(event) => onChange({ thirdPartyCertification: event.target.checked })}
             />
@@ -89,7 +78,7 @@ export function MaterialMaintenanceSourceModal({
           <Grid.Col md={4}>
             <Input
               type="number"
-              label={translate(LANGUAGE_KEYS.rawMaterialMaintenance.consultantApprovalCount, 'Consultant approvals')}
+              label={translate(LANGUAGE_KEYS.rawMaterialMaintenance.consultantApprovalCount)}
               min={0}
               step={1}
               value={sourceForm.consultantApprovalCount}
@@ -99,7 +88,7 @@ export function MaterialMaintenanceSourceModal({
           <Grid.Col md={4}>
             <Input
               type="number"
-              label={translate(LANGUAGE_KEYS.rawMaterialMaintenance.buyerApprovalCount, 'Buyer approvals')}
+              label={translate(LANGUAGE_KEYS.rawMaterialMaintenance.buyerApprovalCount)}
               min={0}
               step={1}
               value={sourceForm.buyerApprovalCount}
@@ -109,7 +98,7 @@ export function MaterialMaintenanceSourceModal({
           <Grid.Col md={4}>
             <Input
               type="number"
-              label={translate(LANGUAGE_KEYS.rawMaterialMaintenance.totalScore, 'Total score')}
+              label={translate(LANGUAGE_KEYS.rawMaterialMaintenance.totalScore)}
               min={0}
               step={1}
               value={sourceForm.totalScore}
@@ -130,10 +119,10 @@ export function MaterialMaintenanceSourceModal({
         ) : null}
         <div className="d-flex justify-content-end gap-2 mt-4">
           <Btn type="button" color="secondary" outline onClick={onClose} disabled={submitting}>
-            {translate(LANGUAGE_KEYS.common.cancel, 'Cancel')}
+            {translate(LANGUAGE_KEYS.common.cancel)}
           </Btn>
           <Btn type="button" color="primary" icon="save" onClick={onSave} loading={submitting}>
-            {translate(LANGUAGE_KEYS.common.save, 'Save')}
+            {translate(LANGUAGE_KEYS.common.save)}
           </Btn>
         </div>
       </Modal.Body>

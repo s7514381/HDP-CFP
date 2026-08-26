@@ -13,9 +13,12 @@ import Card from '@packages/components/bootstrap5/Card';
 import Container from '@packages/components/bootstrap5/Container';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
 import { MaterialMaintenanceSourceModal } from './MaterialMaintenanceSourceModal';
+import { MaterialMaintenanceSecondaryDataModal } from './MaterialMaintenanceSecondaryDataModal';
+import { MaterialMaintenanceAccreditationLevelModal } from './MaterialMaintenanceAccreditationLevelModal';
 import { MaterialMaintenanceView } from './MaterialMaintenanceView';
 import { createMaterialMaintenanceService } from './materialMaintenanceService';
 import { MaterialMaintenanceMessages, MaterialMaintenanceNotifier, useMaterialMaintenance } from './useMaterialMaintenance';
+import { usePagePermissions } from '@/hooks/usePagePermissions';
 
 export default function MaterialMaintenancePage() {
   return (
@@ -47,27 +50,31 @@ function MaterialMaintenancePageContent() {
   const { translate } = useLanguage();
   const { success, danger } = useToast();
   const { confirm } = useConfirm();
+  const { hasPermission, isReady } = usePagePermissions('/DataMaintenance');
+  const canAccess = hasPermission('MaterialMaintenance:GetModel');
   const materialId = searchParams.get('id') || '';
   const service = useMemo(() => createMaterialMaintenanceService(formPost), [formPost]);
   const messages = useMemo<MaterialMaintenanceMessages>(() => ({
-    loadFailed: translate(LANGUAGE_KEYS.rawMaterialMaintenance.loadFailed, 'Unable to load material maintenance.'),
-    operationFailed: translate(LANGUAGE_KEYS.rawMaterialMaintenance.operationFailed, 'The operation failed.'),
-    invalidYear: translate(LANGUAGE_KEYS.rawMaterialMaintenance.invalidYear, 'Enter a year between 1900 and 2100.'),
-    allocationInvalid: translate(LANGUAGE_KEYS.rawMaterialMaintenance.allocationInvalid, 'Enter an allocation between 0 and 100 percent.'),
-    accreditationInvalid: translate(LANGUAGE_KEYS.rawMaterialMaintenance.accreditationInvalid, 'Enter a valid carbon factor and non-negative whole-number accreditation values.'),
-    sourceLoadFailed: translate(LANGUAGE_KEYS.rawMaterialMaintenance.supplierLoadFailed, 'Unable to load supplier sources.'),
-    yearAdded: translate(LANGUAGE_KEYS.rawMaterialMaintenance.yearAdded, 'Year added successfully.'),
-    sourceAdded: translate(LANGUAGE_KEYS.rawMaterialMaintenance.sourceAdded, 'Supplier source added successfully.'),
-    yearDeleted: translate(LANGUAGE_KEYS.rawMaterialMaintenance.yearDeleted, 'Year deleted successfully.'),
-    sourceDeleted: translate(LANGUAGE_KEYS.rawMaterialMaintenance.sourceDeleted, 'Supplier source deleted successfully.'),
-    deleteYearConfirm: translate(LANGUAGE_KEYS.rawMaterialMaintenance.deleteYearConfirm, 'Delete this year and its supplier sources?'),
-    deleteSourceConfirm: translate(LANGUAGE_KEYS.rawMaterialMaintenance.deleteSourceConfirm, 'Delete this supplier source?'),
-    accreditationLevelFailed: translate(LANGUAGE_KEYS.rawMaterialMaintenance.accreditationLevelFailed, 'Unable to determine the buyer accreditation level.'),
-    accreditationLevelUnavailable: translate(LANGUAGE_KEYS.rawMaterialMaintenance.accreditationLevelUnavailable, 'No buyer accreditation level matches this source.'),
-    accreditationLevelFound: translate(LANGUAGE_KEYS.rawMaterialMaintenance.accreditationLevelFound, 'Buyer accreditation level: {level}.'),
-    accreditConfirm: translate(LANGUAGE_KEYS.rawMaterialMaintenance.accreditConfirm, 'Do you want to {action} this source?'),
-    accredited: translate(LANGUAGE_KEYS.rawMaterialMaintenance.accredited, 'approve'),
-    unaccredited: translate(LANGUAGE_KEYS.rawMaterialMaintenance.unaccredited, 'remove approval from'),
+    loadFailed: translate(LANGUAGE_KEYS.rawMaterialMaintenance.loadFailed),
+    operationFailed: translate(LANGUAGE_KEYS.rawMaterialMaintenance.operationFailed),
+    invalidYear: translate(LANGUAGE_KEYS.rawMaterialMaintenance.invalidYear),
+    supplierRequired: translate(LANGUAGE_KEYS.rawMaterialMaintenance.supplierRequired),
+    allocationInvalid: translate(LANGUAGE_KEYS.rawMaterialMaintenance.allocationInvalid),
+    accreditationInvalid: translate(LANGUAGE_KEYS.rawMaterialMaintenance.accreditationInvalid),
+    sourceLoadFailed: translate(LANGUAGE_KEYS.rawMaterialMaintenance.supplierLoadFailed),
+    secondaryDataApplied: translate(LANGUAGE_KEYS.rawMaterialMaintenance.secondaryDataApplied),
+    accreditationLevelUpdated: translate(LANGUAGE_KEYS.rawMaterialMaintenance.accreditationLevelUpdated),
+    notifySupplierConfirm: translate(LANGUAGE_KEYS.rawMaterialMaintenance.notifySupplierConfirm),
+    supplierNotified: translate(LANGUAGE_KEYS.rawMaterialMaintenance.supplierNotified),
+    yearAdded: translate(LANGUAGE_KEYS.rawMaterialMaintenance.yearAdded),
+    sourceAdded: translate(LANGUAGE_KEYS.rawMaterialMaintenance.sourceAdded),
+    yearDeleted: translate(LANGUAGE_KEYS.rawMaterialMaintenance.yearDeleted),
+    sourceDeleted: translate(LANGUAGE_KEYS.rawMaterialMaintenance.sourceDeleted),
+    deleteYearConfirm: translate(LANGUAGE_KEYS.rawMaterialMaintenance.deleteYearConfirm),
+    deleteSourceConfirm: translate(LANGUAGE_KEYS.rawMaterialMaintenance.deleteSourceConfirm),
+    accreditConfirm: translate(LANGUAGE_KEYS.rawMaterialMaintenance.accreditConfirm),
+    accredited: translate(LANGUAGE_KEYS.rawMaterialMaintenance.accredited),
+    unaccredited: translate(LANGUAGE_KEYS.rawMaterialMaintenance.unaccredited),
   }), [translate]);
   const notifier = useMemo<MaterialMaintenanceNotifier>(() => ({
     success: (message) => success({ message: <span>{message}</span> }),
@@ -75,12 +82,17 @@ function MaterialMaintenancePageContent() {
   }), [danger, success]);
   const controller = useMaterialMaintenance({ materialId, service, messages, notifier, confirm });
 
+  if (isReady && !canAccess) {
+    router.replace('/DataMaintenance');
+    return null;
+  }
+
   return (
     <>
       <ActionBar title={LANGUAGE_KEYS.rawMaterialMaintenance.title}>
         <div className="ms-auto">
           <Btn type="button" color="secondary" outline icon="cancel" onClick={() => router.push('/DataMaintenance')}>
-            {translate(LANGUAGE_KEYS.common.backToList, 'Back to list')}
+            {translate(LANGUAGE_KEYS.common.backToList)}
           </Btn>
         </div>
       </ActionBar>
@@ -89,7 +101,7 @@ function MaterialMaintenancePageContent() {
         <Container fluid>
           {controller.loading ? (
             <div className="d-flex justify-content-center py-5">
-              <span className="spinner-border text-primary" role="status" aria-label={translate(LANGUAGE_KEYS.common.loading, 'Loading')} />
+              <span className="spinner-border text-primary" role="status" aria-label={translate(LANGUAGE_KEYS.common.loading)} />
             </div>
           ) : controller.model === null ? (
             <Card className="border-0 shadow-sm">
@@ -104,8 +116,11 @@ function MaterialMaintenancePageContent() {
                 onOpenSourceModal={(year) => void controller.openSourceModal(year)}
                 onDeleteYear={(year) => void controller.deleteYear(year)}
                 onDeleteSource={(sourceId) => void controller.deleteSource(sourceId)}
-                onCheckAccreditationLevel={(sourceId) => void controller.checkAccreditationLevel(sourceId)}
                 onSetAccredited={(sourceId, isAccredited) => void controller.setAccredited(sourceId, isAccredited)}
+                onOpenSourceOpinion={(sourceId) => router.push(`/DataMaintenance/MaterialMaintenance/Opinion/?sourceId=${encodeURIComponent(sourceId)}`)}
+                onOpenSecondaryData={(source) => controller.openSecondaryDataModal(source)}
+                onOpenAccreditationLevel={(source) => controller.openAccreditationLevelModal(source)}
+                onNotifySupplier={(sourceId) => void controller.notifySupplier(sourceId)}
               />
             </div>
           )}
@@ -122,6 +137,23 @@ function MaterialMaintenancePageContent() {
         onDismissError={controller.dismissSourceError}
         onChange={controller.updateSourceForm}
         onSave={() => void controller.addSource()}
+      />
+      <MaterialMaintenanceSecondaryDataModal
+        key={`secondary-${controller.showSecondaryDataModal ? 'open' : 'closed'}-${controller.secondaryDataSource?.id || 'none'}`}
+        show={controller.showSecondaryDataModal}
+        source={controller.secondaryDataSource}
+        submitting={controller.submitting}
+        onClose={controller.closeSecondaryDataModal}
+        onApply={(secondaryDataSettingId) => void controller.applySecondaryData(secondaryDataSettingId)}
+      />
+      <MaterialMaintenanceAccreditationLevelModal
+        key={`accreditation-${controller.showAccreditationLevelModal ? 'open' : 'closed'}-${controller.accreditationLevelSource?.id || 'none'}`}
+        show={controller.showAccreditationLevelModal}
+        materialId={materialId}
+        source={controller.accreditationLevelSource}
+        submitting={controller.submitting}
+        onClose={controller.closeAccreditationLevelModal}
+        onApply={(accreditationLevelId) => void controller.setAccreditationLevel(accreditationLevelId)}
       />
     </>
   );

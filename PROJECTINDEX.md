@@ -9,6 +9,7 @@
 6. [前端規格](#6-前端規格)
    - [6.1.1 PCR 模板頁面實作規則](#611-pcr-模板頁面實作規則)
    - [6.1.3 DataMaintenance 原料維護](#613-datamaintenance-原料維護)
+   - [6.1.6 共用頁面時的路由專屬功能設定原則](#616-共用頁面時的路由專屬功能設定原則)
    - [6.5 多語言系統：執行期載入與資料流](#65-多語言系統執行期載入與資料流)
       - [6.5.1 資料模型與識別方式](#651-資料模型與識別方式)
       - [6.5.2 前端初始化與切換流程](#652-前端初始化與切換流程)
@@ -32,17 +33,20 @@
    - [9.1 基底欄位與狀態](#91-基底欄位與狀態)
    - [9.2 主要資料表](#92-主要資料表)
    - [9.3 領域規則](#93-領域規則)
-      - [9.3.1 PCR 模板父子資料與列表規則](#931-pcr-模板父子資料與列表規則)
+   - [9.3.1 PCR 模板父子資料與列表規則](#931-pcr-模板父子資料與列表規則)
    - [9.4 ManyToMany 關聯設計與使用方式](#94-manytomany-關聯設計與使用方式)
+   - [9.5 權限、選單與角色運作](#95-權限選單與角色運作)
 10. [常見修改路徑](#10-常見修改路徑)
     - [10.5 新增或修改多語言](#105-新增或修改多語言)
     - [10.6 修改 PCR 模板功能](#106-修改-pcr-模板功能)
+    - [10.7 新增功能權限 SOP](#107-新增功能權限-sop)
 11. [已確認的限制與注意事項](#11-已確認的限制與注意事項)
 12. [維護規則](#12-維護規則)
+13. [文件更新紀錄](#13-文件更新紀錄)
 
 # HOP-CFP 專案索引
 
-> 本文件是給 AI 與開發者使用的快速入口。內容依 2026-08-10 工作區原始碼、設定、Migration、資料庫與瀏覽器驗證整理；若本文件與程式碼不一致，以實際執行程式碼與 API 結果為準，並應在修改後同步更新本文件。
+> 本文件是給 AI 與開發者使用的快速入口。內容依 2026-08-25 工作區原始碼、設定、Migration、資料庫與瀏覽器驗證整理；若本文件與程式碼不一致，以實際執行程式碼與 API 結果為準，並應在修改後同步更新本文件。
 
 ## 1. 文件定位與使用方式
 
@@ -125,8 +129,9 @@ HOP-CFP-Backend/
 | 通知建立/狀態 | `MaterialNotify/page.tsx`、`StatusQuery/page.tsx`、`NotifyStatusReport/page.tsx` | 三個對應 Controller / Service |
 | PCR 模板與父子項目 | `src/app/(main)/PcrTemplate/page.tsx`、`Content.tsx` | `PcrTemplateController` → `PcrTemplateService` → `PcrTemplate` / `LanguageResource` |
 | 產品次類別維護與 PCR 模板 | `src/app/(main)/ProductSubcategory/page.tsx`、`PcrPattern/*` | `ProductSubcategoryController` → `ProductSubcategoryService` / `PcrPatternService`；PCR 模板依目前帳號與 `ProductSubcategoryId` 隔離 |
-| DataMaintenance 原料維護 | `src/app/(main)/DataMaintenance/MaterialMaintenance/page.tsx`、`src/types/materialMaintenance.ts` | `MaterialMaintenanceController` → `MaterialMaintenanceService`；只顯示 PCR 原料頁籤（`PcrPattern.Category=Material`）的 4 個根項目、細項、年份與供應來源，並提供 PM 欄位、BuyerAccreditation 等級判斷、認可保存與意見佔位按鈕 |
+| DataMaintenance 原料維護 | `src/app/(main)/DataMaintenance/MaterialMaintenance/page.tsx`、`src/app/(main)/DataMaintenance/MaterialMaintenance/Opinion/page.tsx`、`src/types/materialMaintenance.ts` | `MaterialMaintenanceController` → `MaterialMaintenanceService`；只顯示 PCR 原料頁籤（`PcrPattern.Category=Material`）的 4 個根項目、細項、年份與供應來源，並提供 PM 欄位、BuyerAccreditation 等級判斷、認可保存與審核意見獨立頁面 |
 | DataMaintenance 買方認可依據 | `src/app/(main)/DataMaintenance/BuyerAccreditation/*`、`src/types/buyerAccreditationLevel.ts` | 由每筆 Material 帶入 `materialId`，使用 `BuyerAccreditationLevelController` / `BuyerAccreditationLevelService` 維護該 Material 專屬的等級與認可數 |
+| 顧問管理／認可顧問／註冊顧問 | `src/app/(main)/AccreditationConsultant/page.tsx`、`src/app/(main)/ConsultantRegistration/page.tsx`、`src/types/consultant.ts` | `ConsultantController` → `ConsultantService`；共用全平台 `Consultant` 主檔，認可顧問使用 `ReserveAccreditation`，註冊顧問使用 `GetRegistrationStatus`/`Register`，列表不套用 TaxID |
 | PCR 模板資料維護（Legacy） | `src/app/(main)/PcrPattern/page.tsx`、`Content.tsx` | `PcrPatternController` → `PcrPatternService` → `PcrPattern`；欄位與父子流程對齊 `PcrTemplate`，但仍停用選單與權限 |
 | 資料表欄位與 Migration | `HOP-CFP-Backend.Library/Models/*`、`DBContext.cs` | `HOP-CFP-Backend/Migrations/*` |
 | Entity 關聯、索引與 EF 設定 | 對應 Model 的 `OnModelCreating` | `DBContext.cs` 的全域規則與 `IdModelBase` 掃描 |
@@ -257,8 +262,12 @@ Route Group `(auth)` 與 `(main)` 不會出現在 URL。根 Layout 以 `ApiProvi
 | `/PcrTemplate`、`/PcrTemplate/Create`、`/PcrTemplate/Edit/?id={id}` | `src/app/(main)/PcrTemplate` | PCR 模板範本、分類頁籤與父子項目維護 |
 | `/ProductSubcategory`、`/ProductSubcategory/Create`、`/ProductSubcategory/Edit/?id={id}` | `src/app/(main)/ProductSubcategory` | 產品次類別維護；提供產品次類別搜尋、新增、編輯、刪除與 PCR 模板查看入口 |
 | `/ProductSubcategory/PcrPattern/?id={productSubcategoryId}`、`/Create`、`/Edit` | `src/app/(main)/ProductSubcategory/PcrPattern` | 產品次類別專屬 PCR 模板；首次查看依目前帳號複製 `PcrTemplate` 父子資料，並依 `X-Language-Code` 優先使用目前語系文字 |
-| `/DataMaintenance`、`/DataMaintenance/MaterialMaintenance/?id={materialId}` | `src/app/(main)/DataMaintenance/page.tsx`、`src/app/(main)/DataMaintenance/MaterialMaintenance/page.tsx`、`src/components/common/PcrBindingModal.tsx` | 列表直接重用 `Material/GetList`；原料維護頁依 Material 綁定的 PCR 模板列出第一層、子項目、年份與供應來源，可新增/刪除年份及新增/刪除供應來源，來源列表包含碳排係數、第三方查證、核可數量與三個操作按鈕；資料保存於 `MaterialMaintenanceYear`、`MaterialMaintenanceSource`；固定文案使用 `DM0001`–`DM0015`、`RM0001`–`RM0053` 多語言資源 |
+| `/DataMaintenance`、`/DataMaintenance/MaterialMaintenance/?id={materialId}`、`/DataMaintenance/MaterialMaintenance/Opinion/?sourceId={sourceId}` | `src/app/(main)/DataMaintenance/page.tsx`、`src/app/(main)/DataMaintenance/MaterialMaintenance/page.tsx`、`src/app/(main)/DataMaintenance/MaterialMaintenance/Opinion/page.tsx`、`src/components/common/PcrBindingModal.tsx` | 列表直接重用 `Material/GetList`；原料維護頁依 Material 綁定的 PCR 模板列出第一層、子項目、年份與供應來源，可新增/刪除年份及新增/刪除供應來源，來源列表包含碳排係數、第三方查證、核可數量、審核意見數量與認可/意見/刪除操作；意見導向獨立頁面，依建立時間倒序顯示並僅允許該來源建立者新增；資料保存於 `MaterialMaintenanceYear`、`MaterialMaintenanceSource`、`MaterialMaintenanceSourceOpinion`；固定文案使用 `DM0001`–`DM0015`、`RM0001`–`RM0063` 多語言資源 |
 | `/DataMaintenance/BuyerAccreditation/?materialId={materialId}`、`/Create/?materialId={materialId}`、`/Edit/?id={id}&materialId={materialId}` | `src/app/(main)/DataMaintenance/page.tsx`、`src/app/(main)/DataMaintenance/BuyerAccreditation` | 買方認可依據等級列表與 CRUD；每筆 Material 各自保存供應來源等級、第三方認證、顧問認可數、買方認可數及總分，使用 `BA0001`–`BA0012` 與 `ER0061`–`ER0064` 多語言資源；缺少 `materialId` 時不顯示共用資料並導回 DataMaintenance |
+| `/AccreditationConsultant/` | `src/app/(main)/AccreditationConsultant/page.tsx` | 顧問主檔的認可顧問列表；可依名稱、認證模式、是否認可查詢，預約成功後只 reload CommonTable |
+| `/ConsultantRegistration/` | `src/app/(main)/ConsultantRegistration/page.tsx` | 目前登入帳號的顧問註冊；使用 `Consultant:Register` 查詢註冊狀態與送出資料，等待認可/已註冊完成時只顯示唯讀內容 |
+| `/MaterialDemand/`、`/MaterialDemand/Plant/Edit/?id={plantId}` | `src/app/(main)/MaterialDemand/page.tsx`、`src/app/(main)/MaterialDemand/Plant/Edit/page.tsx`、`src/types/materialDemand.ts` | 顧問管理／需求料件列表與廠區查看；列表以需求類型、急件、完成狀態與年度篩選，資料由 `MaterialDemand/GetList` 帶出料號、產品、年度、廠商與廠區；數據查看導向 MaterialDemand 專用廠區 route，該 route 共用廠區頁面但停用檔案上傳/替換/移除 |
+| `/DataMaintenance/CarbonFactorMaintenance/Plant/Edit/?id={plantId}`、`/DataMaintenance/CarbonFactorMaintenance/Plant/Create/?yearId={yearId}` | `src/app/(main)/DataMaintenance/CarbonFactorMaintenance/Plant/Edit/page.tsx`、`src/app/(main)/DataMaintenance/CarbonFactorMaintenance/Plant/Create/page.tsx`、`src/app/(main)/DataMaintenance/CarbonFactorMaintenance/Plant/PlantEditPage.tsx` | DataMaintenance 廠區編輯/新增；Edit 與 MaterialDemand 廠區查看共用 `PlantEditPage`、`PlantContent`、service 與 request mapping，但 DataMaintenance route 保留附件上傳、替換與移除功能 |
 | `/PcrPattern`、`/PcrPattern/Create`、`/PcrPattern/Edit/?id={id}` | `src/app/(main)/PcrPattern` | Legacy PCR模板資料維護；使用 `ParentId`、`Category`、`Item` 與子項目，仍不掛載實際選單與權限 |
 
 #### 6.1.1 PCR 模板頁面實作規則
@@ -280,23 +289,51 @@ Route Group `(auth)` 與 `(main)` 不會出現在 URL。根 Layout 以 `ApiProvi
 - `AdminFunction` 的 `ProductSubcategory/Index` 根功能直接提供查詢，不另建立查詢子功能；新增、修改、刪除為子功能，Migration 將選單與功能授予系統管理員角色。
 - `PcrPattern` 為獨立的 Legacy PCR 模板資料表，欄位與父子維護流程對齊 `PcrTemplate`；產品次類別入口先呼叫 `EnsurePcrPattern` 完成首次初始化，再由 `GetPcrPattern` 純查詢列表，並以帳號與 `ProductSubcategoryId` 隔離，原本的 PcrPattern 選單入口仍停用。
 - `EnsurePcrPattern` 初始化時由 request 的 `X-Language-Code` 選取 `PcrTemplate` 翻譯；指定語系沒有有效文字時 fallback 到基礎語言。初始化只在該帳號與產品次類別尚無 `PcrPattern` 時執行，不會覆蓋既有資料。
-- `/DataMaintenance` 列表仍直接查詢既有 `Material`；進入 `/DataMaintenance/MaterialMaintenance/?id={materialId}` 後，原料維護資料由 `MaterialMaintenanceYear`（Material + PcrPattern 子項目 + 年份）與 `MaterialMaintenanceSource`（年份 + Supplier + 產品名稱 + 佔比 + 碳排係數 + 第三方查證 + 顧問/買方認可數 + 總分 + 是否認可）保存。
+- `/DataMaintenance` 列表仍直接查詢既有 `Material`；進入 `/DataMaintenance/MaterialMaintenance/?id={materialId}` 後，原料維護資料由 `MaterialMaintenanceYear`（指定者 A 的 Material + PcrPattern 子項目 + 年份）與 `MaterialMaintenanceSource`（年份 + 被指定料號 B 的 MaterialId + 佔比 + 碳排係數 + 第三方查證 + 顧問/買方認可數 + 總分 + 是否認可）保存；供應商名稱與產品名稱由 B 的 Material/Manager 關聯取得。
 - `/DataMaintenance` 的 PCR綁定呼叫 `POST /Material/BindPcr`，以 `Material.Id` 作為 Source、`ProductSubcategory.Id` 作為 Target，透過 `ManyToMany` 保存；業務規則為 Material 與 ProductSubcategory 有效關聯各自只能有一筆，新綁定會將來源或目標的既有有效關聯軟刪除。
+
+#### 6.1.4 數據品質管理料件總表
+
+- `/CarbonFactorMaintenancePlant/` 是獨立的「數據品質管理／料件總表」入口，沿用 `CarbonFactorMaintenancePlant/GetList`，列表資料細到廠區。
+- 搜尋欄位為料號、產品名稱、年度與第三方認證；第三方認證預設「全部」，查詢值直接對應 `HasThirdPartyCertification`。
+- 顧問認可數依該廠區在 `MaterialDemand` 中狀態為「認可」的需求筆數計算；買方認可數依相同產品、買方與年度在 `MaterialMaintenanceSource` 中 `IsAccredited = 1` 的來源筆數計算；總分仍以 `-` 呈現，基本數據頁另依目前草稿中的二級數據計算相似碳係數與偏差量。
+- 操作欄提供「基本數據」與「認可與驗證」兩個按鈕；基本數據導向 `/CarbonFactorMaintenancePlant/BasicData/?id={plantId}`，使用 `MaterialMaintenance/GetModel` 權限，權限關閉時不渲染按鈕。
+- 認可顧問頁面導向 `/AccreditationConsultant/`，使用 `Consultant:ReserveAccreditation` 同時保護列表與預約 API；本階段只顯示既有顧問資料，不提供顧問 CRUD。
+
+#### 6.1.5 基本數據／二級數據比對
+
+- `/CarbonFactorMaintenancePlant/BasicData/?id={plantId}` 使用 `CarbonFactorMaintenancePlant/GetModel` 取得廠區摘要，並以 `SecondaryDataCompare/GetList` 維護該廠區的一對多二級數據比對資料。
+- `SecondaryDataCompare` 以 `CarbonFactorMaintenancePlantId` 關聯廠區、以 `SecondaryDataSettingId` 關聯有效二級數據設定，保存 `Percentage`；同一廠區不可重複綁定同一筆設定，百分比限制為 `0.01–100`，刪除採 soft-delete，本階段不限制總和為 100%。
+- 二級數據選擇器使用 `SecondaryDataCompare/GetSecondaryDataOptions` 關鍵字搜尋 `SecondaryDataSetting`；Compare Controller 與所有標準 API 沿用 `MaterialMaintenance/GetModel` 代表權限，不新增 `SecondaryDataCompare/*` AdminFunction。
+- 基本數據頁的新增、編輯、刪除只更新前端草稿；按下儲存才呼叫 `SecondaryDataCompare/SaveBatch`，由後端單一交易整批新增、更新與 soft-delete。
+- 相似碳係數使用 `Σ(碳排係數 × 百分比) ÷ Σ百分比` 標準化加權平均；偏差量使用 `(本身碳係數 - 相似碳係數) ÷ 相似碳係數 × 100`，畫面四捨五入至小數第 2 位。
+- 基本數據頁的「文件合規與缺漏」只使用 `CarbonFactorMaintenancePlant/GetModel` 回傳的 `PcrEvidenceCategories`，列出沒有有效附件的 PCR 主項目；PCR 細項、第三方查證報告與自我總結報告不納入本階段缺漏清單，且不提供上傳操作。
+- DataMaintenance 廠區編輯路由只需要 `/DataMaintenance/CarbonFactorMaintenance/Plant/Edit/?id={plantId}`；新增路由只需要 `/DataMaintenance/CarbonFactorMaintenance/Plant/Create/?yearId={yearId}`，產品、買方與年度上下文由後端模型回傳，返回父頁時再使用模型中的關聯 Id 組合網址。MaterialDemand 的查看入口使用 `/MaterialDemand/Plant/Edit/?id={plantId}&readonly=true`，共用同一份廠區頁面但由 route page 關閉附件上傳能力。
 
 #### 6.1.3 DataMaintenance 原料維護
 
 - 頁面沿用既有 CFP Bootstrap/Card/ActionBar 視覺語言，以摘要卡、第一層分類區塊、子項目卡片與年份/供應來源巢狀表格呈現；不將 PM 示意圖硬塞成寬表格，避免小螢幕橫向溢出。
 - 顯示流程固定為 PCR 原料頁籤的 `PcrPattern.Category=Material` root → child item → year → supplier source，包含原料頁籤下的 4 個根項目及其細項；子項目卡片使用滿版欄位。頁面第一次載入會呼叫後端 `EnsureInitializedAsync`，沿用既有 PcrTemplate 多語言 fallback 初始化 PcrPattern，之後再查詢資料。
-- 前端原料維護頁以 `page.tsx` 作為組合層，API 路由與回應正規化集中在 `materialMaintenanceService.ts`，年份/來源規則集中在 `materialMaintenanceValidation.ts`，非同步狀態與操作流程由 `useMaterialMaintenance.ts` 管理，階層呈現與來源 Modal 分別由 `MaterialMaintenanceView.tsx`、`MaterialMaintenanceSourceModal.tsx` 負責；新增/刪除後採背景重新查詢，保留既有畫面避免整頁閃爍。
-- 年份限制為 1900–2100，同一 Material、PcrPattern 子項目不可重複有效年份；供應來源需屬於目前 Manager 可見的 Supplier，同一年份下 Supplier + ProductName 不可重複，且有效佔比總和不可超過 100%。
-- 供應來源列表沿用既有表格與 Bootstrap 操作區，顯示佔比、碳排係數、第三方查證與核可數量；「判斷認可等級」依目前來源的四項認可資料，按照該 Material 的 BuyerAccreditation 排序逐筆精確比對，若多筆符合取第一筆；「認可/取消認可」以確認對話框保存 `IsAccredited`；「意見」先以停用按鈕保留位置，後續再實作意見流程。
+- 前端原料維護頁以 `page.tsx` 作為組合層，API 路由與回應正規化集中在 `materialMaintenanceService.ts`，年份/來源規則集中在 `materialMaintenanceValidation.ts`，非同步狀態與操作流程由 `useMaterialMaintenance.ts` 管理，階層呈現與來源 Modal 分別由 `MaterialMaintenanceView.tsx`、`MaterialMaintenanceSourceModal.tsx` 負責；新增/刪除或意見新增後採背景重新查詢，並遵循 6.6.3 的非同步狀態規則，保留既有畫面避免整頁閃爍。
+- 年份限制為 1900–2100，同一 Material、PcrPattern 子項目不可重複有效年份；供應來源需選擇有效 Material，同一年份下 `MaterialMaintenanceYearId + MaterialId` 不可重複，且有效佔比總和不可超過 100%。
+- 供應來源列表沿用既有表格與 Bootstrap 操作區，顯示佔比、碳排係數、第三方查證與核可數量；供應商名稱優先顯示 `Supplier.CreateUserId → Manager.Name`（與供應商/料號選擇器的帳號名稱一致），缺少建立帳號時才回退 `Supplier.Name`；「判斷認可等級」依目前來源的四項認可資料，按照該 Material 的 BuyerAccreditation 排序逐筆精確比對，若多筆符合取第一筆；「認可/取消認可」以確認對話框保存 `IsAccredited`；「意見」導向 `/DataMaintenance/MaterialMaintenance/Opinion/?sourceId={sourceId}`，列表依 `CreateDate DESC, Id DESC` 顯示，只有來源 `CreateUserId` 可新增，暫不提供編輯與刪除。
 - DataMaintenance 每筆資料的操作區提供 `/DataMaintenance/BuyerAccreditation/?materialId={materialId}`，以標準列表/表單維護該 Material 專屬的買方認可依據等級；等級名稱只在同一 Material 內不可重複，認可數與總分不得為負數，後端 CRUD 端點沿用 Material 功能權限鏈並驗證 Material 所屬供應商。
+- DataMaintenance 每筆資料的「碳排係數維護」導向 `/DataMaintenance/CarbonFactorMaintenance/?materialId={materialId}`；目前頁面的 B 料號由 `MaterialMaintenanceSource.MaterialId` 找出指定來源，再透過來源所屬 `MaterialMaintenanceYear.MaterialId` 取得指定者 A，顯示 A 的 `Manager.Name`。完全不使用 `MaterialCompare`；買方切換後只顯示該買方專屬的 `CarbonFactorMaintenanceYear` 與 `CarbonFactorMaintenancePlant`。
+- 碳排係數維護新增年份時輸入年份與產品單位；年份層係數唯讀，依 `SUM(Plant.AllocationPercentage * Plant.CarbonFactor) / 100` 自動計算，佔比未滿 100% 仍可保存。年份與廠區均支援新增、編輯、soft-delete，固定文案使用獨立頁面標題鍵 `CF0030`、其他 `CF0005`–`CF0029` 與 `ER0068`–`ER0078`；側邊欄既有 `CF0001`「碳排資料維護」不改名。
+
+#### 6.1.6 共用頁面時的路由專屬功能設定原則
+
+- `/DataMaintenance/CarbonFactorMaintenance/Plant/Edit` 與 `/MaterialDemand/Plant/Edit` 使用不同的 route entry page，但實際資料載入、權限檢查、`FormPageWrapper`、提交流程與 `PlantContent` 只維護一份，避免複製兩套廠區表單。
+- `PlantEditPage.tsx` 提供頁面層級的 `allowFileUpload` 設定；DataMaintenance route 使用預設 `true`，MaterialDemand route 明確傳入 `false`。Next.js route entry 不直接暴露自訂 props，而由各自的薄層 page wrapper 傳入共用頁面。
+- `PlantContent` 將 `readonly` query（控制整頁唯讀與儲存按鈕）、`allowFileUpload` capability 與 `allowOpinionEdit` capability 分開判斷：只有 `!readOnly && allowFileUpload` 時才顯示單檔上傳、批次上傳、替換、移除與待上傳配對預覽；既有附件下載仍可保留；MaterialDemand route 的 `allowOpinionEdit` 為 true，佐證附件顯示「建議」並可編輯 `Opinion`；DataMaintenance route 若已有 `Opinion` 則顯示「查看建議」並以唯讀 Modal 呈現。返回按鈕一律使用明確列表路徑：MaterialDemand route 固定返回 `/MaterialDemand/`，DataMaintenance route 依 `materialId`、`buyerMaterialId`、`yearId` 返回 `/DataMaintenance/CarbonFactorMaintenance/`，不使用瀏覽器上一頁。
+- route pathname 是選單來源判斷依據：MaterialDemand route 顯示「顧問管理」，DataMaintenance route 顯示「碳排資料維護」，不使用來源 query、sessionStorage 或 Context 傳遞選單狀態。
+- MaterialDemand route 目前仍沿用 DataMaintenance 的碳排 API 與代表權限，因為資料領域與後端責任仍屬碳排資料維護；只有畫面入口與功能能力依 route 分開設定。若未來有其他差異，應優先新增明確的 page capability prop，不要複製整份共用頁面。
 
 ### 6.2 前端狀態與權限
 
 - `UserContext`：從 `localStorage.userInfo` 還原 `username`；登入後寫入，登出時移除。
 - `MenuContext`：從 `localStorage.menus` 還原動態選單；登入回傳 `AdminMenus` 後轉成 `MenuItem` 儲存。
-- `usePagePermissions`：找出目前路徑選單項目的 `permissions`，以 Action 字串判斷按鈕權限。
+- `usePagePermissions`：找出目前路徑選單項目的 `permissions`，以 Action 字串判斷頁面與頁內按鈕權限。
 - `MainLayout`：選單載入後只允許選單中的 href；子路徑會向父路徑比對，無權限導回 `/`。
 - `Aside`：有 `isNextJsApp` 時使用 `router.push`，否則使用一般 `<a>`，以兼容其他平台路徑。
 - 登出目前是前端清除 `token` / `userInfo` 後導向 `/login`，未看到呼叫後端登出 API。
@@ -332,21 +369,21 @@ Route Group `(auth)` 與 `(main)` 不會出現在 URL。根 Layout 以 `ApiProvi
 - `LanguageResource` 是一筆可翻譯資源，包含唯一 `SerialNumber` 與可選的 `AdminMenuId`；資源本身不再保存重複的 `SourceText`。
 - `LanguageResourceTranslation` 以 `LanguageResourceId + LanguageId` 識別每個語言的文字；`Language.IsBaseLanguage = 1` 的翻譯列就是唯一基礎內容。
 - 任何需要多語言名稱的資料表，欄位名稱使用 `{Name}LRID`（例如 `PcrTemplate.ItemLRID`）儲存 `LanguageResource.Id`。
-- `apps/CFP/src/config/languageKeys.ts` 只保存穩定資源代號，不是翻譯字典；畫面應以 `translate(key, fallbackText)` 取得文字並保留 fallback。
+- `apps/CFP/src/config/languageKeys.ts` 只保存穩定資源代號，不是翻譯字典；畫面應以 `translate(key)` 取得文字，不在呼叫端維護 fallback 文案。
 
 #### 6.5.2 前端初始化與切換流程
 
 1. 根 Layout 以 `LanguageProvider` 包住登入頁與主畫面。
 2. `LanguageContext` 從 `localStorage.languageCode` 讀取目前語言；沒有值時使用 `zh-TW`。
-3. 登入後先從 `localStorage.languageTranslations:{languageCode}` 讀取完整翻譯字典；沒有有效快取時才呼叫 `LanguageResource/GetTranslations`，以 FormData 傳入 `languageCode`，建立 `serialNumber -> text` 與 `languageResourceId -> text` 查找表。
+3. 初始化登入頁與主畫面時都先從 `localStorage.languageTranslations:{languageCode}` 讀取完整翻譯字典；沒有有效快取時才呼叫可匿名讀取的 `LanguageResource/GetTranslations`，以 FormData 傳入 `languageCode`，建立 `serialNumber -> text` 與 `languageResourceId -> text` 查找表。
 4. 語言選擇器先呼叫 `LanguageResource/GetActiveLanguages`；選取語言時優先使用該語言快取，沒有快取才重新載入翻譯，成功才更新 language code。
 5. `useAppApi` 將目前語言放在每個請求的 `X-Language-Code` header；後端找不到翻譯時回退至基礎語言或內建 fallback。
 6. 前端會把包含兩種查找表的版本化翻譯結果寫入 `localStorage.languageTranslations:{languageCode}`；快取只在瀏覽器端使用，翻譯資源維護後若需要立即反映新內容，應清除對應語言快取或執行一次重新載入。
 
 `LanguageContext` 提供兩種查找方式：
 
-- `translate(serialNumber, fallbackText)`：一般 UI、按鈕、標籤與錯誤訊息。
-- `translateByLanguageResourceId(languageResourceId, fallbackText)`：後端動態選單帶回 `LanguageResourceId` 時優先使用。
+- `translate(serialNumber)`：一般 UI、按鈕、標籤與錯誤訊息；翻譯缺失時不以呼叫端 fallback 代替。
+- `translateByLanguageResourceId(languageResourceId)`：後端動態選單帶回 `LanguageResourceId` 時使用對應翻譯。
 
 #### 6.5.3 動態選單與頁面標題
 
@@ -384,12 +421,12 @@ Route Group `(auth)` 與 `(main)` 不會出現在 URL。根 Layout 以 `ApiProvi
 #### 6.5.7 使用者介面硬編碼中文盤點規則
 
 - 使用者可見的標題、欄位、按鈕、提示、Toast、錯誤訊息與 `aria-label` 不得直接寫中文；應先在 `apps/CFP/src/config/languageKeys.ts` 建立代號，再以 `useLanguage().translate` 取值。
-- `/DataMaintenance` 與 `PcrBindingModal` 的固定文字使用 `DM0001`–`DM0015`；產品次分類 PCR 頁面的初始化/載入錯誤使用 `PP0015`–`PP0017`；產品次分類列表的「查看」使用 `CM0117`。
+- `/DataMaintenance` 與 `PcrBindingModal` 的固定文字使用 `DM0001`–`DM0015`；數據品質管理料件總表的操作按鈕使用 `DQ0006`–`DQ0007`；產品次分類 PCR 頁面的初始化/載入錯誤使用 `PP0015`–`PP0017`；產品次分類列表的「查看」使用 `CM0117`。
 - `/DataMaintenance/MaterialMaintenance` 的標題、第一層/子項目/年份/供應來源、操作結果與驗證 fallback 使用 `RM0001`–`RM0053`；後端年份/供應來源驗證錯誤使用 `ER0052`–`ER0060`，來源認可資料錯誤使用 `ER0065`；買方認可依據的範圍錯誤使用 `ER0064`。
-- 上述固定文案與共用 API 錯誤標籤（`CM0119`–`CM0133`）由 `HOP-CFP-Backend/Migrations/20260807140000_LocalizeDataMaintenanceUi.cs` 建立繁中與英文翻譯，並補足既有 `CM0116` 的英文翻譯；`20260807143000_NormalizePcrPatternTranslations.cs`、`20260807150000_ActivatePcrPatternTranslations.cs` 會修正既有停用/異常的 `PP0015`–`PP0017`。`ApiError` 必須在 `LanguageProvider` 內由 `translate` 注入標籤。Migration 套用且資料庫查詢確認後，才可宣稱中英文資源完整。
+- 上述固定文案與共用 API 錯誤標籤（`CM0119`–`CM0134`）由 `HOP-CFP-Backend/Migrations/20260807140000_LocalizeDataMaintenanceUi.cs` 與 `20260825104412_AddCommonCloseLanguage.cs` 建立繁中與英文翻譯，並補足既有 `CM0116` 的英文翻譯；`20260807143000_NormalizePcrPatternTranslations.cs`、`20260807150000_ActivatePcrPatternTranslations.cs` 會修正既有停用/異常的 `PP0015`–`PP0017`。`ApiError` 必須在 `LanguageProvider` 內由 `translate` 注入標籤。Migration 套用且資料庫查詢確認後，才可宣稱中英文資源完整。
 - 共用套件元件不得自行依賴繁中文字串；例如分頁與下拉輸入提供英文 fallback 或可覆寫的 label，實際畫面應由應用層傳入翻譯後文字。
 - `HeadContext` 的預設頁面標題由 `apps/CFP/src/app/layout.tsx` 在 `LanguageProvider` 內使用 `CM0030` 解析，並同步設定 `document.documentElement.lang`；`DataGrid` 的空資料訊息使用可覆寫的 `noDataMessage`，不可重新加入固定中文。
-- `translate` 的 fallback 文字可以保留作為載入失敗時的最後保底，但不得把 fallback 當成正常語言來源；新文案的 fallback 使用英文，避免新增中文字串重新散落在頁面程式碼。翻譯快取版本目前為 `5`（`LanguageContext.tsx`），新增資源或修正 seed translation 時要同步升版，避免舊的 `localStorage.languageTranslations:*` 遮蔽新資源。
+- `translate` 的 fallback 文字可以保留作為載入失敗時的最後保底，但不得把 fallback 當成正常語言來源；新文案的 fallback 使用英文，避免新增中文字串重新散落在頁面程式碼。翻譯快取版本目前為 `25`（`LanguageContext.tsx`），新增資源或修正 seed translation 時要同步升版，避免舊的 `localStorage.languageTranslations:*` 遮蔽新資源；這是多語言功能的必要完成條件，不可只套用資料庫 migration。
 - 盤點時要區分註解、型別註解、資料庫欄位/領域資料與實際 UI 文案；前者不屬於使用者介面翻譯範圍。共用套件若需要顯示文字，應由呼叫端傳入已翻譯的 label，不能依賴中文預設值。
 
 - 後端 `BackendMessageKeys.Fallbacks` 僅作資料庫翻譯無法取得時的最後保底，統一維持可讀英文；正常繁中/英文回應仍由 `LanguageResource` 的 `ER0001`–`ER0060` 資源依 `X-Language-Code` 解析。新增後端錯誤代號時，必須同步建立啟用中的繁中與英文翻譯並確認 fallback 不含亂碼或硬編碼中文。
@@ -402,6 +439,7 @@ Route Group `(auth)` 與 `(main)` 不會出現在 URL。根 Layout 以 `ApiProvi
 
 - App Router 以 `(auth)`、`(main)` Route Group 組織頁面；`page.tsx` 是路由入口與功能組合層，功能目錄通常使用 `Content.tsx` 承載表單或畫面內容。
 - 標準列表頁由 Page 管理搜尋、權限、導頁、Toast、匯入或刪除等功能操作，列表資料與分頁交給 `CommonTable`；不要在 Page 另外重複發送同一筆列表請求。
+- CFP 標準列表頁優先使用 `src/components/layouts/ListPageLayout.tsx`，由 Layout 統一管理 `ActionBar`、`WrapContent`、Tabs、`SearchBlock` 與列表 `Container fluid` 的層級；頁面只提供 `tabs`、`searchContent`、`actions` 與列表內容，不得再把整段內容包進額外的 `Container fluid`，避免左右 gutter 不一致。
 - 標準新增/編輯頁優先使用 `FormPageWrapper`，由 Wrapper 管理 query id、模型載入、表單狀態、提交、成功導回與 loading；`Content.tsx` 專注欄位呈現與局部互動。
 - 複雜功能可依責任拆成 feature service、validation、hook、view 與 modal；`DataMaintenance/MaterialMaintenance` 是目前的完整範例。拆分應服務於資料流與生命週期，不為了檔案數量而抽象化。
 - UI 優先使用 `@packages/components` 的 Bootstrap 5 元件與 `@packages/components/layouts`；CFP 專用功能與樣式留在 `apps/CFP`，不要為單一 CFP 需求修改外層共用套件。
@@ -417,7 +455,7 @@ Route Group `(auth)` 與 `(main)` 不會出現在 URL。根 Layout 以 `ApiProvi
 
 - 單頁局部狀態使用 `useState`；使用者、動態選單與語言等跨頁狀態分別由 `UserContext`、`MenuContext`、`LanguageContext` 管理，並與 `appStorage` 同步。
 - 對傳給 effect 或子元件的非同步函式、計算值與 API 操作，依實際依賴使用 `useCallback`、`useMemo`、`useRef`；effect 必須清理取消旗標或 request id，避免卸載後寫入狀態或舊請求覆蓋新結果。
-- 列表 loading 時清除舊資料與總筆數，並用 request sequence 防止競態；表單載入與提交則明確區分 `fetching` / `loading`，失敗時保留可理解的錯誤提示。
+- 列表 loading 時清除舊資料與總筆數，並用 request sequence 防止競態；表單載入與提交則明確區分 `fetching` / `loading`，失敗時保留可理解的錯誤提示。所有頁面、列表、表單與 Modal 都必須將初次資料載入與操作後重新查詢使用不同狀態：重新查詢要保留既有資料畫面，使用 `submitting` 或局部 `refreshing` 顯示處理中，不能重用會切換整頁 spinner 的 `loading`，避免新增、編輯或刪除後畫面閃爍。
 - 使用者操作失敗以 Toast/Confirm 回饋；`console.error` 只記錄必要診斷資訊，不輸出 token、完整 QR/敏感資料或不必要的整包 response。
 
 #### 6.6.4 UI、型別、多語言與權限
@@ -487,7 +525,8 @@ StandardController<DBModel, ViewModel, Search, List, ListData>
 | `AdminFunctionController` | `AdminFunctionService` / `AdminFunction` | `GetSelectListItems`（IgnoreAuthorize） |
 | `RoleController` | `RoleService` / `Role` | `GetRoleItems`、`GetSelectListItems`（IgnoreAuthorize） |
 | `SupplierController` | `SupplierService` / `Supplier` | `GetSelectListItems`、`test` |
-| `MaterialController` | `MaterialService` / `Material` | `GetSelectListItems`、`GetKeywordSelectListItems`、`BindPcr`、`DownloadImportTemplate`、`Import`（IgnoreAuthorize） |
+| `MaterialController` | `MaterialService` / `Material` | `GetSelectListItems`、`GetKeywordSelectListItems`、`DownloadImportTemplate`、`Import`（IgnoreAuthorize） |
+| `DataMaintenanceController` | `MaterialService` / `ProductSubcategoryService` | `GetList` 使用同 Controller 的 `[AuthorizeAs("Index")]`；`GetPcrOptions`、`BindPcr` 共用 `DataMaintenance/BindPcr` 代表權限 |
 | `MaterialGroupController` | `MaterialGroupService` / `MaterialGroup` | 無，自用標準 CRUD |
 | `BuyerCompareController` | `BuyerCompareService` / `Material` | `GetBuyerMaterialList` |
 | `SellerCompareController` | `SellerCompareService` / `Material` | `DownloadImportTemplate`、`Import`（IgnoreAuthorize） |
@@ -496,7 +535,13 @@ StandardController<DBModel, ViewModel, Search, List, ListData>
 | `NotifyStatusReportController` | `NotifyStatusReportService` / `MaterialNotify` | 無，自用標準 CRUD |
 | `PcrTemplateController` | `PcrTemplateService` / `PcrTemplate` | 標準 CRUD；以 `Category` 篩選父項目，編輯時一併保存 `ChildList` |
 | `ProductSubcategoryController` | `ProductSubcategoryService` / `PcrPatternService` | 產品次類別 CRUD；以 `Name` 篩選並提供 PCR 模板初始化、查詢與父子 CRUD |
-| `MaterialMaintenanceController` | `MaterialMaintenanceService` / `MaterialMaintenanceYear` / `MaterialMaintenanceSource` | 原料維護階層查詢、年份與供應來源新增/軟刪除、BuyerAccreditation 等級判斷與來源認可保存；沿用 Material 的 Index/Edit 權限並驗證目前 Manager 可見範圍 |
+| `MaterialMaintenanceController` | `MaterialMaintenanceService` / `MaterialMaintenanceYear` / `MaterialMaintenanceSource` | 原料維護階層查詢、年份與供應來源新增/軟刪除、BuyerAccreditation 等級判斷與來源認可保存；所有 API 共用 `MaterialMaintenance/GetModel` 代表權限，並驗證目前 Manager 可見範圍 |
+| `BuyerAccreditationLevelController` | `BuyerAccreditationLevelService` / `BuyerAccreditationLevel` | 標準列表與 CRUD；所有 API 共用 `BuyerAccreditationLevel/Index` 代表權限，不再建立 CRUD 細項權限 |
+| `CarbonFactorMaintenanceController` | `CarbonFactorMaintenanceService` / `CarbonFactorMaintenance*` | 碳排係數聚合查詢；權限鍵為 `CarbonFactorMaintenance/GetModel` |
+| `CarbonFactorMaintenanceYearController` | `CarbonFactorMaintenanceYearService` / `CarbonFactorMaintenanceYear` | 年度 `Add`、`Edit`、`Delete`；全部共用 `CarbonFactorMaintenance/GetModel` 代表權限 |
+| `CarbonFactorMaintenancePlantController` | `CarbonFactorMaintenancePlantService` / `CarbonFactorMaintenancePlant` | 繼承 `StandardController`；標準 `GetList` 使用實際 `CarbonFactorMaintenancePlant/GetList`，廠區模型與 CRUD 使用 `CarbonFactorMaintenance/GetModel` 代表權限，僅保留 `DownloadAttachment` 客製 API |
+| `SecondaryDataCompareController` | `SecondaryDataCompareService` / `SecondaryDataCompare` | 繼承 `StandardController`；標準 CRUD 與 `GetSecondaryDataOptions` 均使用 `MaterialMaintenance/GetModel` 代表權限，不建立獨立 AdminFunction |
+| `SecondaryDataSettingController` | `SecondaryDataSettingService` / `SecondaryDataSetting` | 標準二級數據設定 CRUD；`SyncApi` 呼叫 MOENV `CFP_P_02` API，同步資料並依 `SecondaryDataSetting/SyncApi` 獨立授權 |
 | `PcrPatternController` | `PcrPatternService` / `PcrPattern` | Legacy PCR模板父子 CRUD；欄位為 `ParentId`、`Category`、`Item`，已停用選單與權限 |
 
 ### 7.4 驗證、授權與錯誤
@@ -514,6 +559,9 @@ StandardController<DBModel, ViewModel, Search, List, ListData>
 - `_ModelService` 統一取得 Model、SetModel、Insert、Update、Copy、Delete；`Delete` 預設是 `Status=-1` 軟刪除，並刪除 ManyToMany 關聯。
 - `Insert` / `Update` 自動填入 `CreateDate`、`CreateUserId`、`UpdateDate`、`UpdateUserId`。
 - `DapperRepository` 以目前 request scope 的 connection/transaction 執行 SQL；`BaseService.TransactionFunc` 是需要多步寫入時的交易入口。
+- 實體資料的單表取得必須由該實體所屬 Service 負責：完整資料使用該 Service 的 `GetData`，只需要部分欄位時才使用 `GetFieldData`；不要在跨功能 ContextService 重寫 `SELECT * FROM Entity`。ContextService 只保留跨表權限、關聯驗證或 aggregate 查詢，且不負責任何實體 CRUD。
+- SQL 的排除 ID 必須使用 nullable `Guid?` 表示：`null` 代表不加入 `Id <> @ExcludeId` 條件，有值時才動態加入排除條件；不得把全零 GUID 寫成 SQL 字串 sentinel。C# 的 `Guid.Empty` 僅保留給輸入驗證或新資料判斷，不得轉成 SQL 常數。
+- Service 內多個彼此獨立的非同步唯讀查詢，應先建立各自的 Task，再以 `await Task.WhenAll(...)` 等待；不得使用 `Task.Run` 包裝已經是非同步的資料庫 I/O。具有資料相依性的查詢仍須依序執行；共用 `DbContext`、交易或不支援並行的連線不可直接平行查詢。`QueryMultipleAsync` 的 `GridReader` 結果集必須依序讀取；涉及同一交易或共享狀態的寫入流程不套用此模式。
 - 多語言列表與 PCR 初始化 SQL 的「指定語言 + 基礎語言 fallback」JOIN 由 `_StandardService.GetLanguageTranslationJoinSql` 統一產生；PcrTemplate 與 PcrPattern 初始化應共用此方法，ProductSubcategory 本身不使用多語言 JOIN。
 - 多對多資料統一透過 `ManyToManyService` 寫入 `ManyToMany`，不要在頁面自行推導關聯表 SQL。
 
@@ -536,6 +584,13 @@ StandardController<DBModel, ViewModel, Search, List, ListData>
 - Migration 的 raw SQL 必須同時考慮既有資料、唯一流水號、基礎語言不存在、語言不存在與 rollback；新增固定翻譯資源時應以 `IF NOT EXISTS` 避免重複插入。
 - 後端正在執行時，`HOP-CFP-Backend.exe` 可能鎖住 build 輸出；建置失敗時先找出並停止明確的後端 PID，不能使用名稱式或廣泛終止程序。若只需編譯驗證，也可使用 `/p:UseAppHost=false`，但仍要注意執行中的 DLL 是否已載入新版本。
 - Migration 套用完成後仍需重新啟動後端，並以 Swagger 或實際 API 請求確認新的 SQL、欄位與資料已可被應用程式使用。
+- `20260818024945_NormalizeDataMaintenancePermissionKeys` 將 DataMaintenance 的四個虛構 `Controller/Access` 權限停用，新增實際 Controller/Action 功能並遷移既有 Role 的 ManyToMany 關聯；測試資料庫已確認 `__EFMigrationsHistory` 有此 Migration。
+- `20260818032927_CollapseDataMaintenancePermissions` 將 DataMaintenance 根功能收斂為 `DataMaintenance/BindPcr`、`MaterialMaintenance/GetModel`、`BuyerAccreditationLevel/Index`、`CarbonFactorMaintenance/GetModel` 四個代表權限；先移除角色關聯，再刪除未使用且未被 AdminMenu 引用的細項功能。此資料 Migration 不可逆。
+- `20260818055616_AddDataQualityMaterialActionLanguage` 建立料件總表「基本數據」與「認可與驗證」的中英文資源 `DQ0006`–`DQ0007`。
+- `20260818061617_AddDataQualityMaterialActionPermissions` 在 `CarbonFactorMaintenancePlant/GetList` 底下建立兩個可由 Role 編輯頁勾選的子功能，分別對應實際 `MaterialMaintenance/GetModel` 與 `BuyerAccreditationLevel/Index`；角色初始關聯依既有代表權限遷移，未建立虛構 Controller/Action。
+- `20260818082206_AddSecondaryDataCompare` 建立 `SecondaryDataCompare` 一對多資料表、廠區/二級數據外鍵、有效資料唯一索引與 `SD0012`–`SD0022` 中英文資源；不新增選單或 AdminFunction。
+- `20260818103211_AddSecondaryDataCompareDraftLanguage` 建立基本數據草稿、批次儲存與計算結果所需的 `SD0023`–`SD0029` 中英文資源。
+- 若執行中的後端鎖住輸出 DLL，不能直接宣稱 `dotnet ef database update --no-build` 已載入最新 Migration；可在測試資料庫以同一份 Migration SQL 交易式套用，並同步寫入 `__EFMigrationsHistory`，之後仍須重新啟動後端做 runtime 驗證。
 - 原料維護 schema 由 `20260807124857_MaterialMaintenanceSchema` 建立；`20260807160000_LocalizeMaterialMaintenance` 建立 `RM0001`–`RM0032` 與 `ER0052`–`ER0060` 的 zh-TW/en-US 資源；`20260810070536_AddMaterialMaintenanceSourceAccreditation` 新增來源認可欄位並建立 `RM0033`–`RM0053`、`ER0065` 資源。Migration 套用後，必須重新啟動後端再驗證 `/MaterialMaintenance/*` API。
 
 ## 8. 前後端 API 契約
@@ -564,14 +619,18 @@ StandardController<DBModel, ViewModel, Search, List, ListData>
 | `PRODUCT_SUBCATEGORY_CREATE/EDIT/GET_MODEL/GET_LIST` | `ProductSubcategory/Create`, `Edit`, `GetModel`, `GetList` |
 | `PRODUCT_SUBCATEGORY_MST` | `ProductSubcategory` 前綴，刪除使用 `/Delete` |
 | `PRODUCT_SUBCATEGORY_*_PCR_PATTERN` | `ProductSubcategory/EnsurePcrPattern`、`GetPcrPattern*`、`CreatePcrPattern`、`EditPcrPattern`、`DeletePcrPattern` |
-| `MATERIAL_MAINTENANCE_GET_MODEL` | `MaterialMaintenance/GetModel` |
+| `DATA_MAINTENANCE_GET_LIST/GET_PCR_OPTIONS/BIND_PCR` | `DataMaintenance/GetList` 使用同 Controller 的 `AuthorizeAs("Index")` 對應 `DataMaintenance/Index`；`GetPcrOptions`、`BindPcr` 使用 `DataMaintenance/BindPcr` 代表權限 |
+| `MATERIAL_MAINTENANCE_GET_MODEL` | `MaterialMaintenance` 全部維護 API 的代表權限：`GetModel`、來源、年份、認可與意見操作 |
 | `MATERIAL_MAINTENANCE_ADD_YEAR` / `DELETE_YEAR` | `MaterialMaintenance/AddYear`、`DeleteYear` |
 | `MATERIAL_MAINTENANCE_ADD_SOURCE` / `DELETE_SOURCE` | `MaterialMaintenance/AddSource`、`DeleteSource` |
 | `MATERIAL_MAINTENANCE_GET_SOURCE_ACCREDITATION_LEVEL` / `SET_SOURCE_ACCREDITED` | `MaterialMaintenance/GetSourceAccreditationLevel`、`SetSourceAccredited` |
+| `CARBON_FACTOR_MAINTENANCE_*` | `CarbonFactorMaintenance/GetModel` 代表權限涵蓋 aggregate query、年度 API 與廠區模型/CRUD；獨立數據品質管理料件總表的 `CarbonFactorMaintenancePlant/GetList` 使用實際列表權限；前端標準 Plant CRUD 改呼叫 `GetModel`、`GetNewModel`、`Create`、`Edit`、`Delete`，附件下載仍為客製 API |
+| `SECONDARY_DATA_COMPARE_*` | `SecondaryDataCompare` 的標準 API、`GetSecondaryDataOptions` 與 `SaveBatch` 均以 `MaterialMaintenance:GetModel` 代表權限授權；基本數據頁使用草稿後批次儲存，不建立 `SecondaryDataCompare/Index`、`Create`、`Edit`、`Delete` AdminFunction |
 | `BUYER_ACCREDITATION_LEVEL_CREATE/EDIT/GET_MODEL/GET_LIST` | `BuyerAccreditationLevel/Create`, `Edit`, `GetModel`, `GetList`；列表與表單均需帶 `materialId` |
 | `BUYER_ACCREDITATION_LEVEL_MST` | `BuyerAccreditationLevel` 前綴，刪除使用 `/Delete`；端點沿用 Material 功能權限鏈，後端依 `materialId` 驗證資料範圍 |
 | `PCR_PATTERN_CREATE/EDIT/GET_MODEL/GET_LIST` | Legacy `PcrPattern/Create`, `Edit`, `GetModel`, `GetList` |
 | `PCR_PATTERN_MST` | Legacy `PcrPattern` 前綴，刪除使用 `/Delete` |
+| `MATERIAL_DEMAND_GET_LIST` | `MaterialDemand/GetList`；以 `MaterialDemand/Index` 作為列表與頁面入口權限 |
 
 目前已確認前端 Buyer/Seller 編輯頁的部分呼叫使用 `Material/*Compare*` 字串，而後端現存比對 Controller 是 `BuyerCompareController` / `SellerCompareController`。這是整合時的高風險交界，不能只依 `API_MAP` 名稱假設 endpoint 一定存在。
 
@@ -662,8 +721,10 @@ PCR 使用 Standard CRUD API，主要入口如下：
 | 產品次類別 | `ProductSubcategory` | `Name`、`Developer`、`ApplicableScope`、`CccCode`；名稱直接保存於 `Name` |
 | PCR模板資料（Legacy） | `PcrPattern` | `ParentId`、`Category`、`Item`；欄位與父子流程對齊 `PcrTemplate`，但名稱直接保存於 `Item` |
 | 原料維護年份 | `MaterialMaintenanceYear` | `MaterialId`、`PcrPatternId`、`Year`；外鍵限制刪除，索引 Material + 子項目 + 年份 |
-| 原料維護供應來源 | `MaterialMaintenanceSource` | `MaterialMaintenanceYearId`、`SupplierId`、`ProductName`、`AllocationPercentage`、`CarbonFactor`、`ThirdPartyCertification`、`ConsultantApprovalCount`、`BuyerApprovalCount`、`TotalScore`、`IsAccredited`；佔比為 decimal(5,2)，碳排係數為 decimal(12,6) |
+| 原料維護供應來源 | `MaterialMaintenanceSource` | `MaterialMaintenanceYearId`、`MaterialId`（被指定料號 B）、`AllocationPercentage`、`CarbonFactor`、`ThirdPartyCertification`、`ConsultantApprovalCount`、`BuyerApprovalCount`、`TotalScore`、`IsAccredited`；供應商名稱與產品名稱由 Material/Manager 關聯取得，佔比為 decimal(5,2)，碳排係數為 decimal(12,6) |
 | 買方認可依據等級 | `BuyerAccreditationLevel` | `MaterialId`、`Name`、`ThirdPartyCertification`、`ConsultantApprovalCount`、`BuyerApprovalCount`、`TotalScore`；有效資料以 Material + 名稱唯一，並以 Material 外鍵與目前供應商範圍隔離，認可數與總分不得為負數 |
+| 顧問主檔 | `Consultant` | `Name`、`CertificationMode`、`ExperienceIndustryCategory`、`CustomerRating`、四個 nullable 非負整數組織統計欄位、`IsAccredited`；全平台共用，只排除 `Status = -1`，不套用 TaxID；註冊以 `CreateUserId` 判斷目前帳號的有效資料，認可顧問/註冊顧問是功能頁名稱，不是資料表 |
+| 需求料件 | `MaterialDemand` | `CarbonFactorMaintenancePlantId`、`DemandType`（認可/輔導）、`IsUrgent`、`IsCompleted`；透過廠區→年度→Material→Supplier 顯示既有料號、產品、年度、廠商與廠區資料，列表跨公司查詢但只保留有效關聯資料 |
 | 稽核 | `Log_ManagerLogin`、`Log_ManagerLoginFail`、`Log_ManagerWatch`、`Log_BackendPageRequest`、`DataChange` | 登入、失敗、瀏覽、請求與異動紀錄 |
 | 設定 | `SysConfig`、`KeyValueSetting` | 系統設定與可依類型/群組查詢的 key-value |
 
@@ -874,6 +935,117 @@ Material 的 `/Material/BindPcr` 在交易內先驗證目前帳號可使用的 M
 
 總結：在本專案中，`ManyToMany` 不只是「兩張表中間多一張表」，而是以 Table 名稱和 Guid 動態描述關係的通用資料層。分析任何權限、群組或選取清單問題時，第一個問題應是「這筆資料是 Source 還是 Target、TargetTable 實際填什麼、關聯 Status 是否有效」，再追對應 Service 的讀寫方法。
 
+### 9.5 權限、選單與角色運作
+
+本專案的權限不是單一欄位，也不是只靠前端顯示/隱藏按鈕；完整鏈如下：
+
+```text
+Manager
+  └─ ManyToMany: TargetTable = Role
+       └─ Role
+            ├─ ManyToMany: TargetTable = AdminMenu
+            │    └─ AdminMenu 樹狀選單、URL、圖示、多語言與功能掛載
+            └─ ManyToMany: TargetTable = AdminFunction
+                 └─ Controller + Action 的 API 功能權限
+
+ManagerService.Login
+  └─ RoleService.GetRoleAdminMenus
+       └─ LoginInfoModel.AdminMenus
+            └─ 前端 Login mapAdminMenuToMenuItem
+                 ├─ MenuContext / appStorage.menus
+                 ├─ Aside 動態側欄
+                 ├─ MainLayout 路由允許清單
+                 └─ usePagePermissions 按鈕權限
+
+每次已登入 API request
+  └─ Authorization token
+       └─ ApiFilter
+            └─ Controller + Action 對照 AdminMenus
+                 └─ 允許 200 或拒絕 401/403
+```
+
+#### 9.5.1 四個核心模型的責任
+
+| 模型 | 責任 | 新增功能時要確認的欄位 |
+|---|---|---|
+| `Manager` | 使用者帳號與租戶/公司範圍；表單上的 `RoleId` 只是 DTO 欄位 | `Id`、`TaxID`、`Status`；實際角色關聯不是 `Manager.RoleId` |
+| `Role` | 權限群組與角色類型 | `Name`、`Type`；透過 `ManyToMany` 選取選單與功能 |
+| `AdminMenu` | 使用者可看到的頁面入口與樹狀階層 | `ParentId`、`Title`、`AdminFunctionId`、`Url`、`IconClass`、`Sequence`、`EnglishCode`、`LanguageResourceId`、`IsSystemSetting` |
+| `AdminFunction` | 後端可授權的 Controller/Action | `ParentId`、`Title`、`Controller`、`Action`、`Parameter` |
+
+`RoleType` 目前固定為：`1=系統管理員`、`2=公司管理員`、`3=一般員工`、`4=新註冊`。註冊時會依同一 `TaxID` 的建立順序分配公司管理員或新註冊角色；登入時從 Manager 的有效 Role 關聯取得角色類型。
+
+#### 9.5.2 AdminMenu 與 AdminFunction 的組合規則
+
+- `AdminMenu` 是「頁面入口」，不是單獨的 API 安全規則。父選單通常沒有 URL，子選單通常有 `Url`，並可透過 `AdminFunctionId` 掛載該頁面的根功能。
+- `AdminMenu.ParentId` 建立父子選單；AdminMenu 後台列表只列 `ParentId IS NULL`，編輯時由 `ChildList` 一併保存。
+- `AdminFunction` 以 `Controller + Action` 形成實際權限鍵。父功能通常使用 `{Controller}/Index`，子功能通常使用 `Create`、`Edit`、`Delete`、`Copy` 或自訂 Action；這是現有維護慣例，新增功能應保持一致。
+- `AdminFunction.Controller + Action` 必須優先逐字對應實際後端 route；`ApiFilter` 在沒有授權覆寫時，直接以 endpoint 的 Controller/Action 查找功能。不可為了一個頁面再建立 `DataMaintenanceXXX/Access` 這類虛構 Controller 別名。
+- DataMaintenance 是代表權限例外：根功能保留 `DataMaintenance/Index`，底下只保留 `DataMaintenance/BindPcr`、`MaterialMaintenance/GetModel`、`BuyerAccreditationLevel/Index`、`CarbonFactorMaintenance/GetModel` 四個代表功能；內部 API 必須用 `AuthorizeAs` 指向代表功能，不再為每個 API 建立 AdminFunction。
+- `AdminMenu` 可掛一個根 `AdminFunction`，根功能底下再有子功能。Role 需要同時保存對應的 `AdminMenu` Id 與 `AdminFunction` Id，只有其中一邊不完整時，可能出現「看得到選單但 API 403」或「API 可呼叫但側欄沒有入口」。
+- `AdminMenuService.ModelSave` 會正規化 `EnglishCode` 為兩碼大寫，並確保選單有對應的 `LanguageResource`；新增選單後仍要確認基礎語言與所有啟用語言翻譯。
+- `20260818040206_AddDataQualityMaterialListMenu` 建立「數據品質管理／料件總表」父子選單、`CarbonFactorMaintenancePlant/GetList` 實際功能與 DQ 多語言資源；角色只從既有 `CarbonFactorMaintenance/GetModel` 代表權限角色初始取得新選單與列表權限。
+- `20260819063332_AddConsultant` 建立「顧問管理／認可顧問」父子選單、`Consultant/ReserveAccreditation` 唯一業務功能與 CT 多語言資源；只將選單與功能關聯給 `RoleType.系統管理員`，不建立 `AccreditationConsultant` 資料表或額外 CRUD 權限。父選單確認既有 `CM` 已被多語言設定使用後改用 `CO`，子選單確認既有 `AC` 已被帳號管理使用後改用 `CA`。
+- `20260819080439_AddConsultantRegistration` 將 Consultant 四個組織統計欄位改為 nullable int，建立有效 `CreateUserId` 唯一索引，新增 `CO` 底下 `CR`／`/ConsultantRegistration/` 系統設定選單、`Consultant/Register` 功能、CT0017–CT0022 翻譯與系統管理員關聯；註冊不建立新資料表或初始顧問資料。
+- `20260818054219_RenameDataQualityMaterialListRoute` 將料件總表選單 URL 統一為 `/CarbonFactorMaintenancePlant/`，與實際前端頁面路由一致。
+- `20260820062903_AddMaterialDemand` 建立 `MaterialDemand` 表與廠區外鍵/索引，新增 `CO` 底下 `MD`／`/MaterialDemand/` 選單、`MaterialDemand/Index` 功能、MD0001–MD0015 的 zh-TW/en-US 翻譯及系統管理員關聯；第一階段不建立 Create/Edit/Delete 功能、不授權操作，也不插入展示資料。
+
+#### 9.5.3 Role 與 ManyToMany 實際關聯
+
+權限資料必須沿著以下三組方向讀寫：
+
+```text
+Manager.Id  ── SourceId ── ManyToMany ── TargetTable=Role ── TargetId ── Role.Id
+Role.Id     ── SourceId ── ManyToMany ── TargetTable=AdminMenu ── TargetId ── AdminMenu.Id
+Role.Id     ── SourceId ── ManyToMany ── TargetTable=AdminFunction ── TargetId ── AdminFunction.Id
+```
+
+- `ManagerService.SetModel` 以 `GetTargetId<Role>` 載入單一 Role；`ModelSave` 以表單的 `RoleId` 呼叫 `ManyToManyService.SaveById`。
+- `RoleService.SetModel` 載入 `SelectedAdminMenuIds` 與 `SelectedAdminFunctionIds`；`ModelSave` 以完整 Id 集合同步兩組關聯。
+- DataMaintenance 角色只應持有根功能與四個代表功能；細項 API 不應再出現在 `SelectedAdminFunctionIds` 或 `ManyToMany`。
+- `Role` 編輯頁目前呼叫 `AdminMenu/GetAdminMenus` 取得可選樹，勾選功能後再反算 `SelectedAdminMenuIds`；真正的持久化仍由後端 `RoleService.ModelSave` 負責。
+- 送空的 selected Id 集合代表清除該 Role 對應 TargetTable 的既有選取，不是只代表「這次沒有新增」。
+- 查詢與除錯時要確認 `SourceTable`、`SourceId`、`TargetTable`、`TargetId`、`Status` 五項；不要只用 Guid 或 `TargetId` 判斷權限。
+
+#### 9.5.4 登入、前端與後端授權執行流程
+
+1. `ManagerService.Login` 驗證帳密，取得 Manager 的 Role，呼叫 `RoleService.GetRoleAdminMenus` 組出有效、啟用中的樹狀 `AdminMenus`，並將 token 與 session 放入 `IMemoryCache` 20 分鐘。
+2. 前端 `login/page.tsx` 將每個 AdminMenu 轉為 `MenuItem`。功能的 `Action` 會轉成裸 Action（例如 `Edit`）及 `Controller:Action`（例如 `Material:Edit`）兩種權限字串，並保存至 `MenuContext` 使用的 storage。
+3. `Aside` 使用登入回傳的動態 AdminMenus 顯示側欄；`MainLayout` 以 menu href 檢查目前路由，子路徑可沿父路徑比對；無權限路徑導回 `/`。
+4. 頁面按鈕使用 `usePagePermissions()` 判斷 `Create`、`Edit`、`Delete` 等 Action。這只是 UX 層，不能取代後端授權。
+5. 已登入 API 由 `useAppApi` 送出 `Authorization` token。`AuthorizedController` 套用 `ApiFilter`，每次 request 從 token cache 取得 Manager，重新組裝其 AdminMenus，再以實際 Controller/Action 查找功能權限；DataMaintenance 內部 API 可依四個代表權限規則，以 `AuthorizeAs` 指向代表功能。
+6. `ApiFilter` 的結果語意如下：缺少或失效 token 為 `401`；有 token 但沒有功能權限為 `403`；有權限才執行 action。`Index` 另有頁面入口相容規則：若同 Controller 有 `Create` 功能，也可作為頁面入口判斷，仍須以目前程式碼與實際 API 驗證為準。
+
+#### 9.5.5 授權 Attribute 的差異
+
+| 標記 | 語意 | 使用時機 |
+|---|---|---|
+| `[AllowAnonymous]` | 不需要 token，也不檢查功能權限 | 登入、註冊、忘記密碼等真正公開 endpoint |
+| `[IgnoreAuthorize]` | 仍需有效 token，但略過 Controller/Action 功能權限檢查 | 只適合登入後的共用資料載入；不可當成匿名 API |
+| `[AuthorizeAs(nameof(Index))]` | 使用指定的 Action 名稱作為授權鍵 | StandardController 或確實需要沿用同 Controller 頁面權限的例外；不可用來取代實際 route 的一般功能權限 |
+| `[AuthorizeAs(action, controller)]` | 使用指定 Controller + Action 作為授權鍵 | DataMaintenance 四個代表功能的明確跨 Controller 授權例外；不得再用虛構 `DataMaintenanceXXX/Access` 或建立 API 細項功能 |
+| `[AuthorizeAsAny("Controller:Action", ...)]` | 多個權限中任一個通過即可 | 同一操作允許多種既有權限來源時 |
+| 無額外 Attribute 的標準 CRUD | 由 `StandardController` 的既有 Attribute 自動套用權限 | 一般列表/表單 CRUD |
+
+標準 `StandardController` 的常見權限對照如下：
+
+| Endpoint | 功能權限 |
+|---|---|
+| `GetList`、`GetStatusItems` | `Index` |
+| `GetDetailModel` | `Detail` |
+| `GetNewModel`、`Create` | `Create` |
+| `GetModel`、`Edit`、`Save` | `Edit` |
+| `GetCopyModel`、`Copy` | `Copy` |
+| `Delete` | `Delete` |
+
+#### 9.5.6 IsSystemSetting 與角色可見性
+
+- `RoleType.系統管理員` 可看到全部由 `AdminMenu` 定義的有效選單。
+- 非系統管理員會由 `AdminMenuVisibility.FilterForRole` 過濾 `IsSystemSetting` 選單及其子孫；只有目前已授予的選單或功能才可保留在執行期選單中。
+- `AdminMenuService.GetAdminMenus` 用於 Role 編輯頁的可選權限樹，會依目前操作者角色隱藏不可授予的系統設定項目。
+- 不可因前端看不到某個系統設定項目，就推論後端 API 一定安全；仍須確認 `ApiFilter` 的 AdminFunction 判斷與實際 `403` 結果。
+- 修改系統設定選單、系統管理員角色或角色權限保存邏輯時，必須同時檢查目前操作者是否能保留既有系統權限，避免 Role 編輯頁清單覆蓋受保護關聯。
+
 ## 10. 常見修改路徑
 
 ### 10.1 新增一個管理後台 CRUD
@@ -918,9 +1090,66 @@ Material 的 `/Material/BindPcr` 在交易內先驗證目前帳號可使用的 M
 7. 修改完成後至少驗證四個分類、分類記憶、新增預設分類、搜尋、空白/重複驗證、父子新增/編輯/刪除、語言 fallback、權限與列表 loading 時序。
 8. 若新增固定 UI 文字，建立對應 LanguageResource Migration；Migration 套用後重啟後端，使用登入帳號在瀏覽器確認畫面與實際 API 回應。
 
+### 10.7 新增功能權限 SOP
+
+新增一個需要登入的管理功能時，依下列順序逐項完成；只完成前端 route、只建立 AdminMenu，或只建立 AdminFunction，都不算完成。
+
+#### A. 先定義功能與權限矩陣
+
+- 確認功能的前端 route、後端 Controller 名稱、列表入口與所有實際 API Action。
+- 列出哪些角色可看到頁面、哪些角色可執行查詢、新增、編輯、刪除與自訂操作。
+- 決定是新建 AdminMenu/AdminFunction，還是沿用既有頁面/功能權限；若是子功能，先確認父選單與父功能。
+
+#### B. 建立後端功能與標準權限
+
+- 建立 Library Model、ViewModel、Service、Controller；需要 schema 變更才建立 Migration，並保留軟刪除、TaxID 範圍與 transaction 規則。
+- 一般 CRUD 優先繼承 `StandardController` / `_StandardService`，讓 `Index/Create/Edit/Delete/Copy` 使用既有權限對照。
+- 新增共用顧問領域功能時，資料表與主檔使用 `Consultant`；Controller 必須繼承 `StandardController`、Service 必須繼承 `_StandardService`。若列表是全平台共用資料，Service 覆寫 `GetBaseWhere()` 只保留 `main.Status != -1`，不可套用 TaxID。
+- `Consultant` 是通用顧問主檔；「認可顧問」與「註冊顧問」是功能頁，不得各自建立資料表。註冊流程使用 `CreateUserId` 綁定目前帳號，`IsAccredited=false/true` 對應等待認可/已註冊完成；同一帳號的有效資料由 filtered unique index 限制一筆。
+- 每一個自訂 action 先讓 `AdminFunction.Controller + Action` 與實際 route 一致；只有確實需要例外時才選擇 `[AuthorizeAs]`、`[AuthorizeAsAny]`、`[IgnoreAuthorize]` 或 `[AllowAnonymous]`，不可因為 action 是查詢就直接標成匿名。
+- DataMaintenance 內部 API 必須沿用四個代表權限：PCR=`DataMaintenance/BindPcr`、原料=`MaterialMaintenance/GetModel`、買方=`BuyerAccreditationLevel/Index`、碳排=`CarbonFactorMaintenance/GetModel`；主列表 `DataMaintenance/GetList` 使用 `DataMaintenance/Index` 根權限。
+- 不得建立與實際 Controller 無關的 `DataMaintenanceXXX/Access` 權限，也不得為上述四組代表功能的每個 API 再建立細項 AdminFunction。
+
+#### C. 建立 AdminFunction
+
+- 建立一個根功能：`Controller = 實際 Controller`、`Action = Index` 或實際頁面資料入口 Action，作為頁面/列表入口；不可使用虛構的功能 Controller 名稱。
+- 建立標準子功能：`Create`、`Edit`、`Delete`，需要複製或明細時再建立 `Copy`、`Detail`。
+- 每個自訂 API action 建立對應的 `Controller + Action` 功能；名稱與後端 route 必須逐字核對大小寫與實際 action。前端 permission string 也必須使用同一組 Controller/Action，不得另造別名。
+- 父子功能的 `ParentId`、`Status`、`Title` 與排序要完整保存；Role 需要勾選真正會被 `ApiFilter` 查到的功能 Id。
+
+#### D. 建立 AdminMenu 與多語言
+
+- 建立父 AdminMenu 與必要的子 AdminMenu，設定 `ParentId`、`AdminFunctionId`、`Url`、`IconClass`、`Sequence`、`Status`。
+- 設定兩碼大寫 `EnglishCode`；讓 `AdminMenuService` 建立/維護對應 `LanguageResource`，並補齊基礎語言及啟用語言翻譯。
+- 確認登入回應的 `languageResourceId`、`englishCode`、`url` 與前端 `Aside` / `ActionBar` 的標題查找能形成同一條資料鏈。
+- 若功能只有頁內操作、沒有新側欄入口，仍要確認它掛在哪一個既有 AdminMenu，以及頁面路徑會如何通過 MainLayout 的父路徑檢查。
+
+#### E. 建立 Role 關聯
+
+- 以 `Role.Id` 為 `ManyToMany.SourceId`，分別寫入 `TargetTable = AdminMenu` 與 `TargetTable = AdminFunction`。
+- 若是新角色，確認 `Manager → Role` 關聯；若是既有角色，確認所有應可使用功能的角色都已更新。
+- 使用 Migration 或受控資料更新建立權限資料時，避免重複關聯、錯誤 TargetTable、錯誤父子 Id 與未啟用資料。
+- 變更 Role 編輯頁欄位時，同步確認 `SelectedAdminMenuIds` / `SelectedAdminFunctionIds`、`RoleService.SetModel`、`RoleService.ModelSave` 與 `ManyToManyService.SaveById`。
+
+#### F. 完成前端頁面與按鈕
+
+- 建立 route、Page、`Create` / `Edit` 表單與 API route 常數，並依現有頁面使用 `CommonTable`、`FormPageWrapper`、`useAppApi`。
+- 列表新增、編輯、刪除等按鈕使用 `usePagePermissions`；頁面標題與選單標題使用既有多語言資源流程。
+- 確認 Login 的 `AdminMenus` mapping 能取得正確 href、子選單與 permissions；不要在 `menus.ts` 靜態陣列另外硬編一份權限。
+
+#### G. 權限驗證與索引同步
+
+- 以可使用角色登入，確認登入 response 的 AdminMenus、側欄、頁面路由、按鈕與成功 API response。
+- 以不可使用角色登入，確認側欄/按鈕不顯示、直接進入路由會被導回或 API 回 `403`。
+- 未登入直接呼叫 API，確認回 `401`；修改 token 或重啟後端後，確認 cache 失效會回登入流程。
+- 檢查標準 action 與自訂 action 是否各自有 AdminFunction，並確認 `Controller + Action` 與 `ApiFilter` 實際查找一致；DataMaintenance API 細項例外改核對其 `AuthorizeAs` 代表權限。
+- 查詢資料庫確認 DataMaintenance 根下只有四個代表功能；細項與舊別名已刪除，角色沒有殘留細項 ManyToMany。
+- 完成後同步更新本文件的快速定位表、Controller/API 表、資料模型、權限章節與 Migration/資料更新紀錄。
+
 ## 11. 已確認的限制與注意事項
 
 - `apps/CFP/src/config/menus.ts` 的靜態 `menus` 目前是空陣列；實際側欄依登入回傳的 `AdminMenus` 動態建立，因此未登入或 localStorage 遺失時主頁可能沒有可用選單。
+- 舊的 `DataMaintenancePcrBinding`、`DataMaintenanceRawMaterial`、`DataMaintenanceBuyerAccreditation`、`DataMaintenanceCarbonFactor` 及 DataMaintenance API 細項已由 `20260818032927_CollapseDataMaintenancePermissions` 刪除；未來不可再新增 `DataMaintenanceXXX/Access` 或一般 API 細項權限。
 - `API_MAP` 的 Buyer/Seller compare 部分與目前後端 Controller 命名存在不一致；任何比對功能修改前應先以瀏覽器 Network 或 curl 確認實際 endpoint，不要只看常數名稱。
 - `apiRoutes.ts` 註解描述 `/api/{controller}/{action}`，但目前後端 Controller 的 Route 屬性是 `[controller]/[action]`；`/api` 是否由部署層補上尚未由本 Repository 原始碼證實。
 - `apps/CFP/src/lib/apiProxy.ts` 沒有被證實是可運作的 Next API proxy；目前找不到 `route.ts` 實作，前端開發設定是直接呼叫 `https://localhost:7007`。
@@ -949,3 +1178,62 @@ Material 的 `/Material/BindPcr` 在交易內先驗證目前帳號可使用的 M
 - 每次功能完成後保留「程式檢查」「API 驗證」「瀏覽器驗證」「資料清理」的紀錄，並區分已確認結果與尚待驗證項目。
 
 更新索引時保留「實際已確認」與「尚待驗證」的區分；若發現 API_MAP、Route、型別或既有索引矛盾，先以可執行程式碼與實際 Network/API 結果為準，再修正文件與必要程式碼。
+
+## 13. 文件更新紀錄
+
+### 2026-08-18 權限、選單與角色機制補強
+
+- 補充 `Manager → Role → ManyToMany → AdminMenu/AdminFunction` 的實際資料方向與登入後權限資料流。
+- 補充 `MenuContext`、`usePagePermissions`、`MainLayout`、`ApiFilter` 與標準 CRUD Action 的責任分界。
+- 新增 `IsSystemSetting`、`RoleType`、授權 Attribute 差異及新增功能權限 SOP。
+- 本次僅更新文件，未修改前後端程式碼、資料庫或 Migration。
+
+### 2026-08-18 DataMaintenance 實際 Controller/Action 權限正規化
+
+- 移除 DataMaintenance API 對 `DataMaintenanceXXX/Access` 的跨 Controller 授權別名。
+- 新增 `20260818024945_NormalizeDataMaintenancePermissionKeys`，建立實際 Controller/Action AdminFunction、遷移 Role ManyToMany 關聯並停用舊別名。
+- 前端 DataMaintenance 權限字串同步改用實際 Controller/Action。
+- 測試資料庫已套用並確認 Migration history、實際功能權限與既有角色關聯。
+
+### 2026-08-18 DataMaintenance 四代表權限收斂
+
+- DataMaintenance 只保留 PCR、原料、買方認可依據、碳排係數維護四個代表功能。
+- 內部 API 改以 `AuthorizeAs` 共用代表權限，主列表使用 `DataMaintenance/Index` 根權限。
+- `20260818032927_CollapseDataMaintenancePermissions` 已移除細項 AdminFunction、角色關聯與舊別名，測試資料庫已同步套用。
+
+### 2026-08-18 數據品質管理料件總表
+
+- 新增 `/CarbonFactorMaintenancePlant/` 廠區明細列表，沿用 `CarbonFactorMaintenancePlant/GetList`。
+- 新增實際 `CarbonFactorMaintenancePlant/GetList` AdminFunction 與父子 AdminMenu；操作按鈕先完成 UI，後續再接功能流程。
+- 料件總表底下提供「基本數據」與「認可與驗證」兩個實際子權限，Role 編輯頁可獨立勾選，前端按鈕依目前料件總表頁面的權限樹渲染。
+
+### 2026-08-18 碳排資料維護二級數據設定
+
+- 新增 `/SecondaryDataSetting/`，Controller 繼承 `StandardController`，Service 繼承 `_StandardService`，提供標準列表、搜尋與 CRUD。
+- `SecondaryDataSetting/SyncApi` 由 Service 呼叫 MOENV `CFP_P_02` 分頁 API；以五個外部欄位正規化後的 SHA-256 `ExternalKey` 做 upsert，外部消失資料軟刪除，手動資料（無外部鍵）保留。
+- API Key 只存於 `SysConfig` 的 `Moenv.CfpP02.ApiKey`，不可寫入 Git、前端或一般 log；Migration 只建立空設定列，測試環境金鑰以受控資料庫更新寫入。
+- 新增 `SecondaryDataSetting/Index`、`Create`、`Edit`、`Delete`、`SyncApi` 實際功能；角色初始授權沿用既有 `CarbonFactorMaintenance/GetModel` 範圍，`SyncApi` 無權限時前端隱藏按鈕且後端回傳 403。
+
+### 2026-08-19 顧問主檔與認可顧問
+
+- 新增共用 `Consultant` 資料表、Model、ViewModel、`ConsultantService` 與 `ConsultantController`；認可顧問是 `/AccreditationConsultant/` 功能頁，不建立 `AccreditationConsultant` 資料表。
+- `Consultant/GetList` 與 `Consultant/ReserveAccreditation` 共用 `Consultant:ReserveAccreditation` 權限；預約採條件式更新，成功後前端只重新載入列表，不整頁重整。
+- Migration 建立顧問管理／認可顧問動態選單、CT0001–CT0016 翻譯資源與系統管理員角色關聯；本階段不提供顧問新增、編輯、刪除 UI。`Consultant` 列表已先提供四個可保存的組織統計欄位：組織輔導數、組織稽核數、組織覆核數、組織查證數；PM 若確認欄位正式語意或統計來源，再補上對應計算與資料來源。
+
+### 2026-08-18 基本數據 StandardController 化
+
+- `CarbonFactorMaintenancePlantController` / `CarbonFactorMaintenancePlantService` 改用 `StandardController` / `_StandardService`，前端改用標準 `GetModel`、`GetNewModel`、`Create`、`Edit`、`Delete` 路徑；附件下載保留為唯一客製 API。
+- 新增 `SecondaryDataCompare` 標準 CRUD 與二級數據關鍵字選擇 API，權限沿用 `MaterialMaintenance/GetModel`，不建立新的權限樹。
+- 基本數據頁改為前端草稿操作，新增 `SecondaryDataCompare/SaveBatch` 以交易整批儲存；畫面即時計算標準化加權相似碳係數與偏差量。
+
+### 2026-08-18 文件合規缺漏與廠區網址解耦
+
+- 基本數據頁新增只讀的「文件合規與缺漏」區塊，依廠區模型回傳的 PCR 主項目附件列出未上傳資料，不新增檔案操作 API。
+- 廠區編輯改用 `id`、廠區新增改用 `yearId`，前端不再從網址重複傳遞 Material／Buyer／Year 上下文；新增 `DQ0017`–`DQ0020` 中英文資源。
+
+### 2026-08-18 碳排資料維護二級數據設定
+
+- 新增 `/SecondaryDataSetting/`，Controller 繼承 `StandardController`，Service 繼承 `_StandardService`，提供標準列表、搜尋與 CRUD。
+- `SecondaryDataSetting/SyncApi` 由 Service 呼叫 MOENV `CFP_P_02` 分頁 API；以五個外部欄位正規化後的 SHA-256 `ExternalKey` 做 upsert，外部消失資料軟刪除，手動資料（無外部鍵）保留。
+- API Key 只存於 `SysConfig` 的 `Moenv.CfpP02.ApiKey`，不可寫入 Git、前端或一般 log；Migration 只建立空設定列，測試環境金鑰以受控資料庫更新寫入。
+- 新增 `SecondaryDataSetting/Index`、`Create`、`Edit`、`Delete`、`SyncApi` 實際功能；角色初始授權沿用既有 `CarbonFactorMaintenance/GetModel` 範圍，`SyncApi` 無權限時前端隱藏按鈕且後端回傳 403。

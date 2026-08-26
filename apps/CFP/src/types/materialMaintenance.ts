@@ -1,6 +1,6 @@
 export interface MaterialMaintenanceSource {
   id: string;
-  supplierId: string;
+  materialId: string;
   supplierName: string;
   productName: string;
   allocationPercentage: number;
@@ -9,8 +9,22 @@ export interface MaterialMaintenanceSource {
   consultantApprovalCount: number;
   buyerApprovalCount: number;
   totalScore: number;
+  opinionCount: number;
+  accreditationLevelSettingId?: string | null;
+  accreditationLevelSettingName?: string | null;
+  accreditationLevelName?: string | null;
+  accreditationLevelMeetsRequirement?: boolean | null;
   approvedQuantity: number;
   isAccredited: boolean;
+}
+
+export interface MaterialMaintenanceSecondaryDataOption {
+  id: string;
+  name: string;
+  carbonFactor: number;
+  unit: string;
+  departmentName?: string | null;
+  announcementYear?: number | null;
 }
 
 export interface MaterialMaintenanceYear {

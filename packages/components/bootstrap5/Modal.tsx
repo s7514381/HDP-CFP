@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 
 const MODAL_Z_INDEX = 11000;
 const MODAL_BACKDROP_Z_INDEX = MODAL_Z_INDEX - 10;
+const MODAL_ANIMATION_DURATION_MS = 180;
 
 interface ModalProps {
     show: boolean;
@@ -26,9 +27,12 @@ type ModalComponent = React.ForwardRefExoticComponent<ModalProps & React.RefAttr
 
 const Modal = forwardRef<ModalRef, ModalProps>(({ show, size, onClose, children }, ref) => {
     const modalRef = useRef<HTMLDivElement>(null);
-    const [mounted, setMounted] = React.useState(false);
-    const _className = ['modal', 'fade', show ? 'show' : ''].join(' ').trim();
+    const closeTimerRef = useRef<number | null>(null);
+    const [mounted, setMounted] = React.useState(show);
+    const [animationState, setAnimationState] = React.useState<'entering' | 'exiting'>('entering');
+    const _className = ['modal', 'fade', 'show', `cfp-modal-${animationState}`].join(' ').trim();
     const _dialogClass = ['modal-dialog', size ? `modal-${size}` : ''].join(' ').trim();
+
     useImperativeHandle(ref, () => ({
         close: () => {
             onClose();
@@ -36,19 +40,43 @@ const Modal = forwardRef<ModalRef, ModalProps>(({ show, size, onClose, children 
     }));
 
     useEffect(() => {
-        setMounted(true);
-    }, []);
+        if (show) {
+            if (closeTimerRef.current !== null) {
+                window.clearTimeout(closeTimerRef.current);
+                closeTimerRef.current = null;
+            }
+
+            setMounted(true);
+            setAnimationState('entering');
+            return;
+        }
+
+        if (!mounted) return;
+
+        setAnimationState('exiting');
+        closeTimerRef.current = window.setTimeout(() => {
+            closeTimerRef.current = null;
+            setMounted(false);
+        }, MODAL_ANIMATION_DURATION_MS);
+
+        return () => {
+            if (closeTimerRef.current !== null) {
+                window.clearTimeout(closeTimerRef.current);
+                closeTimerRef.current = null;
+            }
+        };
+    }, [mounted, show]);
 
     useEffect(() => {
-        if (show) {
-            document.body.classList.add('modal-open');
-        } else {
-            document.body.classList.remove('modal-open');
+        document.body.classList.toggle('modal-open', show || mounted);
+    }, [mounted, show]);
+
+    useEffect(() => () => {
+        if (closeTimerRef.current !== null) {
+            window.clearTimeout(closeTimerRef.current);
         }
-        return () => {
-            document.body.classList.remove('modal-open');
-        };
-    }, [show]);
+        document.body.classList.remove('modal-open');
+    }, []);
 
     const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
         if (e.target === modalRef.current) {
@@ -62,7 +90,7 @@ const Modal = forwardRef<ModalRef, ModalProps>(({ show, size, onClose, children 
         }
     };
 
-    if (!show || !mounted) return null;
+    if (!mounted) return null;
 
     return createPortal(
         <>
@@ -71,7 +99,7 @@ const Modal = forwardRef<ModalRef, ModalProps>(({ show, size, onClose, children 
                 <div className="modal-content">{children}</div>
             </div>
         </div>
-        <div className="modal-backdrop fade show" style={{ zIndex: MODAL_BACKDROP_Z_INDEX }} />
+        <div className={`modal-backdrop fade show cfp-modal-${animationState}`} style={{ zIndex: MODAL_BACKDROP_Z_INDEX }} />
         </>,
         document.body,
     );

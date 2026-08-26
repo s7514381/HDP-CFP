@@ -22,39 +22,43 @@ import { LANGUAGE_KEYS } from "@/config/languageKeys";
 const UpdateHead = () => {
   const { head } = useHead();
   const { languageCode, translate } = useLanguage();
-  const defaultTitle = `${translate(LANGUAGE_KEYS.common.supplierPlatform, 'Supplier platform')} - aHOP`;
+  const defaultTitle = `${translate(LANGUAGE_KEYS.common.supplierPlatform)} - aHOP`;
 
   useEffect(() => {
     document.documentElement.lang = languageCode;
-  }, [languageCode]);
+    document.title = head.title || defaultTitle;
 
-  return (
-    <head>
-      <title>{head.title || defaultTitle}</title>
-      <meta name="description" content={head.description} />
-    </head>
-  );
+    let descriptionMeta = document.head.querySelector('meta[name="description"]');
+    if (!descriptionMeta) {
+      descriptionMeta = document.createElement('meta');
+      descriptionMeta.setAttribute('name', 'description');
+      document.head.appendChild(descriptionMeta);
+    }
+    descriptionMeta.setAttribute('content', head.description || '');
+  }, [defaultTitle, head.description, head.title, languageCode]);
+
+  return null;
 }
 
 const LocalizedApiError = () => {
   const { apiEvent, setApiEvent } = useApiContext();
   const { translate } = useLanguage();
   const labels: ApiErrorLabels = {
-    noMessage: translate(LANGUAGE_KEYS.apiError.noMessage, 'Please sign in again'),
-    loading: translate(LANGUAGE_KEYS.apiError.loading, 'Network error'),
-    badRequest: translate(LANGUAGE_KEYS.apiError.badRequest, 'Bad request'),
-    forbidden: translate(LANGUAGE_KEYS.apiError.forbidden, 'Insufficient permissions'),
-    notFound: translate(LANGUAGE_KEYS.apiError.notFound, 'Resource not found'),
-    methodNotAllowed: translate(LANGUAGE_KEYS.apiError.methodNotAllowed, 'Method not allowed'),
-    lengthRequired: translate(LANGUAGE_KEYS.apiError.lengthRequired, 'Request length missing'),
-    uriTooLong: translate(LANGUAGE_KEYS.apiError.uriTooLong, 'URI too long'),
-    unsupportedMediaType: translate(LANGUAGE_KEYS.apiError.unsupportedMediaType, 'Unsupported media type'),
-    tooManyRequests: translate(LANGUAGE_KEYS.apiError.tooManyRequests, 'Too many requests'),
-    serverError: translate(LANGUAGE_KEYS.apiError.serverError, 'Server error'),
-    badGateway: translate(LANGUAGE_KEYS.apiError.badGateway, 'Invalid server response'),
-    serviceUnavailable: translate(LANGUAGE_KEYS.apiError.serviceUnavailable, 'Service unavailable'),
-    gatewayTimeout: translate(LANGUAGE_KEYS.apiError.gatewayTimeout, 'Server response timed out'),
-    unknown: translate(LANGUAGE_KEYS.apiError.unknown, 'Request error'),
+    noMessage: translate(LANGUAGE_KEYS.apiError.noMessage),
+    loading: translate(LANGUAGE_KEYS.apiError.loading),
+    badRequest: translate(LANGUAGE_KEYS.apiError.badRequest),
+    forbidden: translate(LANGUAGE_KEYS.apiError.forbidden),
+    notFound: translate(LANGUAGE_KEYS.apiError.notFound),
+    methodNotAllowed: translate(LANGUAGE_KEYS.apiError.methodNotAllowed),
+    lengthRequired: translate(LANGUAGE_KEYS.apiError.lengthRequired),
+    uriTooLong: translate(LANGUAGE_KEYS.apiError.uriTooLong),
+    unsupportedMediaType: translate(LANGUAGE_KEYS.apiError.unsupportedMediaType),
+    tooManyRequests: translate(LANGUAGE_KEYS.apiError.tooManyRequests),
+    serverError: translate(LANGUAGE_KEYS.apiError.serverError),
+    badGateway: translate(LANGUAGE_KEYS.apiError.badGateway),
+    serviceUnavailable: translate(LANGUAGE_KEYS.apiError.serviceUnavailable),
+    gatewayTimeout: translate(LANGUAGE_KEYS.apiError.gatewayTimeout),
+    unknown: translate(LANGUAGE_KEYS.apiError.unknown),
   };
 
   return <ApiError apiEvent={apiEvent} onClose={() => setApiEvent(null)} labels={labels} />;

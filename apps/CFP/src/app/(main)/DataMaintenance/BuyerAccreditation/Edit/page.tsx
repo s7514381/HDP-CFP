@@ -8,11 +8,13 @@ import { API_MAP } from '@/lib/apiRoutes';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
 import BuyerAccreditationLevelContent from '../Content';
 import { BuyerAccreditationLevelFormData } from '@/types/buyerAccreditationLevel';
+import { usePagePermissions } from '@/hooks/usePagePermissions';
 
 function toRequest(data: BuyerAccreditationLevelFormData, materialId: string) {
   return {
     ...data,
     materialId,
+    sequence: data.sequence === '' || data.sequence == null ? null : Number(data.sequence),
     name: data.name.trim(),
     thirdPartyCertification: data.thirdPartyCertification === true || String(data.thirdPartyCertification).toLowerCase() === 'true',
     consultantApprovalCount: Number(data.consultantApprovalCount),
@@ -26,6 +28,8 @@ function BuyerAccreditationLevelEditPageContent() {
   const searchParams = useSearchParams();
   const materialId = searchParams.get('materialId')?.trim() || '';
   const { formPost } = useAppApi();
+  const { hasPermission, isReady } = usePagePermissions('/DataMaintenance');
+  const canAccess = hasPermission('BuyerAccreditationLevel:Index');
   const handleFetchModel = React.useCallback(async (id: string) => (
     formPost(API_MAP.BUYER_ACCREDITATION_LEVEL_GET_MODEL, { id, materialId })
   ), [formPost, materialId]);
@@ -33,6 +37,10 @@ function BuyerAccreditationLevelEditPageContent() {
   React.useEffect(() => {
     if (!materialId) router.replace('/DataMaintenance');
   }, [materialId, router]);
+
+  React.useEffect(() => {
+    if (isReady && !canAccess) router.replace('/DataMaintenance');
+  }, [canAccess, isReady, router]);
 
   if (!materialId) return null;
 

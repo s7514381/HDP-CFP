@@ -8,7 +8,7 @@ import { Select } from '@packages/components/bootstrap5/Select';
 import Card from '@packages/components/bootstrap5/Card';
 import Grid from '@packages/components/bootstrap5/Grid';
 import { Container } from '@packages/components/bootstrap5/Container';
-import ActionBar from '@/components/layouts/ActionBar';
+import FormActionBar from '@/components/common/FormActionBar';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
 import { FormContentProps } from '@/components/common/formTypes';
@@ -48,7 +48,7 @@ export default function PcrPatternContent({
   const router = useRouter();
   const pathname = usePathname();
   const { translate } = useLanguage();
-  const displayTitle = translate(title, 'PCR模板範本');
+  const displayTitle = translate(title);
   const childList = formData.childList || [];
   const isProductSubcategoryPcrPattern = pathname.startsWith('/ProductSubcategory/PcrPattern');
   const listPath = isProductSubcategoryPcrPattern
@@ -84,38 +84,38 @@ export default function PcrPatternContent({
 
   return (
     <>
-      <ActionBar title={displayTitle}>
-        <div className="ms-auto">
-          <Btn color="secondary" outline onClick={handleCancel} icon="cancel">
-            {translate(LANGUAGE_KEYS.common.backToList, '返回列表')}
-          </Btn>
-        </div>
-      </ActionBar>
+      <FormActionBar
+        title={displayTitle}
+        formId="pcr-pattern-form"
+        submitLabel={submitLabel}
+        loading={loading}
+        onBack={handleCancel}
+      />
 
       <Container className="py-4">
         <Card>
           <Card.Body>
-            <form onSubmit={onSubmit}>
+            <form id="pcr-pattern-form" onSubmit={onSubmit}>
               <Grid.Row className="g-3">
                 <Grid.Col md={6}>
                   <Select
-                    label={translate(LANGUAGE_KEYS.pcrTemplate.title, 'PCR 模板類別')}
+                    label={translate(LANGUAGE_KEYS.pcrTemplate.title)}
                     name="category"
                     value={formData.category}
                     onChange={onChange}
                     options={CATEGORY_OPTIONS.map(option => ({
-                      label: translate(option.label, option.fallback),
+                      label: translate(option.label),
                       value: option.value,
                     }))}
                   />
                 </Grid.Col>
                 <Grid.Col md={6}>
                   <Input
-                    label={translate(LANGUAGE_KEYS.pcrTemplate.item, '項目')}
+                    label={translate(LANGUAGE_KEYS.pcrTemplate.item)}
                     name="item"
                     value={formData.item || ''}
                     onChange={onChange}
-                    placeholder={translate(LANGUAGE_KEYS.pcrTemplate.item, '請輸入項目')}
+                    placeholder={translate(LANGUAGE_KEYS.pcrTemplate.item)}
                     required
                     autoFocus
                   />
@@ -123,10 +123,10 @@ export default function PcrPatternContent({
                 <Grid.Col md={12}>
                   <div className="d-flex align-items-center justify-content-between mt-3 mb-2">
                     <h5 className="fw-bold mb-0">
-                      {translate(LANGUAGE_KEYS.pcrTemplate.subItems, '細項')}
+                      {translate(LANGUAGE_KEYS.pcrTemplate.subItems)}
                     </h5>
                     <Btn type="button" color="primary" size="sm" icon="add" onClick={handleAddSubItem}>
-                      {translate(LANGUAGE_KEYS.common.add, '新增')}
+                      {translate(LANGUAGE_KEYS.common.add)}
                     </Btn>
                   </div>
 
@@ -136,10 +136,10 @@ export default function PcrPatternContent({
                         <div className="d-flex align-items-end gap-3">
                           <div className="flex-grow-1">
                             <Input
-                              label={`${translate(LANGUAGE_KEYS.pcrTemplate.subItems, '細項')} ${index + 1}`}
+                              label={`${translate(LANGUAGE_KEYS.pcrTemplate.subItems)} ${index + 1}`}
                               value={child.item}
                               onChange={(event) => handleSubItemChange(index, event.target.value)}
-                              placeholder={translate(LANGUAGE_KEYS.pcrTemplate.subItems, '請輸入細項')}
+                              placeholder={translate(LANGUAGE_KEYS.pcrTemplate.subItems)}
                               required
                             />
                           </div>
@@ -149,25 +149,12 @@ export default function PcrPatternContent({
                             size="sm"
                             onClick={() => handleRemoveSubItem(index)}
                           >
-                            {translate(LANGUAGE_KEYS.common.delete, '刪除')}
+                            {translate(LANGUAGE_KEYS.common.delete)}
                           </Btn>
                         </div>
                       </Card.Body>
                     </Card>
                   ))}
-                </Grid.Col>
-                <Grid.Col md={12} className="d-flex justify-content-end gap-2 mt-4">
-                  <Btn
-                    type="button"
-                    color="secondary"
-                    outline
-                    onClick={handleCancel}
-                  >
-                    {translate(LANGUAGE_KEYS.common.cancel, '取消')}
-                  </Btn>
-                  <Btn type="submit" color="primary" loading={loading} icon="save">
-                    {translate(submitLabel, '儲存')}
-                  </Btn>
                 </Grid.Col>
               </Grid.Row>
             </form>

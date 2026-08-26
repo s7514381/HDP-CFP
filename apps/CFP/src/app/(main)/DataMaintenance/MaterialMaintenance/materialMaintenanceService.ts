@@ -10,9 +10,8 @@ export interface AddYearRequest {
 
 export interface AddSourceRequest {
   materialMaintenanceYearId: string;
-  sourceMaterialId: string;
+  materialId: string;
   allocationPercentage: number;
-  carbonFactor: number | null;
   thirdPartyCertification: boolean;
   consultantApprovalCount: number;
   buyerApprovalCount: number;
@@ -22,11 +21,6 @@ export interface AddSourceRequest {
 export interface SourceSelectListItem {
   value: string | number;
   text?: string;
-}
-
-export interface SourceAccreditationLevel {
-  levelId?: string | null;
-  levelName?: string | null;
 }
 
 export interface ServiceResponse<T> {
@@ -40,7 +34,9 @@ export interface MaterialMaintenanceService {
   getSourceOptions(keyword: string): Promise<ServiceResponse<SourceSelectListItem[]>>;
   addYear(request: AddYearRequest): Promise<ServiceResponse<unknown>>;
   addSource(request: AddSourceRequest): Promise<ServiceResponse<unknown>>;
-  getAccreditationLevel(id: string): Promise<ServiceResponse<SourceAccreditationLevel>>;
+  applySecondaryData(sourceId: string, secondaryDataSettingId: string): Promise<ServiceResponse<unknown>>;
+  setAccreditationLevel(sourceId: string, accreditationLevelId: string | null): Promise<ServiceResponse<unknown>>;
+  notifySupplier(sourceId: string): Promise<ServiceResponse<unknown>>;
   setAccredited(id: string, isAccredited: boolean): Promise<ServiceResponse<unknown>>;
   deleteYear(id: string): Promise<ServiceResponse<unknown>>;
   deleteSource(id: string): Promise<ServiceResponse<unknown>>;
@@ -81,7 +77,15 @@ export function createMaterialMaintenanceService(formPost: FormPost): MaterialMa
     ),
     addYear: (request) => post(API_MAP.MATERIAL_MAINTENANCE_ADD_YEAR, { ...request }),
     addSource: (request) => post(API_MAP.MATERIAL_MAINTENANCE_ADD_SOURCE, { ...request }),
-    getAccreditationLevel: (id) => post<SourceAccreditationLevel>(API_MAP.MATERIAL_MAINTENANCE_GET_SOURCE_ACCREDITATION_LEVEL, { id }),
+    applySecondaryData: (sourceId, secondaryDataSettingId) => post(API_MAP.MATERIAL_MAINTENANCE_APPLY_SECONDARY_DATA, {
+      sourceId,
+      secondaryDataSettingId,
+    }),
+    setAccreditationLevel: (sourceId, accreditationLevelId) => post(API_MAP.MATERIAL_MAINTENANCE_SET_SOURCE_ACCREDITATION_LEVEL, {
+      sourceId,
+      accreditationLevelId,
+    }),
+    notifySupplier: (sourceId) => post(API_MAP.MATERIAL_MAINTENANCE_NOTIFY_SUPPLIER, { id: sourceId }),
     setAccredited: (id, isAccredited) => post(API_MAP.MATERIAL_MAINTENANCE_SET_SOURCE_ACCREDITED, { id, isAccredited }),
     deleteYear: (id) => post(API_MAP.MATERIAL_MAINTENANCE_DELETE_YEAR, { id }),
     deleteSource: (id) => post(API_MAP.MATERIAL_MAINTENANCE_DELETE_SOURCE, { id }),

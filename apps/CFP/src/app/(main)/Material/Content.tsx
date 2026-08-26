@@ -2,14 +2,13 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { Btn } from '@packages/components/bootstrap5/Btn';
 import { Input } from '@packages/components/bootstrap5/Input';
 import { Checkbox } from '@packages/components/bootstrap5/Input';
 import { Select } from '@packages/components/bootstrap5/Select';
 import Card from '@packages/components/bootstrap5/Card';
 import Grid from '@packages/components/bootstrap5/Grid';
 import { Container } from '@packages/components/bootstrap5/Container';
-import ActionBar from '@/components/layouts/ActionBar';
+import FormActionBar from '@/components/common/FormActionBar';
 import { useAppApi } from '@/hooks/useAppApi';
 import { API_MAP } from '@/lib/apiRoutes';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -69,77 +68,69 @@ export default function Content({ title, formData, onChange, updateForm, onSubmi
 
   return (
     <>
-      <ActionBar title={title}>
-        <div className="ms-auto">
-          <Btn color="secondary" outline onClick={() => router.back()} icon="cancel">
-            {translate(LANGUAGE_KEYS.common.backToList, '返回列表')}
-          </Btn>
-        </div>
-      </ActionBar>
+      <FormActionBar
+        title={title}
+        formId="material-form"
+        submitLabel={submitLabel}
+        loading={loading}
+        onBack={() => router.back()}
+      />
 
       <Container className="py-4">
         <Card>
           <Card.Body>
-            <form onSubmit={onSubmit}>
+            <form id="material-form" onSubmit={onSubmit}>
               <Grid.Row className="g-3">
                 <Grid.Col md={6}>
                   <Select
-                    label={translate(LANGUAGE_KEYS.common.supplier, '供應商')}
+                    label={translate(LANGUAGE_KEYS.common.supplier)}
                     name="supplierId"
                     value={formData.supplierId || ''}
                     onChange={onChange}
                     options={[
-                      { label: translate(LANGUAGE_KEYS.material.selectSupplier, '請選擇供應商'), value: '' },
+                      { label: translate(LANGUAGE_KEYS.material.selectSupplier), value: '' },
                       ...suppliers.map((supplier) => ({ label: supplier.text || supplier.name || '', value: supplier.value ?? supplier.id ?? '' }))
                     ]}
                   />
                 </Grid.Col>
                 <Grid.Col md={6}>
                   <Input
-                    label={translate(LANGUAGE_KEYS.common.materialNumber, '料號')}
+                    label={translate(LANGUAGE_KEYS.common.materialNumber)}
                     name="materialNumber"
                     value={formData.materialNumber || ''}
                     onChange={onChange}
-                    placeholder={translate(LANGUAGE_KEYS.common.materialNumber, '請輸入料號')}
+                    placeholder={translate(LANGUAGE_KEYS.common.materialNumber)}
                   />
                 </Grid.Col>
 
                 <Grid.Col md={6}>
                   <Input
-                    label={translate(LANGUAGE_KEYS.common.productModel, '產品型號')}
+                    label={translate(LANGUAGE_KEYS.common.productModel)}
                     name="productModel"
                     value={formData.productModel || ''}
                     onChange={onChange}
-                    placeholder={translate(LANGUAGE_KEYS.common.productModel, '請輸入產品型號')}
+                    placeholder={translate(LANGUAGE_KEYS.common.productModel)}
                   />
                 </Grid.Col>
                 <Grid.Col md={6}>
                   <Input
-                    label={translate(LANGUAGE_KEYS.common.productName, '產品名稱')}
+                    label={translate(LANGUAGE_KEYS.common.productName)}
                     name="productName"
                     value={formData.productName || ''}
                     onChange={onChange}
-                    placeholder={translate(LANGUAGE_KEYS.common.productName, '請輸入產品名稱')}
+                    placeholder={translate(LANGUAGE_KEYS.common.productName)}
                   />
                 </Grid.Col>
 
                 <Grid.Col md={6} className="d-flex align-items-end">
                   <Checkbox
                     name="canSell"
-                    label={translate(LANGUAGE_KEYS.material.canSell, '是否可銷售')}
+                    label={translate(LANGUAGE_KEYS.material.canSell)}
                     checked={isCanSell}
                     onChange={handleCanSellChange}
                   />
                 </Grid.Col>
 
-                <Grid.Col md={12} className="d-flex justify-content-end gap-2 mt-4">
-                  <Btn type="button" color="secondary" outline onClick={() => router.push('/Material')}>
-                    {translate(LANGUAGE_KEYS.common.cancel, '取消')}
-                  </Btn>
-                  <Btn type="submit" color="primary" loading={loading} icon="save">
-                    {translate(submitLabel, submitLabel)}
-                  </Btn>
-                </Grid.Col>
               </Grid.Row>
             </form>
           </Card.Body>

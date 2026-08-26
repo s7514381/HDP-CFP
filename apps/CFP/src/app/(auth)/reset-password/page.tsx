@@ -29,12 +29,12 @@ function ResetPasswordForm() {
     e.preventDefault();
 
     if (formData.newPassword !== formData.confirmPassword) {
-      danger({ message: <span>{translate(LANGUAGE_KEYS.auth.passwordMismatch, '密碼與確認密碼不一致')}</span> });
+      danger({ message: <span>{translate(LANGUAGE_KEYS.auth.passwordMismatch)}</span> });
       return;
     }
 
     if (formData.newPassword.length < 6) {
-      danger({ message: <span>{translate(LANGUAGE_KEYS.auth.passwordTooShort, '密碼長度至少需要 6 個字元')}</span> });
+      danger({ message: <span>{translate(LANGUAGE_KEYS.auth.passwordTooShort)}</span> });
       return;
     }
 
@@ -44,19 +44,19 @@ function ResetPasswordForm() {
     if (res.success) {
       setDone(true);
     } else {
-      danger({ message: <span>{res.message || translate(LANGUAGE_KEYS.common.saveFailed, '重設失敗，請重新申請忘記密碼')}</span> });
+      danger({ message: <span>{res.message || translate(LANGUAGE_KEYS.common.saveFailed)}</span> });
     }
   };
 
   if (!token) {
     return (
       <>
-        <h3 className="auth-title">{translate(LANGUAGE_KEYS.auth.invalidLink, '連結無效')}</h3>
+        <h3 className="auth-title">{translate(LANGUAGE_KEYS.auth.invalidLink)}</h3>
         <div className="alert alert-danger" role="alert">
-          {translate(LANGUAGE_KEYS.auth.invalidOrExpiredLink, '重設連結無效或已過期，請重新申請。')}
+          {translate(LANGUAGE_KEYS.auth.invalidOrExpiredLink)}
         </div>
         <div className="auth-footer">
-          <Link href="/forgot-password/" className="btn btn-outline-primary w-100">{translate(LANGUAGE_KEYS.auth.requestAgain, '重新申請')}</Link>
+          <Link href="/forgot-password/" className="btn btn-outline-primary w-100">{translate(LANGUAGE_KEYS.auth.requestAgain)}</Link>
         </div>
       </>
     );
@@ -65,12 +65,12 @@ function ResetPasswordForm() {
   if (done) {
     return (
       <>
-        <h3 className="auth-title">{translate(LANGUAGE_KEYS.auth.resetSuccess, '重設成功')}</h3>
+        <h3 className="auth-title">{translate(LANGUAGE_KEYS.auth.resetSuccess)}</h3>
         <div className="alert alert-success" role="alert">
-          {translate(LANGUAGE_KEYS.auth.passwordResetSuccess, '密碼已重設成功，請使用新密碼登入。')}
+          {translate(LANGUAGE_KEYS.auth.passwordResetSuccess)}
         </div>
         <div className="auth-footer">
-          <Link href="/login/" className="btn btn-primary w-100">{translate(LANGUAGE_KEYS.auth.goToLogin, '前往登入')}</Link>
+          <Link href="/login/" className="btn btn-primary w-100">{translate(LANGUAGE_KEYS.auth.goToLogin)}</Link>
         </div>
       </>
     );
@@ -78,15 +78,15 @@ function ResetPasswordForm() {
 
   return (
     <>
-      <h3 className="auth-title">{translate(LANGUAGE_KEYS.auth.resetPassword, '重設密碼')}</h3>
-      <p className="text-center text-muted mb-4">{translate(LANGUAGE_KEYS.auth.resetPasswordDescription, '請輸入您的新密碼（至少 6 個字元）。')}</p>
+      <h3 className="auth-title">{translate(LANGUAGE_KEYS.auth.resetPassword)}</h3>
+      <p className="text-center text-muted mb-4">{translate(LANGUAGE_KEYS.auth.resetPasswordDescription)}</p>
       <form onSubmit={handleSubmit}>
         <div className="mb-3">
           <Input
-            label={translate(LANGUAGE_KEYS.auth.newPassword, '新密碼')}
+            label={translate(LANGUAGE_KEYS.auth.newPassword)}
             name="newPassword"
             type="password"
-            placeholder={translate(LANGUAGE_KEYS.auth.newPasswordPlaceholder, '請輸入新密碼')}
+            placeholder={translate(LANGUAGE_KEYS.auth.newPasswordPlaceholder)}
             value={formData.newPassword}
             onChange={handleChange}
             required
@@ -95,10 +95,10 @@ function ResetPasswordForm() {
         </div>
         <div className="mb-4">
           <Input
-            label={translate(LANGUAGE_KEYS.auth.confirmPassword, '確認密碼')}
+            label={translate(LANGUAGE_KEYS.auth.confirmPassword)}
             name="confirmPassword"
             type="password"
-            placeholder={translate(LANGUAGE_KEYS.auth.confirmPasswordPlaceholder, '請再次輸入新密碼')}
+            placeholder={translate(LANGUAGE_KEYS.auth.confirmPasswordPlaceholder)}
             value={formData.confirmPassword}
             onChange={handleChange}
             required
@@ -107,12 +107,12 @@ function ResetPasswordForm() {
         </div>
         <div className="d-grid gap-2">
           <Btn type="submit" color="primary" outline={false} size="lg" loading={loading === 'loading'}>
-            {translate(LANGUAGE_KEYS.auth.confirmResetPassword, '確認重設密碼')}
+            {translate(LANGUAGE_KEYS.auth.confirmResetPassword)}
           </Btn>
         </div>
       </form>
       <div className="auth-footer">
-        <Link href="/login/">{translate(LANGUAGE_KEYS.auth.returnLogin, '返回登入')}</Link>
+        <Link href="/login/">{translate(LANGUAGE_KEYS.auth.returnLogin)}</Link>
       </div>
     </>
   );

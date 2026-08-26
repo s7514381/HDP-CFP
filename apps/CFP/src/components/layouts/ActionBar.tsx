@@ -39,11 +39,11 @@ export default function ActionBar({title, children}: ActionBarProps) {
   const getMenuLabel = (menuItem?: MenuItem) => {
     if (!menuItem) return undefined;
     if (menuItem.languageResourceId) {
-      return translateByLanguageResourceId(menuItem.languageResourceId, menuItem.label);
+      return translateByLanguageResourceId(menuItem.languageResourceId) || menuItem.label;
     }
 
     const serialNumber = getMenuLanguageResourceSerialNumber(menuItem.englishCode);
-    return serialNumber ? translate(serialNumber, menuItem.label) : menuItem.label;
+    return serialNumber ? translate(serialNumber) : menuItem.label;
   };
 
   // Prefer an explicit title and otherwise resolve the route title.

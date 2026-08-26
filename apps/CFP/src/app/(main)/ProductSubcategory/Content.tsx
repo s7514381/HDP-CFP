@@ -2,12 +2,11 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { Btn } from '@packages/components/bootstrap5/Btn';
 import { Input, Textarea } from '@packages/components/bootstrap5/Input';
 import Card from '@packages/components/bootstrap5/Card';
 import Grid from '@packages/components/bootstrap5/Grid';
 import { Container } from '@packages/components/bootstrap5/Container';
-import ActionBar from '@/components/layouts/ActionBar';
+import FormActionBar from '@/components/common/FormActionBar';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
 import { FormContentProps } from '@/components/common/formTypes';
@@ -34,65 +33,57 @@ export default function ProductSubcategoryContent({
 
   return (
     <>
-      <ActionBar title={translate(title, '產品次類別')}>
-        <div className="ms-auto">
-          <Btn color="secondary" outline onClick={() => router.back()} icon="cancel" disabled={loading}>
-            {translate(LANGUAGE_KEYS.common.backToList, '返回列表')}
-          </Btn>
-        </div>
-      </ActionBar>
+      <FormActionBar
+        title={translate(title)}
+        formId="product-subcategory-form"
+        submitLabel={submitLabel}
+        loading={loading}
+        onBack={() => router.back()}
+      />
 
       <Container className="py-4">
         <Card>
           <Card.Body>
-            <form onSubmit={onSubmit}>
+            <form id="product-subcategory-form" onSubmit={onSubmit}>
               <Grid.Row className="g-3">
                 <Grid.Col md={6}>
                   <Input
-                    label={translate(LANGUAGE_KEYS.productSubcategory.productSubcategory, '產品次類別')}
+                    label={translate(LANGUAGE_KEYS.productSubcategory.productSubcategory)}
                     name="name"
                     value={formData.name || ''}
                     onChange={onChange}
-                    placeholder={translate(LANGUAGE_KEYS.productSubcategory.productSubcategory, '請輸入產品次類別')}
+                    placeholder={translate(LANGUAGE_KEYS.productSubcategory.productSubcategory)}
                     required
                     autoFocus
                   />
                 </Grid.Col>
                 <Grid.Col md={6}>
                   <Input
-                    label={translate(LANGUAGE_KEYS.productSubcategory.developer, '制定者')}
+                    label={translate(LANGUAGE_KEYS.productSubcategory.developer)}
                     name="developer"
                     value={formData.developer || ''}
                     onChange={onChange}
-                    placeholder={translate(LANGUAGE_KEYS.productSubcategory.developer, '請輸入制定者')}
+                    placeholder={translate(LANGUAGE_KEYS.productSubcategory.developer)}
                   />
                 </Grid.Col>
                 <Grid.Col md={12}>
                   <Textarea
-                    label={translate(LANGUAGE_KEYS.productSubcategory.applicableScope, '適用範圍')}
+                    label={translate(LANGUAGE_KEYS.productSubcategory.applicableScope)}
                     name="applicableScope"
                     value={formData.applicableScope || ''}
                     onChange={onChange}
                     rows={4}
-                    placeholder={translate(LANGUAGE_KEYS.productSubcategory.applicableScope, '請輸入適用範圍')}
+                    placeholder={translate(LANGUAGE_KEYS.productSubcategory.applicableScope)}
                   />
                 </Grid.Col>
                 <Grid.Col md={12}>
                   <Input
-                    label={translate(LANGUAGE_KEYS.productSubcategory.cccCode, 'CCC code')}
+                    label={translate(LANGUAGE_KEYS.productSubcategory.cccCode)}
                     name="cccCode"
                     value={formData.cccCode || ''}
                     onChange={onChange}
-                    placeholder={translate(LANGUAGE_KEYS.productSubcategory.cccCode, '請輸入 CCC code')}
+                    placeholder={translate(LANGUAGE_KEYS.productSubcategory.cccCode)}
                   />
-                </Grid.Col>
-                <Grid.Col md={12} className="d-flex justify-content-end gap-2 mt-4">
-                  <Btn type="button" color="secondary" outline onClick={() => router.push('/ProductSubcategory')}>
-                    {translate(LANGUAGE_KEYS.common.cancel, '取消')}
-                  </Btn>
-                  <Btn type="submit" color="primary" loading={loading} icon="save">
-                    {translate(submitLabel, '儲存')}
-                  </Btn>
                 </Grid.Col>
               </Grid.Row>
             </form>

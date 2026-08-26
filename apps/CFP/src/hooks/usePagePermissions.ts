@@ -11,9 +11,10 @@ export function usePagePermissions(permissionPath?: string) {
   const targetPath = permissionPath || pathname;
 
   const permissions = useMemo(() => {
+    const normalizePath = (path: string) => path.replace(/^\/+|\/+$/g, '') || '/';
     const findMenuItem = (items: MenuItem[], targetPath: string): MenuItem | undefined => {
       for (const item of items) {
-        if (item.href === targetPath) {
+        if (item.href && normalizePath(item.href) === normalizePath(targetPath)) {
           return item;
         }
         if (item.children) {
@@ -38,6 +39,6 @@ export function usePagePermissions(permissionPath?: string) {
   return {
     permissions,
     isReady: menus.length > 0,
-    hasPermission
+    hasPermission,
   };
 }

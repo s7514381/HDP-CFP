@@ -8,7 +8,7 @@ import { Select } from '@packages/components/bootstrap5/Select';
 import Card from '@packages/components/bootstrap5/Card';
 import Grid from '@packages/components/bootstrap5/Grid';
 import { Container } from '@packages/components/bootstrap5/Container';
-import ActionBar from '@/components/layouts/ActionBar';
+import FormActionBar from '@/components/common/FormActionBar';
 import { useAppApi } from '@/hooks/useAppApi';
 import { API_MAP } from '@/lib/apiRoutes';
 import { MaterialData } from '@/app/(main)/Material/Content';
@@ -74,7 +74,7 @@ export default function Content({ title, formData, onChange, updateForm, onSubmi
       value: material.id ?? '',
       label: material.materialNumber && material.productName
         ? `${material.materialNumber} - ${material.productName}`
-        : (material.label || material.name || material.productName || material.materialNumber || translate(LANGUAGE_KEYS.common.unnamedItem, '未命名項目')),
+        : (material.label || material.name || material.productName || material.materialNumber || translate(LANGUAGE_KEYS.common.unnamedItem)),
     };
   }), [formData.materialList, translate]);
   const displayedMaterials = selectedMaterials ?? mappedFormMaterials;
@@ -105,41 +105,41 @@ export default function Content({ title, formData, onChange, updateForm, onSubmi
 
   return (
     <>
-      <ActionBar title={title}>
-        <div className="ms-auto">
-          <Btn color="secondary" outline onClick={() => router.back()} icon="cancel">
-            {translate(LANGUAGE_KEYS.common.backToList, '返回列表')}
-          </Btn>
-        </div>
-      </ActionBar>
+      <FormActionBar
+        title={title}
+        formId="material-group-form"
+        submitLabel={submitLabel}
+        loading={loading}
+        onBack={() => router.back()}
+      />
 
       <Container className="py-4">
         <Card>
         <Card.Body>
-           <form onSubmit={onSubmit}>
+           <form id="material-group-form" onSubmit={onSubmit}>
 
 
             <Grid.Row className="g-3">
               <Grid.Col md={6}>
                 <Input
-                  label={translate(LANGUAGE_KEYS.materialGroup.name, '群組名稱')}
+                  label={translate(LANGUAGE_KEYS.materialGroup.name)}
                   name="name"
                   value={formData.name || ''}
                   onChange={onChange}
-                  placeholder={translate(LANGUAGE_KEYS.materialGroup.name, '請輸入群組名稱')}
+                  placeholder={translate(LANGUAGE_KEYS.materialGroup.name)}
                   required
                 />
               </Grid.Col>
 
               <Grid.Col md={6}>
                 <Select
-                  label={translate(LANGUAGE_KEYS.common.status, '狀態')}
+                  label={translate(LANGUAGE_KEYS.common.status)}
                   name="status"
                   value={formData.status || ''}
                   onChange={onChange}
                   options={[
-                    { label: translate(LANGUAGE_KEYS.common.enabled, '啟用'), value: '1' },
-                    { label: translate(LANGUAGE_KEYS.common.disabled, '停用'), value: '0' }
+                    { label: translate(LANGUAGE_KEYS.common.enabled), value: '1' },
+                    { label: translate(LANGUAGE_KEYS.common.disabled), value: '0' }
                   ]}
                 />
               </Grid.Col>
@@ -150,8 +150,8 @@ export default function Content({ title, formData, onChange, updateForm, onSubmi
                   <Card.Body>
                     <div className="mb-3">
                       <DropdownInput
-                        label={translate(LANGUAGE_KEYS.materialGroup.selectMaterials, '選擇料號')}
-                        placeholder={translate(LANGUAGE_KEYS.common.materialNumber, '輸入料號或名稱關鍵字搜尋...')}
+                        label={translate(LANGUAGE_KEYS.materialGroup.selectMaterials)}
+                        placeholder={translate(LANGUAGE_KEYS.common.materialNumber)}
                         fetchItems={async (input: string) => {
                           // 根據輸入關鍵字搜尋料號，使用 params 傳遞 keyword
                           // 當 input 為空字串時，也呼叫 API 取得完整列表
@@ -174,7 +174,7 @@ export default function Content({ title, formData, onChange, updateForm, onSubmi
                     {/* 已選取的料號列表 */}
                     {displayedMaterials.length > 0 && (
                       <div className="mt-3">
-                        <label className="form-label fw-bold">{translate(LANGUAGE_KEYS.common.selectedItems, '已選取料號')} ({displayedMaterials.length})</label>
+                        <label className="form-label fw-bold">{translate(LANGUAGE_KEYS.common.selectedItems)} ({displayedMaterials.length})</label>
                         <div className="border rounded p-3 bg-white">
                           {displayedMaterials.map((material) => (
                             <div
@@ -191,7 +191,7 @@ export default function Content({ title, formData, onChange, updateForm, onSubmi
                                 icon="delete"
                                 onClick={() => handleRemoveMaterial(material.id ?? material.value ?? '')}
                               >
-                                {translate(LANGUAGE_KEYS.common.delete, '刪除')}
+                                {translate(LANGUAGE_KEYS.common.delete)}
                               </Btn>
                             </div>
                           ))}
@@ -202,14 +202,6 @@ export default function Content({ title, formData, onChange, updateForm, onSubmi
                 </Card>
               </Grid.Col>
 
-              <Grid.Col md={12} className="d-flex justify-content-end gap-2 mt-4">
-                <Btn type="button" color="secondary" outline onClick={() => router.push('/MaterialGroup')}>
-                  {translate(LANGUAGE_KEYS.common.cancel, '取消')}
-                </Btn>
-                <Btn type="submit" color="primary" loading={loading} icon="save">
-                  {translate(submitLabel, submitLabel)}
-                </Btn>
-              </Grid.Col>
             </Grid.Row>
           </form>
         </Card.Body>

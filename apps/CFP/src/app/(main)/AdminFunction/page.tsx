@@ -46,34 +46,34 @@ export default function AdminFunctionPage() {
   };
 
   const handleDelete = async (id: number | string) => {
-    if (await confirm(translate(LANGUAGE_KEYS.common.confirm, '確定要刪除此功能嗎？'))) {
+    if (await confirm(translate(LANGUAGE_KEYS.common.confirm))) {
       try {
         await formPost(`${API_MAP.ADMIN_FUNCTION_MST}/Delete`, { id });
-        success({ message: <span>{translate(LANGUAGE_KEYS.common.deleteSuccess, '刪除成功！')}</span> });
+        success({ message: <span>{translate(LANGUAGE_KEYS.common.deleteSuccess)}</span> });
         tableRef.current?.reload();
       } catch {
-        danger({ message: <span>{translate(LANGUAGE_KEYS.common.deleteFailed, '刪除失敗。')}</span> });
+        danger({ message: <span>{translate(LANGUAGE_KEYS.common.deleteFailed)}</span> });
       }
     }
   };
 
   const columns: Column<{ id: string | number; title?: string; status?: string | number }>[] = [
     {
-      header: translate(LANGUAGE_KEYS.common.rowNumber, '項次'),
+      header: translate(LANGUAGE_KEYS.common.rowNumber),
       className: "text-center",
       style: { width: '80px' },
       render: (_, index) => index + 1
     },
     {
-      header: translate(LANGUAGE_KEYS.common.functionName, '功能名稱'),
+      header: translate(LANGUAGE_KEYS.common.functionName),
       key: "title"
     },
     {
-      header: translate(LANGUAGE_KEYS.common.status, '狀態'),
+      header: translate(LANGUAGE_KEYS.common.status),
       key: "status"
     },
     {
-      header: translate(LANGUAGE_KEYS.common.actions, '操作'),
+      header: translate(LANGUAGE_KEYS.common.actions),
       className: "text-center",
       style: { width: '120px' },
       render: (item) => (
@@ -106,16 +106,16 @@ export default function AdminFunctionPage() {
         <SearchBlock title="" icon="" className="mb-3">
           <Row align="center" gutter={3}>
             <Col md={4}>
-              <Input label={translate(LANGUAGE_KEYS.common.functionName, '功能名稱')} placeholder={translate(LANGUAGE_KEYS.common.functionName, '功能名稱')} value={searchName} onChange={(e) => setSearchName(e.target.value)} />
+              <Input label={translate(LANGUAGE_KEYS.common.functionName)} placeholder={translate(LANGUAGE_KEYS.common.functionName)} value={searchName} onChange={(e) => setSearchName(e.target.value)} />
             </Col>
             <Col md={4}>
-              <Input label={translate(LANGUAGE_KEYS.common.itemCode, '功能代碼')} placeholder={translate(LANGUAGE_KEYS.common.itemCode, '功能代碼')} value={searchCode} onChange={(e) => setSearchCode(e.target.value)} />
+              <Input label={translate(LANGUAGE_KEYS.common.itemCode)} placeholder={translate(LANGUAGE_KEYS.common.itemCode)} value={searchCode} onChange={(e) => setSearchCode(e.target.value)} />
             </Col>
             <Col md={4} className="d-flex justify-content-end gap-2 align-items-end">
               <Btn color="success" outline className="bg-success-light text-success border-success" style={{ backgroundColor: '#d1e7dd' }} icon="search" onClick={handleSearch}>
-                {translate(LANGUAGE_KEYS.common.search, '查詢')}
+                {translate(LANGUAGE_KEYS.common.search)}
               </Btn>
-              <Btn color="light" className="text-primary border" onClick={handleClear}>{translate(LANGUAGE_KEYS.common.clear, '清除')}</Btn>
+              <Btn color="light" className="text-primary border" onClick={handleClear}>{translate(LANGUAGE_KEYS.common.clear)}</Btn>
             </Col>
           </Row>
         </SearchBlock>
@@ -123,7 +123,7 @@ export default function AdminFunctionPage() {
         <Container fluid className="mb-3">
             <div className="d-flex justify-content-end gap-2">
                 {hasPermission('Create') && (
-                  <Btn color="success" icon="add" outline={false} onClick={() => router.push('/AdminFunction/Create')}>{translate(LANGUAGE_KEYS.common.add, '新增')}</Btn>
+                  <Btn color="success" icon="add" outline={false} onClick={() => router.push('/AdminFunction/Create')}>{translate(LANGUAGE_KEYS.common.add)}</Btn>
                 )}
             </div>
         </Container>

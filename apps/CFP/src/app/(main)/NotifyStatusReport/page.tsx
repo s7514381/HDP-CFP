@@ -56,10 +56,10 @@ export default function MaterialNotifyPage() {
   const { Row, Col } = Grid;
   const { translate } = useLanguage();
   const tableColumns: Column<NotifyStatusReportItem>[] = [
-    { header: translate(LANGUAGE_KEYS.common.sendTime, '寄送時間'), key: 'strDate' },
-    { header: translate(LANGUAGE_KEYS.common.supplier, '供應商'), key: 'supplierName' },
-    { header: translate(LANGUAGE_KEYS.common.receiveCount, '收到筆數'), key: 'sentCount' },
-    { header: translate(LANGUAGE_KEYS.common.updateCount, '更新筆數'), key: 'updateCount' },
+    { header: translate(LANGUAGE_KEYS.common.sendTime), key: 'strDate' },
+    { header: translate(LANGUAGE_KEYS.common.supplier), key: 'supplierName' },
+    { header: translate(LANGUAGE_KEYS.common.receiveCount), key: 'sentCount' },
+    { header: translate(LANGUAGE_KEYS.common.updateCount), key: 'updateCount' },
   ] as const;
 
   const tableRef = useRef<CommonTableHandle<NotifyStatusReportItem>>(null);
@@ -115,7 +115,7 @@ export default function MaterialNotifyPage() {
 
       const response = await api.post(`${API_URL}/NotifyStatusReport/GetList?${params.toString()}`);
       if (!response.success) {
-        danger({ message: <span>{translate(LANGUAGE_KEYS.common.operationFailed, '匯出失敗。')}</span> });
+        danger({ message: <span>{translate(LANGUAGE_KEYS.common.operationFailed)}</span> });
         return;
       }
 
@@ -131,7 +131,7 @@ export default function MaterialNotifyPage() {
       }));
 
       if (list.length === 0) {
-        danger({ message: <span>{translate(LANGUAGE_KEYS.common.noData, '目前篩選條件沒有可匯出的資料。')}</span> });
+        danger({ message: <span>{translate(LANGUAGE_KEYS.common.noData)}</span> });
         return;
       }
 
@@ -142,7 +142,7 @@ export default function MaterialNotifyPage() {
       });
     } catch (error) {
       console.error('Export failed', error);
-      danger({ message: <span>{translate(LANGUAGE_KEYS.common.operationFailed, '匯出失敗。')}</span> });
+      danger({ message: <span>{translate(LANGUAGE_KEYS.common.operationFailed)}</span> });
     } finally {
       setExporting(false);
     }
@@ -158,7 +158,7 @@ export default function MaterialNotifyPage() {
             <Col md={3}>
               <Input
                 type="date"
-                label={translate(LANGUAGE_KEYS.report.sendStart, '寄送開始日期')}
+                label={translate(LANGUAGE_KEYS.report.sendStart)}
                 name="createDateFrom"
                 value={searchForm.createDateFrom}
                 onChange={handleSearchChange}
@@ -167,7 +167,7 @@ export default function MaterialNotifyPage() {
             <Col md={3}>
               <Input
                 type="date"
-                label={translate(LANGUAGE_KEYS.report.sendEnd, '寄送結束日期')}
+                label={translate(LANGUAGE_KEYS.report.sendEnd)}
                 name="createDateTo"
                 value={searchForm.createDateTo}
                 onChange={handleSearchChange}
@@ -176,21 +176,21 @@ export default function MaterialNotifyPage() {
             <Col md={3}>
               <Input
                 type="text"
-                label={translate(LANGUAGE_KEYS.common.supplier, '供應商')}
+                label={translate(LANGUAGE_KEYS.common.supplier)}
                 name="supplierName"
                 value={searchForm.supplierName}
                 onChange={handleSearchChange}
-                placeholder={translate(LANGUAGE_KEYS.report.supplierName, '請輸入供應商名稱')}
+                placeholder={translate(LANGUAGE_KEYS.report.supplierName)}
               />
             </Col>
 
             <Col md={3} className="d-flex justify-content-end gap-2 align-items-end">
               <Btn color="success" outline className="bg-success-light text-success border-success" style={{ backgroundColor: '#d1e7dd' }} icon="search" onClick={handleSearch}>
-                {translate(LANGUAGE_KEYS.common.filter, '篩選')}
+                {translate(LANGUAGE_KEYS.common.filter)}
               </Btn>
-              <Btn color="light" className="text-primary border" onClick={handleClear}>{translate(LANGUAGE_KEYS.common.clear, '清除')}</Btn>
+              <Btn color="light" className="text-primary border" onClick={handleClear}>{translate(LANGUAGE_KEYS.common.clear)}</Btn>
               <Btn color="secondary" outline disabled={exporting} onClick={handleExport}>
-                {exporting ? translate(LANGUAGE_KEYS.common.exporting, '匯出中...') : translate(LANGUAGE_KEYS.common.exportReport, '匯出報表')}
+                {exporting ? translate(LANGUAGE_KEYS.common.exporting) : translate(LANGUAGE_KEYS.common.exportReport)}
               </Btn>
             </Col>
           </Row>

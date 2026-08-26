@@ -65,54 +65,54 @@ export default function MaterialPage() {
   };
 
   const handleDelete = async (id: number | string) => {
-    if (await confirm(translate(LANGUAGE_KEYS.common.confirm, '確定要刪除此料號嗎？'))) {
+    if (await confirm(translate(LANGUAGE_KEYS.common.confirm))) {
       const fd = new FormData();
       fd.append('id', String(id));
       const result = await api.post<unknown, FormData>(`${API_URL}/Material/Delete`, { body: fd });
       if (result.success) {
-        success({ message: <span>{translate(LANGUAGE_KEYS.common.deleteSuccess, '刪除成功！')}</span> });
+        success({ message: <span>{translate(LANGUAGE_KEYS.common.deleteSuccess)}</span> });
         tableRef.current?.reload();
       } else {
-        danger({ message: <span>{translate(LANGUAGE_KEYS.common.deleteFailed, '刪除失敗。')}</span> });
+        danger({ message: <span>{translate(LANGUAGE_KEYS.common.deleteFailed)}</span> });
       }
     }
   };
 
   const columns: Column<MaterialRow>[] = [
     {
-      header: translate(LANGUAGE_KEYS.common.rowNumber, '項次'),
+      header: translate(LANGUAGE_KEYS.common.rowNumber),
       className: "text-center",
       style: { width: '80px' },
       render: (_, index) => index + 1
     },
     {
-      header: translate(LANGUAGE_KEYS.material.group, '群組'),
+      header: translate(LANGUAGE_KEYS.material.group),
       key: "materialGroupName"
     },
     {
-      header: translate(LANGUAGE_KEYS.common.materialNumber, '料號'),
+      header: translate(LANGUAGE_KEYS.common.materialNumber),
       key: "materialNumber"
     },
     {
-      header: translate(LANGUAGE_KEYS.common.productModel, '產品型號'),
+      header: translate(LANGUAGE_KEYS.common.productModel),
       key: "productModel"
     },
     {
-      header: translate(LANGUAGE_KEYS.common.productName, '產品名稱'),
+      header: translate(LANGUAGE_KEYS.common.productName),
       key: "productName"
     },
     {
-      header: translate(LANGUAGE_KEYS.material.canSell, '是否可銷售'),
+      header: translate(LANGUAGE_KEYS.material.canSell),
       className: "text-center",
       style: { width: '120px' },
       render: (item) => {
         const value = item.canSell ?? item.CanSell;
         const isCanSell = value === '1' || value === 1 || value === true || value === 'true';
-        return isCanSell ? translate(LANGUAGE_KEYS.material.sellable, '可銷售') : translate(LANGUAGE_KEYS.material.notSellable, '不可銷售');
+        return isCanSell ? translate(LANGUAGE_KEYS.material.sellable) : translate(LANGUAGE_KEYS.material.notSellable);
       }
     },
     {
-      header: translate(LANGUAGE_KEYS.common.supplier, '供應商'),
+      header: translate(LANGUAGE_KEYS.common.supplier),
       key: "supplierName"
     },
     {
@@ -149,16 +149,16 @@ export default function MaterialPage() {
         <SearchBlock title="" icon="" className="mb-3">
           <Row align="center" gutter={3}>
             <Col md={4}>
-              <Input label={translate(LANGUAGE_KEYS.common.materialNumber, '料號')} placeholder={translate(LANGUAGE_KEYS.common.materialNumber, '料號')} value={importList.searchValues.MaterialNumber} onChange={(e) => importList.updateSearchValue('MaterialNumber', e.target.value)} />
+              <Input label={translate(LANGUAGE_KEYS.common.materialNumber)} placeholder={translate(LANGUAGE_KEYS.common.materialNumber)} value={importList.searchValues.MaterialNumber} onChange={(e) => importList.updateSearchValue('MaterialNumber', e.target.value)} />
             </Col>
             <Col md={4}>
-              <Input label={translate(LANGUAGE_KEYS.report.supplierName, '供應商名稱')} placeholder={translate(LANGUAGE_KEYS.report.supplierName, '供應商名稱')} value={importList.searchValues.SupplierName} onChange={(e) => importList.updateSearchValue('SupplierName', e.target.value)} />
+              <Input label={translate(LANGUAGE_KEYS.report.supplierName)} placeholder={translate(LANGUAGE_KEYS.report.supplierName)} value={importList.searchValues.SupplierName} onChange={(e) => importList.updateSearchValue('SupplierName', e.target.value)} />
             </Col>
             <Col md={4} className="d-flex justify-content-end gap-2 align-items-end">
               <Btn color="success" outline className="bg-success-light text-success border-success" style={{ backgroundColor: '#d1e7dd' }} icon="search" onClick={handleSearch}>
-                {translate(LANGUAGE_KEYS.common.search, '查詢')}
+                {translate(LANGUAGE_KEYS.common.search)}
               </Btn>
-              <Btn color="light" className="text-primary border" onClick={handleClear}>{translate(LANGUAGE_KEYS.common.clear, '清除')}</Btn>
+              <Btn color="light" className="text-primary border" onClick={handleClear}>{translate(LANGUAGE_KEYS.common.clear)}</Btn>
             </Col>
           </Row>
         </SearchBlock>
@@ -167,14 +167,14 @@ export default function MaterialPage() {
             <div className="d-flex justify-content-end gap-2 flex-wrap">
                 {hasPermission('Create') && (
                   <>
-                    <Btn color="secondary" outline onClick={importList.downloadTemplate}>{translate(LANGUAGE_KEYS.common.downloadTemplate, '下載範本')}</Btn>
+                    <Btn color="secondary" outline onClick={importList.downloadTemplate}>{translate(LANGUAGE_KEYS.common.downloadTemplate)}</Btn>
                     <FileBtn
-                      label={importList.importing ? translate(LANGUAGE_KEYS.common.importing, '匯入中...') : translate(LANGUAGE_KEYS.common.import, '匯入')}
+                      label={importList.importing ? translate(LANGUAGE_KEYS.common.importing) : translate(LANGUAGE_KEYS.common.import)}
                       accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
                       onChange={importList.importFile}
                       btnProps={{ color: 'primary', disabled: importList.importing }}
                     />
-                    <Btn color="success" icon="add" outline={false} onClick={() => router.push('/Material/Create')}>{translate(LANGUAGE_KEYS.common.add, '新增')}</Btn>
+                    <Btn color="success" icon="add" outline={false} onClick={() => router.push('/Material/Create')}>{translate(LANGUAGE_KEYS.common.add)}</Btn>
                   </>
                 )}
             </div>

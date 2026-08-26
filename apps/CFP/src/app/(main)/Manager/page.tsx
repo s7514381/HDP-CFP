@@ -54,34 +54,34 @@ export default function ManagerPage() {
   };
 
   const handleDelete = async (id: number | string) => {
-    if (await confirm(translate(LANGUAGE_KEYS.common.confirm, '確定要刪除此管理員嗎？'))) {
+    if (await confirm(translate(LANGUAGE_KEYS.common.confirm))) {
       try {
         await formPost(`${API_MAP.MANAGER_MST}/Delete`, { id });
-        success({ message: <span>{translate(LANGUAGE_KEYS.common.deleteSuccess, '刪除成功！')}</span> });
+        success({ message: <span>{translate(LANGUAGE_KEYS.common.deleteSuccess)}</span> });
         tableRef.current?.reload();
       } catch {
-        danger({ message: <span>{translate(LANGUAGE_KEYS.common.deleteFailed, '刪除失敗。')}</span> });
+        danger({ message: <span>{translate(LANGUAGE_KEYS.common.deleteFailed)}</span> });
       }
     }
   };
 
   const columns: Column<ManagerRow>[] = [
     {
-      header: translate(LANGUAGE_KEYS.common.rowNumber, '項次'),
+      header: translate(LANGUAGE_KEYS.common.rowNumber),
       className: "text-center",
       style: { width: '80px' },
       render: (_, index) => index + 1
     },
     {
-      header: translate(LANGUAGE_KEYS.manager.name, '姓名'),
+      header: translate(LANGUAGE_KEYS.manager.name),
       key: "name"
     },
     {
-      header: translate(LANGUAGE_KEYS.manager.account, '帳號'),
+      header: translate(LANGUAGE_KEYS.manager.account),
       key: "account"
     },
     {
-      header: translate(LANGUAGE_KEYS.manager.taxId, '統一編號'),
+      header: translate(LANGUAGE_KEYS.manager.taxId),
       key: "taxID"
     },
     {
@@ -89,7 +89,7 @@ export default function ManagerPage() {
       key: "email"
     },
     {
-      header: translate(LANGUAGE_KEYS.common.actions, '操作'),
+      header: translate(LANGUAGE_KEYS.common.actions),
       className: "text-center",
       style: { width: '120px' },
       render: (item) => (

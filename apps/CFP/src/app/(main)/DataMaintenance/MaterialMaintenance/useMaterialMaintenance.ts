@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useConfirm } from '@packages/hooks/useConfirm';
-import { MaterialMaintenanceModel, MaterialMaintenanceYear } from '@/types/materialMaintenance';
+import { MaterialMaintenanceModel, MaterialMaintenanceSource, MaterialMaintenanceYear } from '@/types/materialMaintenance';
 import { AddSourceRequest, MaterialMaintenanceService, ServiceResponse, SourceSelectListItem } from './materialMaintenanceService';
 import { emptySourceForm, parseMaintenanceYear, SourceFormState, validateSourceForm } from './materialMaintenanceValidation';
 
@@ -8,18 +8,20 @@ export interface MaterialMaintenanceMessages {
   loadFailed: string;
   operationFailed: string;
   invalidYear: string;
+  supplierRequired: string;
   allocationInvalid: string;
   accreditationInvalid: string;
   sourceLoadFailed: string;
+  secondaryDataApplied: string;
+  accreditationLevelUpdated: string;
+  notifySupplierConfirm: string;
+  supplierNotified: string;
   yearAdded: string;
   sourceAdded: string;
   yearDeleted: string;
   sourceDeleted: string;
   deleteYearConfirm: string;
   deleteSourceConfirm: string;
-  accreditationLevelFailed: string;
-  accreditationLevelUnavailable: string;
-  accreditationLevelFound: string;
   accreditConfirm: string;
   accredited: string;
   unaccredited: string;
@@ -46,8 +48,19 @@ export interface MaterialMaintenanceController {
   sourceForm: SourceFormState;
   showSourceModal: boolean;
   sourceError: string | null;
+  secondaryDataSource: MaterialMaintenanceSource | null;
+  showSecondaryDataModal: boolean;
+  accreditationLevelSource: MaterialMaintenanceSource | null;
+  showAccreditationLevelModal: boolean;
   fetchSourceOptions(keyword: string): Promise<SourceSelectListItem[]>;
   dismissSourceError(): void;
+  openSecondaryDataModal(source: MaterialMaintenanceSource): void;
+  closeSecondaryDataModal(): void;
+  applySecondaryData(secondaryDataSettingId: string): Promise<boolean>;
+  openAccreditationLevelModal(source: MaterialMaintenanceSource): void;
+  closeAccreditationLevelModal(): void;
+  setAccreditationLevel(accreditationLevelId: string): Promise<boolean>;
+  notifySupplier(sourceId: string): Promise<void>;
   addYear(pcrPatternId: string, yearInput: string): Promise<boolean>;
   openSourceModal(year: MaterialMaintenanceYear): Promise<void>;
   closeSourceModal(): void;
@@ -55,7 +68,6 @@ export interface MaterialMaintenanceController {
   addSource(): Promise<void>;
   deleteYear(year: MaterialMaintenanceYear): Promise<void>;
   deleteSource(sourceId: string): Promise<void>;
-  checkAccreditationLevel(sourceId: string): Promise<void>;
   setAccredited(sourceId: string, isAccredited: boolean): Promise<void>;
 }
 
@@ -77,6 +89,10 @@ export function useMaterialMaintenance({
   const [sourceForm, setSourceForm] = useState<SourceFormState>(emptySourceForm);
   const [showSourceModal, setShowSourceModal] = useState(false);
   const [sourceError, setSourceError] = useState<string | null>(null);
+  const [secondaryDataSource, setSecondaryDataSource] = useState<MaterialMaintenanceSource | null>(null);
+  const [showSecondaryDataModal, setShowSecondaryDataModal] = useState(false);
+  const [accreditationLevelSource, setAccreditationLevelSource] = useState<MaterialMaintenanceSource | null>(null);
+  const [showAccreditationLevelModal, setShowAccreditationLevelModal] = useState(false);
   const requestIdRef = useRef(0);
   const initialLoadMaterialIdRef = useRef<string | null>(null);
 
@@ -202,10 +218,62 @@ export function useMaterialMaintenance({
     setSourceError(null);
   }, []);
 
+  const openSecondaryDataModal = useCallback((source: MaterialMaintenanceSource) => {
+    setSecondaryDataSource(source);
+    setShowSecondaryDataModal(true);
+  }, []);
+
+  const closeSecondaryDataModal = useCallback(() => {
+    if (submitting) return;
+    setShowSecondaryDataModal(false);
+    setSecondaryDataSource(null);
+  }, [submitting]);
+
+  const applySecondaryData = useCallback(async (secondaryDataSettingId: string): Promise<boolean> => {
+    if (!secondaryDataSource) return false;
+
+    const applied = await submitOperation(
+      () => service.applySecondaryData(secondaryDataSource.id, secondaryDataSettingId),
+      messages.secondaryDataApplied,
+    );
+    if (applied) closeSecondaryDataModal();
+    return applied;
+  }, [closeSecondaryDataModal, messages.secondaryDataApplied, secondaryDataSource, service, submitOperation]);
+
+  const notifySupplier = useCallback(async (sourceId: string) => {
+    if (!await confirm(messages.notifySupplierConfirm)) return;
+    await submitOperation(
+      () => service.notifySupplier(sourceId),
+      messages.supplierNotified,
+    );
+  }, [confirm, messages.notifySupplierConfirm, messages.supplierNotified, service, submitOperation]);
+
+  const openAccreditationLevelModal = useCallback((source: MaterialMaintenanceSource) => {
+    setAccreditationLevelSource(source);
+    setShowAccreditationLevelModal(true);
+  }, []);
+
+  const closeAccreditationLevelModal = useCallback(() => {
+    if (submitting) return;
+    setShowAccreditationLevelModal(false);
+    setAccreditationLevelSource(null);
+  }, [submitting]);
+
+  const setAccreditationLevel = useCallback(async (accreditationLevelId: string): Promise<boolean> => {
+    if (!accreditationLevelSource) return false;
+
+    const updated = await submitOperation(
+      () => service.setAccreditationLevel(accreditationLevelSource.id, accreditationLevelId),
+      messages.accreditationLevelUpdated,
+    );
+    if (updated) closeAccreditationLevelModal();
+    return updated;
+  }, [accreditationLevelSource, closeAccreditationLevelModal, messages.accreditationLevelUpdated, service, submitOperation]);
+
   const addSource = useCallback(async () => {
     const validationError = validateSourceForm(sourceForm);
     if (validationError === 'required') {
-      setSourceError(messages.operationFailed);
+      setSourceError(messages.supplierRequired);
       return;
     }
     if (validationError === 'allocation') {
@@ -219,9 +287,8 @@ export function useMaterialMaintenance({
 
     const request: AddSourceRequest = {
       materialMaintenanceYearId: sourceForm.yearId,
-      sourceMaterialId: sourceForm.sourceMaterialId,
+      materialId: sourceForm.materialId,
       allocationPercentage: Number(sourceForm.allocationPercentage),
-      carbonFactor: sourceForm.carbonFactor.trim() === '' ? null : Number(sourceForm.carbonFactor),
       thirdPartyCertification: sourceForm.thirdPartyCertification,
       consultantApprovalCount: Number(sourceForm.consultantApprovalCount),
       buyerApprovalCount: Number(sourceForm.buyerApprovalCount),
@@ -234,7 +301,7 @@ export function useMaterialMaintenance({
       (message) => setSourceError(message || messages.operationFailed),
     );
     if (added) closeSourceModal();
-  }, [closeSourceModal, messages.accreditationInvalid, messages.allocationInvalid, messages.operationFailed, messages.sourceAdded, service, sourceForm, submitOperation]);
+  }, [closeSourceModal, messages.accreditationInvalid, messages.allocationInvalid, messages.operationFailed, messages.sourceAdded, messages.supplierRequired, service, sourceForm, submitOperation]);
 
   const deleteYear = useCallback(async (year: MaterialMaintenanceYear) => {
     if (!await confirm(messages.deleteYearConfirm)) return;
@@ -245,24 +312,6 @@ export function useMaterialMaintenance({
     if (!await confirm(messages.deleteSourceConfirm)) return;
     await submitOperation(() => service.deleteSource(sourceId), messages.sourceDeleted);
   }, [confirm, messages.deleteSourceConfirm, messages.sourceDeleted, service, submitOperation]);
-
-  const checkAccreditationLevel = useCallback(async (sourceId: string) => {
-    try {
-      const result = await service.getAccreditationLevel(sourceId);
-      if (!result.success) {
-        reportFailure(result.message, messages.accreditationLevelFailed);
-        return;
-      }
-
-      if (result.data?.levelName) {
-        notifier.success(messages.accreditationLevelFound.replace('{level}', result.data.levelName));
-      } else {
-        notifier.danger(messages.accreditationLevelUnavailable);
-      }
-    } catch (error) {
-      reportFailure(error instanceof Error ? error.message : null, messages.accreditationLevelFailed);
-    }
-  }, [messages.accreditationLevelFailed, messages.accreditationLevelFound, messages.accreditationLevelUnavailable, notifier, reportFailure, service]);
 
   const setAccredited = useCallback(async (sourceId: string, isAccredited: boolean) => {
     if (!await confirm(messages.accreditConfirm.replace('{action}', isAccredited ? messages.accredited : messages.unaccredited))) return;
@@ -280,8 +329,19 @@ export function useMaterialMaintenance({
     sourceForm,
     showSourceModal,
     sourceError,
+    secondaryDataSource,
+    showSecondaryDataModal,
+    accreditationLevelSource,
+    showAccreditationLevelModal,
     fetchSourceOptions,
     dismissSourceError,
+    openSecondaryDataModal,
+    closeSecondaryDataModal,
+    applySecondaryData,
+    openAccreditationLevelModal,
+    closeAccreditationLevelModal,
+    setAccreditationLevel,
+    notifySupplier,
     addYear,
     openSourceModal,
     closeSourceModal,
@@ -289,7 +349,6 @@ export function useMaterialMaintenance({
     addSource,
     deleteYear,
     deleteSource,
-    checkAccreditationLevel,
     setAccredited,
   };
 }

@@ -44,36 +44,36 @@ export default function LanguageCreateModal({ show, onClose, onSubmit }: Languag
 
   return (
     <Modal show={show} size="sm" onClose={handleClose}>
-      <Modal.Title onClose={handleClose}>{translate(LANGUAGE_KEYS.languageResource.addLanguageTitle, '新增語言')}</Modal.Title>
+      <Modal.Title onClose={handleClose}>{translate(LANGUAGE_KEYS.languageResource.addLanguageTitle)}</Modal.Title>
       <Modal.Body>
         <form onSubmit={handleSubmit}>
           <div className="mb-3">
             <Input
-              label={translate(LANGUAGE_KEYS.common.languageName, '語言名稱')}
+              label={translate(LANGUAGE_KEYS.common.languageName)}
               labelMark
               value={name}
               onChange={event => setName(event.target.value)}
-              placeholder={translate(LANGUAGE_KEYS.common.languageNamePlaceholder, '例如：日文')}
+              placeholder={translate(LANGUAGE_KEYS.common.languageNamePlaceholder)}
               autoFocus
               required
             />
           </div>
           <div className="mb-3">
             <Input
-              label={translate(LANGUAGE_KEYS.common.languageCode, '語言代碼')}
+              label={translate(LANGUAGE_KEYS.common.languageCode)}
               labelMark
               value={code}
               onChange={event => setCode(event.target.value)}
-              placeholder={translate(LANGUAGE_KEYS.common.languageCodePlaceholder, '例如：ja-JP')}
+              placeholder={translate(LANGUAGE_KEYS.common.languageCodePlaceholder)}
               required
             />
           </div>
           <div className="d-flex justify-content-end gap-2">
             <Btn type="button" color="secondary" outline onClick={handleClose} disabled={submitting}>
-              {translate(LANGUAGE_KEYS.common.cancel, '取消')}
+              {translate(LANGUAGE_KEYS.common.cancel)}
             </Btn>
             <Btn type="submit" color="primary" icon="add" loading={submitting}>
-              {translate(LANGUAGE_KEYS.languageResource.addLanguage, '新增語言')}
+              {translate(LANGUAGE_KEYS.languageResource.addLanguage)}
             </Btn>
           </div>
         </form>
