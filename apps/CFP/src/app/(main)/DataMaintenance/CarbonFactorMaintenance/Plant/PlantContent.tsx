@@ -23,6 +23,7 @@ import {
   CarbonFactorMaintenancePcrEvidenceItem,
   PcrTemplateCategory,
 } from '../carbonFactorMaintenanceService';
+import { PCR_TEMPLATE_CATEGORY_OPTIONS } from '@/lib/pcrTemplateCategories';
 
 export interface EvidenceUploadDraft {
   pcrPatternId: string;
@@ -81,13 +82,6 @@ export const createEmptyPlantFormData = (context: Partial<PlantFormData> = {}): 
 
 const ACCEPTED_FILES = '.pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png';
 const FORM_ID = 'carbon-factor-maintenance-plant-form';
-const CATEGORY_NAMES: Record<PcrTemplateCategory, string> = {
-  0: '原料',
-  1: '製程',
-  2: '運輸',
-  3: '廢棄',
-};
-
 async function isValidXlsxFile(file: File): Promise<boolean> {
   if (!file.name.toLowerCase().endsWith('.xlsx')) return true;
 
@@ -107,10 +101,9 @@ const attachmentDefinitions: Array<{
   fileField: AttachmentField;
   removeField: RemoveField;
   labelKey: string;
-  fallback: string;
 }> = [
-  { type: 'ThirdPartyReport', fileField: 'thirdPartyReport', removeField: 'removeThirdPartyReport', labelKey: LANGUAGE_KEYS.carbonFactorMaintenance.thirdPartyReport, fallback: '第三方查證報告' },
-  { type: 'SelfSummaryReport', fileField: 'selfSummaryReport', removeField: 'removeSelfSummaryReport', labelKey: LANGUAGE_KEYS.carbonFactorMaintenance.selfSummaryReport, fallback: '自我總結報告' },
+  { type: 'ThirdPartyReport', fileField: 'thirdPartyReport', removeField: 'removeThirdPartyReport', labelKey: LANGUAGE_KEYS.carbonFactorMaintenance.thirdPartyReport },
+  { type: 'SelfSummaryReport', fileField: 'selfSummaryReport', removeField: 'removeSelfSummaryReport', labelKey: LANGUAGE_KEYS.carbonFactorMaintenance.selfSummaryReport },
 ];
 
 function getAttachmentByType(attachments: CarbonFactorMaintenanceAttachment[], type: string) {
@@ -124,6 +117,13 @@ function getCategoryItems(formData: PlantFormData, category: PcrTemplateCategory
 function hasVisibleAttachment(formData: PlantFormData, item: CarbonFactorMaintenancePcrEvidenceItem) {
   return formData.evidenceUploads.some((upload) => upload.pcrPatternId === item.pcrPatternId)
     || (!!item.attachment && !formData.removeEvidencePcrPatternIds.includes(item.pcrPatternId));
+}
+
+function formatTranslation(template: string, values: unknown[]): string {
+  return values.reduce<string>(
+    (result, value, index) => result.replaceAll(`{${index}}`, String(value)),
+    template,
+  );
 }
 
 export interface PlantContentProps extends FormContentProps<PlantFormData> {
@@ -158,7 +158,6 @@ export default function PlantContent({
   const [opinionDraft, setOpinionDraft] = useState('');
   const [opinionError, setOpinionError] = useState<string | null>(null);
   const [opinionSubmitting, setOpinionSubmitting] = useState(false);
-  const label = (key: string, fallback: string) => translate(key) || fallback;
   const defaultReturnUrl = useMemo(() => {
     const params = new URLSearchParams();
     ['materialId', 'buyerMaterialId', 'yearId'].forEach((name) => {
@@ -180,7 +179,7 @@ export default function PlantContent({
       return;
     }
     if (incompletePatternCount > 0) {
-      danger({ message: <span>尚有 {incompletePatternCount} 筆 PCR 主項目未上傳，仍可先儲存並稍後補件。</span> });
+      danger({ message: <span>{formatTranslation(translate(LANGUAGE_KEYS.carbonFactorMaintenance.incompletePatternWarning), [incompletePatternCount])}</span> });
     }
     onSubmit(event);
   };
@@ -188,7 +187,7 @@ export default function PlantContent({
   const downloadAttachment = async (attachment: CarbonFactorMaintenanceAttachment) => {
     const result = await get<Blob>(`${API_MAP.CARBON_FACTOR_MAINTENANCE_PLANT_DOWNLOAD_ATTACHMENT}?id=${encodeURIComponent(attachment.uploadFileId)}`, { responseType: 'blob' });
     if (!result.success || !(result.data instanceof Blob)) {
-      danger({ message: <span>{result.message || label(LANGUAGE_KEYS.common.loadFailed, '下載失敗')}</span> });
+      danger({ message: <span>{result.message || translate(LANGUAGE_KEYS.common.loadFailed)}</span> });
       return;
     }
     downloadFile({ blob: result.data, defaultFileName: attachment.originalFileName });
@@ -221,13 +220,13 @@ export default function PlantContent({
     }
     if (invalidFiles.length > 0) {
       event.target.value = '';
-      danger({ message: <span>以下檔案不是有效的 XLSX 檔案：{invalidFiles.join('、')}</span> });
+      danger({ message: <span>{formatTranslation(translate(LANGUAGE_KEYS.carbonFactorMaintenance.invalidXlsxFiles), [invalidFiles.join('、')])}</span> });
       return;
     }
 
     const availableItems = activeItems.filter((item) => !hasVisibleAttachment(formData, item));
     if (files.length > availableItems.length) {
-      danger({ message: <span>本分類最多只能配對 {availableItems.length} 個未完成主項目，請減少檔案數量。</span> });
+      danger({ message: <span>{formatTranslation(translate(LANGUAGE_KEYS.carbonFactorMaintenance.batchFilesExceeded), [availableItems.length])}</span> });
       return;
     }
 
@@ -284,7 +283,7 @@ export default function PlantContent({
         opinion: opinionDraft,
       });
       if (!result.success) {
-        setOpinionError(result.message || '建議儲存失敗');
+        setOpinionError(result.message || translate(LANGUAGE_KEYS.carbonFactorMaintenance.opinionSaveFailed));
         return;
       }
 
@@ -301,11 +300,11 @@ export default function PlantContent({
         })),
       });
       setOpinionAttachment((attachment) => attachment ? { ...attachment, opinion } : attachment);
-      success({ message: <span>建議已儲存</span> });
+      success({ message: <span>{translate(LANGUAGE_KEYS.carbonFactorMaintenance.opinionSaved)}</span> });
       setOpinionSubmitting(false);
       closeOpinionModal();
     } catch (error) {
-      setOpinionError(error instanceof Error && error.message ? error.message : '建議儲存失敗');
+      setOpinionError(error instanceof Error && error.message ? error.message : translate(LANGUAGE_KEYS.carbonFactorMaintenance.opinionSaveFailed));
     } finally {
       setOpinionSubmitting(false);
     }
@@ -320,35 +319,35 @@ export default function PlantContent({
       <WrapContent className="p-3">
         <Container fluid>
           <Card className="border-0 shadow-sm mb-3">
-            <Card.Header>{label(LANGUAGE_KEYS.carbonFactorMaintenance.currentFile, '產品／買方／年度摘要')}</Card.Header>
+            <Card.Header>{translate(LANGUAGE_KEYS.carbonFactorMaintenance.currentFile)}</Card.Header>
             <Card.Body>
               <Grid.Row className="g-3">
-                <Grid.Col md={4}><div className="small text-muted">產品</div><div className="fw-semibold">{formData.productName || '-'}</div><div className="small text-muted">{formData.materialNumber || '-'}</div></Grid.Col>
-                <Grid.Col md={4}><div className="small text-muted">買方</div><div className="fw-semibold">{formData.buyerName || '-'}</div><div className="small text-muted">{formData.buyerMaterialNumber || '-'}</div></Grid.Col>
-                <Grid.Col md={4}><div className="small text-muted">年度／產品單位</div><div className="fw-semibold">{formData.year || '-'}／{formData.productUnit || '-'}</div></Grid.Col>
+                <Grid.Col md={4}><div className="small text-muted">{translate(LANGUAGE_KEYS.carbonFactorMaintenance.summaryProduct)}</div><div className="fw-semibold">{formData.productName || '-'}</div><div className="small text-muted">{formData.materialNumber || '-'}</div></Grid.Col>
+                <Grid.Col md={4}><div className="small text-muted">{translate(LANGUAGE_KEYS.carbonFactorMaintenance.summaryBuyer)}</div><div className="fw-semibold">{formData.buyerName || '-'}</div><div className="small text-muted">{formData.buyerMaterialNumber || '-'}</div></Grid.Col>
+                <Grid.Col md={4}><div className="small text-muted">{translate(LANGUAGE_KEYS.carbonFactorMaintenance.summaryYearProductUnit)}</div><div className="fw-semibold">{formData.year || '-'}／{formData.productUnit || '-'}</div></Grid.Col>
               </Grid.Row>
             </Card.Body>
           </Card>
 
           <form id={FORM_ID} onSubmit={handleFormSubmit} encType="multipart/form-data">
             <Card className="border shadow-sm mb-3">
-              <Card.Header>廠區基本資料</Card.Header>
+              <Card.Header>{translate(LANGUAGE_KEYS.carbonFactorMaintenance.plantBasicInformation)}</Card.Header>
               <Card.Body>
                 <Grid.Row className="g-3">
-                  <Grid.Col md={4}><Input name="plantName" label={label(LANGUAGE_KEYS.carbonFactorMaintenance.plantName, '廠區名稱')} value={formData.plantName} onChange={onChange} required disabled={readOnly} /></Grid.Col>
-                  <Grid.Col md={4}><Input name="allocationPercentage" type="number" min={0.01} max={100} step="0.01" label={label(LANGUAGE_KEYS.carbonFactorMaintenance.allocation, '佔比（％）')} value={formData.allocationPercentage} onChange={onChange} required disabled={readOnly} /></Grid.Col>
-                  <Grid.Col md={4}><Input name="carbonFactor" type="number" min={0} step="0.000001" label={label(LANGUAGE_KEYS.carbonFactorMaintenance.carbonFactor, '碳排係數')} value={formData.carbonFactor} onChange={onChange} required disabled={readOnly} /></Grid.Col>
+                  <Grid.Col md={4}><Input name="plantName" label={translate(LANGUAGE_KEYS.carbonFactorMaintenance.plantName)} value={formData.plantName} onChange={onChange} required disabled={readOnly} /></Grid.Col>
+                  <Grid.Col md={4}><Input name="allocationPercentage" type="number" min={0.01} max={100} step="0.01" label={translate(LANGUAGE_KEYS.carbonFactorMaintenance.allocation)} value={formData.allocationPercentage} onChange={onChange} required disabled={readOnly} /></Grid.Col>
+                  <Grid.Col md={4}><Input name="carbonFactor" type="number" min={0} step="0.000001" label={translate(LANGUAGE_KEYS.carbonFactorMaintenance.carbonFactor)} value={formData.carbonFactor} onChange={onChange} required disabled={readOnly} /></Grid.Col>
                 </Grid.Row>
               </Card.Body>
             </Card>
 
             <Card className="border shadow-sm mb-3">
-              <Card.Header>{label(LANGUAGE_KEYS.carbonFactorMaintenance.certificationYear, '第三方查證資料')}</Card.Header>
+              <Card.Header>{translate(LANGUAGE_KEYS.carbonFactorMaintenance.thirdPartyReport)}</Card.Header>
               <Card.Body>
                 <Grid.Row className="g-3">
-                  <Grid.Col md={4}><Input name="thirdPartyCertificationYear" type="number" min={minCertificationYear} max={currentYear} label={label(LANGUAGE_KEYS.carbonFactorMaintenance.certificationYear, '第三方查證年份')} value={formData.thirdPartyCertificationYear} onChange={onChange} required disabled={readOnly} /></Grid.Col>
+                  <Grid.Col md={4}><Input name="thirdPartyCertificationYear" type="number" min={minCertificationYear} max={currentYear} label={translate(LANGUAGE_KEYS.carbonFactorMaintenance.certificationYear)} value={formData.thirdPartyCertificationYear} onChange={onChange} required disabled={readOnly} /></Grid.Col>
                 </Grid.Row>
-                <div className="small text-muted mt-2">{label(LANGUAGE_KEYS.carbonFactorMaintenance.fileHint, '可上傳 PDF、DOC／DOCX、XLS／XLSX、JPG／JPEG、PNG，每個檔案上限 5MB。')}</div>
+                <div className="small text-muted mt-2">{translate(LANGUAGE_KEYS.carbonFactorMaintenance.fileHint)}</div>
                 <div className="row g-3 mt-1">
                   {attachmentDefinitions.map((definition) => {
                     const existing = getAttachmentByType(formData.attachments, definition.type);
@@ -357,20 +356,20 @@ export default function PlantContent({
                     return (
                       <div className="col-12" key={definition.type}>
                         <div className="border rounded p-3 d-flex flex-wrap align-items-center gap-2">
-                          <strong className="me-2">{label(definition.labelKey, definition.fallback)}</strong>
-                          {canManageAttachments && <FileBtn label={selectedFile ? label(LANGUAGE_KEYS.carbonFactorMaintenance.replaceFile, '替換檔案') : label(LANGUAGE_KEYS.carbonFactorMaintenance.uploadFile, '上傳檔案')} accept={ACCEPTED_FILES} onChange={async (event) => {
+                          <strong className="me-2">{translate(definition.labelKey)}</strong>
+                          {canManageAttachments && <FileBtn label={selectedFile ? translate(LANGUAGE_KEYS.carbonFactorMaintenance.replaceFile) : translate(LANGUAGE_KEYS.carbonFactorMaintenance.uploadFile)} accept={ACCEPTED_FILES} onChange={async (event) => {
                             const file = event.target.files?.[0];
                             if (!file) return;
                             if (!await isValidXlsxFile(file)) {
                               event.target.value = '';
-                              danger({ message: <span>檔案內容不是有效的 XLSX 檔案：{file.name}</span> });
+                              danger({ message: <span>{formatTranslation(translate(LANGUAGE_KEYS.carbonFactorMaintenance.invalidXlsxFile), [file.name])}</span> });
                               return;
                             }
                             updateForm({ [definition.fileField]: file, [definition.removeField]: false } as Partial<PlantFormData>);
                           }} />}
-                          {existing && !isRemoved && !selectedFile && <><span className="text-break">{existing.originalFileName} <span className="text-muted small">({Math.ceil(existing.fileSize / 1024)} KB)</span></span><Btn type="button" color="info" size="sm" outline onClick={() => void downloadAttachment(existing)}>{label(LANGUAGE_KEYS.carbonFactorMaintenance.downloadFile, '下載')}</Btn></>}
+                          {existing && !isRemoved && !selectedFile && <><span className="text-break">{existing.originalFileName} <span className="text-muted small">({Math.ceil(existing.fileSize / 1024)} KB)</span></span><Btn type="button" color="info" size="sm" outline onClick={() => void downloadAttachment(existing)}>{translate(LANGUAGE_KEYS.carbonFactorMaintenance.downloadFile)}</Btn></>}
                           {selectedFile && <span className="text-break">{selectedFile.name} <span className="text-muted small">({Math.ceil(selectedFile.size / 1024)} KB)</span></span>}
-                          {canManageAttachments && (existing || selectedFile) && <Btn type="button" color="danger" size="sm" outline onClick={() => updateForm({ [definition.fileField]: null, [definition.removeField]: Boolean(existing) } as Partial<PlantFormData>)}>{label(LANGUAGE_KEYS.carbonFactorMaintenance.removeFile, '移除')}</Btn>}
+                          {canManageAttachments && (existing || selectedFile) && <Btn type="button" color="danger" size="sm" outline onClick={() => updateForm({ [definition.fileField]: null, [definition.removeField]: Boolean(existing) } as Partial<PlantFormData>)}>{translate(LANGUAGE_KEYS.carbonFactorMaintenance.removeFile)}</Btn>}
                         </div>
                       </div>
                     );
@@ -382,27 +381,28 @@ export default function PlantContent({
             <Card className="border shadow-sm mb-3">
               <Card.Header>
                 <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
-                  <span>佐證資料</span>
-                  <span className="small text-muted">依 PCR 主項目上傳，細項不需上傳</span>
+                  <span>{translate(LANGUAGE_KEYS.carbonFactorMaintenance.evidence)}</span>
+                  <span className="small text-muted">{translate(LANGUAGE_KEYS.carbonFactorMaintenance.evidenceDescription)}</span>
                 </div>
               </Card.Header>
               <Card.Body>
-                <div className="nav nav-tabs mb-3" role="tablist" aria-label="PCR 佐證資料分類">
+                <div className="nav nav-tabs mb-3" role="tablist" aria-label={translate(LANGUAGE_KEYS.carbonFactorMaintenance.evidenceCategories)}>
                   {[0, 1, 2, 3].map((category) => {
                     const typedCategory = category as PcrTemplateCategory;
                     const items = getCategoryItems(formData, typedCategory);
                     const count = items.filter((item) => hasVisibleAttachment(formData, item)).length;
                     const isComplete = items.length > 0 && count === items.length;
-                    return <button key={category} type="button" className={`nav-link ${activeCategory === typedCategory ? 'active' : ''}`} onClick={() => setActiveCategory(typedCategory)}>{CATEGORY_NAMES[typedCategory]} <span className={`badge ms-1 ${items.length === 0 ? 'text-bg-secondary' : isComplete ? 'text-bg-success' : 'text-bg-warning'}`}>{count}/{items.length}</span></button>;
+                    const categoryOption = PCR_TEMPLATE_CATEGORY_OPTIONS.find(option => option.value === typedCategory);
+                    return <button key={category} type="button" className={`nav-link ${activeCategory === typedCategory ? 'active' : ''}`} onClick={() => setActiveCategory(typedCategory)}>{categoryOption ? translate(categoryOption.languageKey) : String(category)} <span className={`badge ms-1 ${items.length === 0 ? 'text-bg-secondary' : isComplete ? 'text-bg-success' : 'text-bg-warning'}`}>{count}/{items.length}</span></button>;
                   })}
                 </div>
 
                 <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-                  <div><strong>{CATEGORY_NAMES[activeCategory]}</strong><span className="text-muted ms-2">已完成 {completedCount}/{activeItems.length}</span></div>
-                  {canManageAttachments && activeItems.length > completedCount && <FileBtn label="依序上傳本分類檔案" accept={ACCEPTED_FILES} multiple onChange={assignBatchFiles} btnProps={{ color: 'primary', outline: false, size: 'sm', icon: 'upload' }} />}
+                  <div><strong>{PCR_TEMPLATE_CATEGORY_OPTIONS.find(option => option.value === activeCategory) ? translate(PCR_TEMPLATE_CATEGORY_OPTIONS.find(option => option.value === activeCategory)!.languageKey) : String(activeCategory)}</strong><span className="text-muted ms-2">{formatTranslation(translate(LANGUAGE_KEYS.carbonFactorMaintenance.completedCount), [completedCount, activeItems.length])}</span></div>
+                  {canManageAttachments && activeItems.length > completedCount && <FileBtn label={translate(LANGUAGE_KEYS.carbonFactorMaintenance.batchUploadFiles)} accept={ACCEPTED_FILES} multiple onChange={assignBatchFiles} btnProps={{ color: 'primary', outline: false, size: 'sm', icon: 'upload' }} />}
                 </div>
 
-                {activeItems.length === 0 && <div className="text-center text-muted border rounded p-4">此分類目前沒有 PCR 主項目。</div>}
+                {activeItems.length === 0 && <div className="text-center text-muted border rounded p-4">{translate(LANGUAGE_KEYS.carbonFactorMaintenance.noPcrItems)}</div>}
                 {activeItems.length > 0 && <div className="list-group">
                   {activeItems.map((item, index) => {
                     const draft = formData.evidenceUploads.find((upload) => upload.pcrPatternId === item.pcrPatternId);
@@ -412,16 +412,16 @@ export default function PlantContent({
                       <div className="d-flex flex-wrap align-items-start justify-content-between gap-3">
                         <div className="flex-grow-1">
                           <div className="fw-semibold">{index + 1}. {item.item}</div>
-                          {item.childItems.length > 0 && <div className="small text-muted mt-1">細項：{item.childItems.join('、')}</div>}
-                          {attachment && !displayFile && <div className="small mt-2">目前檔案：{attachment.originalFileName} <span className="text-muted">({Math.ceil(attachment.fileSize / 1024)} KB)</span></div>}
-                          {displayFile && <div className="small mt-2 text-primary">待上傳：{displayFile.name} <span className="text-muted">({Math.ceil(displayFile.size / 1024)} KB)</span></div>}
-                          {!attachment && !displayFile && <div className="small text-warning mt-2">尚未上傳</div>}
+                          {item.childItems.length > 0 && <div className="small text-muted mt-1">{translate(LANGUAGE_KEYS.carbonFactorMaintenance.childItems)}：{item.childItems.join('、')}</div>}
+                          {attachment && !displayFile && <div className="small mt-2">{translate(LANGUAGE_KEYS.carbonFactorMaintenance.currentFile)}：{attachment.originalFileName} <span className="text-muted">({Math.ceil(attachment.fileSize / 1024)} KB)</span></div>}
+                          {displayFile && <div className="small mt-2 text-primary">{translate(LANGUAGE_KEYS.carbonFactorMaintenance.pendingUpload)}：{displayFile.name} <span className="text-muted">({Math.ceil(displayFile.size / 1024)} KB)</span></div>}
+                          {!attachment && !displayFile && <div className="small text-warning mt-2">{translate(LANGUAGE_KEYS.carbonFactorMaintenance.notUploaded)}</div>}
                         </div>
                         <div className="d-flex flex-wrap gap-2">
-                          {canManageAttachments && <FileBtn label={attachment || displayFile ? '替換檔案' : '上傳檔案'} accept={ACCEPTED_FILES} onChange={(event) => { const file = event.target.files?.[0]; if (file) updateEvidenceDraft(item.pcrPatternId, file); }} btnProps={{ color: 'primary', outline: true, size: 'sm' }} />}
-                          {attachment && <Btn type="button" color="info" size="sm" outline onClick={() => void downloadAttachment(attachment)}>下載</Btn>}
-                          {attachment && canViewOpinion(attachment) && <Btn type="button" color="warning" size="sm" outline onClick={() => openOpinionModal(attachment)}>{allowOpinionEdit ? '建議' : '查看建議'}</Btn>}
-                          {canManageAttachments && (attachment || displayFile) && <Btn type="button" color="danger" size="sm" outline onClick={() => removeEvidence(item)}>移除</Btn>}
+                          {canManageAttachments && <FileBtn label={attachment || displayFile ? translate(LANGUAGE_KEYS.carbonFactorMaintenance.replaceFile) : translate(LANGUAGE_KEYS.carbonFactorMaintenance.uploadFile)} accept={ACCEPTED_FILES} onChange={(event) => { const file = event.target.files?.[0]; if (file) updateEvidenceDraft(item.pcrPatternId, file); }} btnProps={{ color: 'primary', outline: true, size: 'sm' }} />}
+                          {attachment && <Btn type="button" color="info" size="sm" outline onClick={() => void downloadAttachment(attachment)}>{translate(LANGUAGE_KEYS.carbonFactorMaintenance.downloadFile)}</Btn>}
+                          {attachment && canViewOpinion(attachment) && <Btn type="button" color="warning" size="sm" outline onClick={() => openOpinionModal(attachment)}>{translate(allowOpinionEdit ? LANGUAGE_KEYS.carbonFactorMaintenance.editOpinion : LANGUAGE_KEYS.carbonFactorMaintenance.viewOpinion)}</Btn>}
+                          {canManageAttachments && (attachment || displayFile) && <Btn type="button" color="danger" size="sm" outline onClick={() => removeEvidence(item)}>{translate(LANGUAGE_KEYS.carbonFactorMaintenance.removeFile)}</Btn>}
                         </div>
                       </div>
                     </div>;
@@ -429,14 +429,14 @@ export default function PlantContent({
                 </div>}
 
                 {canManageAttachments && formData.evidenceUploads.length > 0 && <div className="border rounded p-3 mt-3 bg-light">
-                  <div className="fw-semibold mb-2">待上傳檔案配對預覽</div>
+                  <div className="fw-semibold mb-2">{translate(LANGUAGE_KEYS.carbonFactorMaintenance.batchUploadPreview)}</div>
                   {formData.evidenceUploads.map((upload) => {
                     const sourceItem = allPatternItems.find((item) => item.pcrPatternId === upload.pcrPatternId);
                     const categoryItems = getCategoryItems(formData, sourceItem?.category ?? activeCategory);
                     return <div className="row align-items-center g-2 mb-2" key={`${upload.pcrPatternId}-${upload.file.name}`}>
                       <div className="col-md-5 text-break">{upload.file.name}</div>
-                      <div className="col-md-6"><select className="form-select form-select-sm" value={upload.pcrPatternId} onChange={(event) => reassignDraft(upload.file, upload.pcrPatternId, event.target.value)} aria-label="選擇 PCR 主項目">{categoryItems.map((item) => <option key={item.pcrPatternId} value={item.pcrPatternId}>{item.item}</option>)}</select></div>
-                      <div className="col-md-1 text-end"><Btn type="button" color="danger" size="sm" outline onClick={() => { const item = allPatternItems.find((candidate) => candidate.pcrPatternId === upload.pcrPatternId); if (item) removeEvidence(item); }}>移除</Btn></div>
+                      <div className="col-md-6"><select className="form-select form-select-sm" value={upload.pcrPatternId} onChange={(event) => reassignDraft(upload.file, upload.pcrPatternId, event.target.value)} aria-label={translate(LANGUAGE_KEYS.carbonFactorMaintenance.selectPcrItem)}>{categoryItems.map((item) => <option key={item.pcrPatternId} value={item.pcrPatternId}>{item.item}</option>)}</select></div>
+                      <div className="col-md-1 text-end"><Btn type="button" color="danger" size="sm" outline onClick={() => { const item = allPatternItems.find((candidate) => candidate.pcrPatternId === upload.pcrPatternId); if (item) removeEvidence(item); }}>{translate(LANGUAGE_KEYS.carbonFactorMaintenance.removeFile)}</Btn></div>
                     </div>;
                   })}
                 </div>}
@@ -446,12 +446,12 @@ export default function PlantContent({
         </Container>
       </WrapContent>
       <Modal show={opinionAttachment !== null} size="lg" onClose={closeOpinionModal}>
-        <Modal.Title onClose={closeOpinionModal}>{allowOpinionEdit ? '編輯建議' : '查看建議'}</Modal.Title>
+        <Modal.Title onClose={closeOpinionModal}>{translate(allowOpinionEdit ? LANGUAGE_KEYS.carbonFactorMaintenance.editOpinion : LANGUAGE_KEYS.carbonFactorMaintenance.viewOpinion)}</Modal.Title>
         <Modal.Body>
           <form onSubmit={saveOpinion}>
             <div className="small text-muted mb-2">{opinionAttachment?.originalFileName || ''}</div>
             <Textarea
-              label="建議內容"
+              label={translate(LANGUAGE_KEYS.carbonFactorMaintenance.opinionContent)}
               value={opinionDraft}
               maxLength={4000}
               rows={6}
@@ -466,7 +466,7 @@ export default function PlantContent({
             />
             <div className="d-flex justify-content-end gap-2 mt-3">
               <Btn type="button" color="secondary" outline onClick={closeOpinionModal} disabled={opinionSubmitting}>{translate(LANGUAGE_KEYS.common.close)}</Btn>
-              {allowOpinionEdit && <Btn type="submit" color="primary" loading={opinionSubmitting}>儲存</Btn>}
+              {allowOpinionEdit && <Btn type="submit" color="primary" loading={opinionSubmitting}>{translate(LANGUAGE_KEYS.common.save)}</Btn>}
             </div>
           </form>
         </Modal.Body>

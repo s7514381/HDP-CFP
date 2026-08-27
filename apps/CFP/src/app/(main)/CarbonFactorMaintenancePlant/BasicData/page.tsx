@@ -26,6 +26,7 @@ import {
   SecondaryDataCompareOption,
   SecondaryDataCompareRow,
 } from '@/types/secondaryDataCompare';
+import { PCR_TEMPLATE_CATEGORY_OPTIONS } from '@/lib/pcrTemplateCategories';
 
 interface SecondaryDataCompareListResponse {
   data: SecondaryDataCompareRow[];
@@ -86,13 +87,6 @@ function getRowSignature(rows: SecondaryDataCompareDraftRow[]): string {
 function formatResult(value: number | null): string {
   return value == null || !Number.isFinite(value) ? '-' : value.toFixed(2);
 }
-
-const PCR_CATEGORY_LANGUAGE_KEYS: Record<number, { key: string; fallback: string }> = {
-  0: { key: LANGUAGE_KEYS.pcrTemplate.material, fallback: '原料' },
-  1: { key: LANGUAGE_KEYS.pcrTemplate.process, fallback: '製程' },
-  2: { key: LANGUAGE_KEYS.pcrTemplate.transport, fallback: '運輸' },
-  3: { key: LANGUAGE_KEYS.pcrTemplate.waste, fallback: '廢棄' },
-};
 
 function BasicDataContent() {
   const router = useRouter();
@@ -406,9 +400,9 @@ function BasicDataContent() {
                   ) : (
                     <div className="list-group list-group-flush">
                       {missingEvidence.map((missing, index) => {
-                        const categoryLabel = PCR_CATEGORY_LANGUAGE_KEYS[missing.category];
+                        const categoryLabel = PCR_TEMPLATE_CATEGORY_OPTIONS.find(option => option.value === missing.category);
                         const categoryName = categoryLabel
-                          ? translate(categoryLabel.key) || categoryLabel.fallback
+                          ? translate(categoryLabel.languageKey)
                           : String(missing.category);
                         return (
                           <div className="list-group-item px-0" key={`${missing.category}-${missing.item}-${index}`}>

@@ -54,7 +54,7 @@ export default function ForgotPassword() {
             label={translate(LANGUAGE_KEYS.auth.email)}
             name="email"
             type="email"
-            placeholder="example@mail.com"
+            placeholder={translate(LANGUAGE_KEYS.common.emailPlaceholder)}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required

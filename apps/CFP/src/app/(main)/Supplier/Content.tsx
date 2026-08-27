@@ -103,7 +103,7 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                   name="email"
                   value={formData.email || ''}
                   onChange={onChange}
-                  placeholder="example@domain.com"
+                  placeholder={translate(LANGUAGE_KEYS.common.emailPlaceholder)}
                 />
               </Grid.Col>
               <Grid.Col md={6}>

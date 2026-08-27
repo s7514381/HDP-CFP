@@ -112,7 +112,7 @@ export function MaterialMaintenanceSourceModal({
             <button
               type="button"
               className="btn-close flex-shrink-0"
-              aria-label="Close"
+              aria-label={translate(LANGUAGE_KEYS.common.close)}
               onClick={onDismissError}
             />
           </div>

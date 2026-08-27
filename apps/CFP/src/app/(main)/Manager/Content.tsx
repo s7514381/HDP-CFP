@@ -116,21 +116,11 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                     name="email"
                     value={formData.email || ''}
                     onChange={onChange}
-                    placeholder="example@domain.com"
+                    placeholder={translate(LANGUAGE_KEYS.common.emailPlaceholder)}
                   />
                 </Grid.Col>
 
-                {/* <Grid.Col md={6}>
-                <Input
-                  label="聯絡電話"
-                  name="phone"
-                  value={formData.phone || ''}
-                  onChange={onChange}
-                    placeholder={translate(LANGUAGE_KEYS.common.phonePlaceholder)}
-                />
-              </Grid.Col> */}
-
-                <Grid.Col md={6}>
+                  <Grid.Col md={6}>
                   <Input
                     label={translate(LANGUAGE_KEYS.manager.taxId)}
                     name="taxID"
@@ -152,33 +142,6 @@ export default function Content({ title, formData, onChange, onSubmit, loading =
                     />
                   </Grid.Col>
                 )}
-
-                {/* <Grid.Col md={6}>
-                <Select
-                  label="狀態"
-                  name="status"
-                  value={formData.status || ''}
-                  onChange={onChange}
-                  options={[
-                    { label: '啟用', value: '1' },
-                    { label: '停用', value: '0' }
-                  ]}
-                />
-              </Grid.Col> */}
-
-                {/* <Grid.Col md={12}>
-                <div className="mb-3">
-                  <label className="form-label">{translate(LANGUAGE_KEYS.manager.note)}</label>
-                  <textarea
-                    className="form-control"
-                    name="note"
-                    rows={3}
-                    value={formData.note || ''}
-                    onChange={onChange}
-                    placeholder={translate(LANGUAGE_KEYS.common.notePlaceholder)}
-                  />
-                </div>
-              </Grid.Col> */}
 
               </Grid.Row>
             </form>

@@ -19,19 +19,13 @@ import { useToast } from '@packages/contexts/ToastContext';
 import { useConfirm } from '@packages/hooks/useConfirm';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
 import { appStorage, useStoredValue } from '@/lib/appStorage';
+import { PCR_TEMPLATE_CATEGORY_OPTIONS } from '@/lib/pcrTemplateCategories';
 import {
   isPcrTemplateCategory,
   PcrTemplateCategory,
   PcrTemplateRow,
   PCR_TEMPLATE_CATEGORY_STORAGE_KEY,
 } from '@/types/pcrTemplate';
-
-const CATEGORY_OPTIONS = [
-  { value: PcrTemplateCategory.Material, label: LANGUAGE_KEYS.pcrTemplate.material, fallback: '原料' },
-  { value: PcrTemplateCategory.Process, label: LANGUAGE_KEYS.pcrTemplate.process, fallback: '製程' },
-  { value: PcrTemplateCategory.Transport, label: LANGUAGE_KEYS.pcrTemplate.transport, fallback: '運輸' },
-  { value: PcrTemplateCategory.Waste, label: LANGUAGE_KEYS.pcrTemplate.waste, fallback: '廢棄' },
-];
 
 export default function PcrTemplatePage() {
   const router = useRouter();
@@ -160,7 +154,7 @@ export default function PcrTemplatePage() {
       <WrapContent className="p-3">
         <div className="border-bottom mb-3">
           <div className="nav nav-tabs" role="tablist" aria-label={translate(LANGUAGE_KEYS.pcrTemplate.title)}>
-            {CATEGORY_OPTIONS.map(option => {
+            {PCR_TEMPLATE_CATEGORY_OPTIONS.map(option => {
               const isActive = category !== null && category === option.value;
               return (
                 <div className="nav-item flex-fill" key={option.value}>
@@ -171,7 +165,7 @@ export default function PcrTemplatePage() {
                     className={`nav-link w-100 ${isActive ? 'active fw-semibold' : 'text-secondary'}`}
                     onClick={() => selectCategory(option.value)}
                   >
-                    {translate(option.label)}
+                    {translate(option.languageKey)}
                   </button>
                 </div>
               );

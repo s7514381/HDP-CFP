@@ -14,10 +14,14 @@ import { usePagePermissions } from '@/hooks/usePagePermissions';
 import { useToast } from '@packages/contexts/ToastContext';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
 import { API_MAP } from '@/lib/apiRoutes';
+import { MaterialDemandRow } from '@/types/materialDemand';
 import MaterialDemandReservationModal from './MaterialDemandReservationModal';
 import downloadFile from '@packages/lib/downloadFlie';
 import {
   AccreditationVerificationPageModel,
+  ConsultantDemand,
+  getAccreditedConsultantNames,
+  getMaterialDemandAccreditationDemands,
   getAccreditationVerificationModel,
 } from '../accreditationVerificationService';
 
@@ -33,7 +37,7 @@ function AccreditationVerificationContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const plantId = searchParams.get('id')?.trim() || '';
-  const { formPost, get } = useAppApi();
+  const { formPost, get, post } = useAppApi();
   const { translate, languageCode } = useLanguage();
   const { hasPermission, isReady } = usePagePermissions('/DataMaintenance');
   const { success, danger } = useToast();
@@ -42,7 +46,7 @@ function AccreditationVerificationContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reservationType, setReservationType] = useState<'0' | '1' | null>(null);
-  const [agreeingDemandId, setAgreeingDemandId] = useState<string | null>(null);
+  const [processingDemandId, setProcessingDemandId] = useState<string | null>(null);
 
   const loadModel = useCallback(async () => {
     if (!plantId) {
@@ -54,18 +58,38 @@ function AccreditationVerificationContent() {
     setError(null);
     setModel(null);
     try {
-      const result = await getAccreditationVerificationModel(formPost, plantId);
+      const [result, demandRows, consultantNames] = await Promise.all([
+        getAccreditationVerificationModel(formPost, plantId),
+        getMaterialDemandAccreditationDemands(post, plantId),
+        getAccreditedConsultantNames(post),
+      ]);
       if (!result.success || !result.data) {
         setError(result.message || translate(LANGUAGE_KEYS.carbonFactorMaintenance.loadFailed));
         return;
       }
-      setModel({ ...result.data, consultantDemands: result.data.consultantDemands ?? [] });
+      const existingConsultantNames = new Map<string, string>();
+      (result.data.consultantDemands ?? []).forEach((demand: ConsultantDemand) => {
+        existingConsultantNames.set(demand.id, demand.consultantName);
+      });
+      setModel({
+        ...result.data,
+        consultantDemands: demandRows.map((demand: MaterialDemandRow): ConsultantDemand => ({
+          id: String(demand.id),
+          demandType: demand.demandType ?? '0',
+          consultantId: demand.consultantId,
+          consultantName: consultantNames.get(String(demand.consultantId)) || existingConsultantNames.get(String(demand.id)) || '',
+          demandPrice: demand.demandPrice ?? '-',
+          consultantResponsePrice: demand.consultantResponsePrice ?? null,
+          isUrgent: demand.isUrgent ?? false,
+          demandStatus: demand.demandStatus ?? '',
+        })),
+      });
     } catch {
       setError(translate(LANGUAGE_KEYS.carbonFactorMaintenance.loadFailed));
     } finally {
       setLoading(false);
     }
-  }, [formPost, plantId, router, translate]);
+  }, [formPost, plantId, post, router, translate]);
 
   useEffect(() => {
     if (!isReady) return;
@@ -92,8 +116,8 @@ function AccreditationVerificationContent() {
   };
 
   const sellerAgree = async (demandId: string) => {
-    if (agreeingDemandId) return;
-    setAgreeingDemandId(demandId);
+    if (processingDemandId) return;
+    setProcessingDemandId(demandId);
     try {
       const result = await formPost<boolean>(API_MAP.MATERIAL_DEMAND_SELLER_AGREE, { id: demandId });
       if (!result.success) {
@@ -105,11 +129,32 @@ function AccreditationVerificationContent() {
     } catch {
       danger({ message: <span>{translate(LANGUAGE_KEYS.materialDemand.operationFailed)}</span> });
     } finally {
-      setAgreeingDemandId(null);
+      setProcessingDemandId(null);
+    }
+  };
+
+  const accredit = async (demandId: string) => {
+    if (processingDemandId) return;
+    setProcessingDemandId(demandId);
+    try {
+      const result = await formPost<boolean>(API_MAP.MATERIAL_DEMAND_ACCREDIT, { id: demandId });
+      if (!result.success) {
+        danger({ message: <span>{result.message || translate(LANGUAGE_KEYS.materialDemand.operationFailed)}</span> });
+        return;
+      }
+      success({ message: <span>{result.message || translate(LANGUAGE_KEYS.materialDemand.accreditSucceeded)}</span> });
+      await loadModel();
+    } catch {
+      danger({ message: <span>{translate(LANGUAGE_KEYS.materialDemand.operationFailed)}</span> });
+    } finally {
+      setProcessingDemandId(null);
     }
   };
 
   const title = translate(LANGUAGE_KEYS.dataQualityManagement.accreditationVerification);
+  const consultantAccreditationTitle = languageCode === 'zh-TW'
+    ? `${translate(LANGUAGE_KEYS.materialDemand.consultant)}${translate(LANGUAGE_KEYS.materialDemand.accredit)}`
+    : `${translate(LANGUAGE_KEYS.materialDemand.consultant)} ${translate(LANGUAGE_KEYS.materialDemand.accredit)}`;
 
   return (
     <>
@@ -181,7 +226,7 @@ function AccreditationVerificationContent() {
               </Card>
 
               <Card className="border shadow-sm mb-3">
-                <Card.Header>買方認可</Card.Header>
+                <Card.Header>{translate(LANGUAGE_KEYS.buyerAccreditation.title)}</Card.Header>
                 <Card.Body>
                   {model.buyerAccreditations.length === 0 ? (
                     <div className="text-center text-muted py-4">{translate(LANGUAGE_KEYS.common.noData)}</div>
@@ -191,7 +236,7 @@ function AccreditationVerificationContent() {
                         <div key={buyer.sourceId}>
                           <Grid.Row className="g-3">
                             <Grid.Col md={4}>
-                              <div className="small text-muted">買方</div>
+                              <div className="small text-muted">{translate(LANGUAGE_KEYS.sellerCompare.buyer)}</div>
                               <div className="fw-semibold">{buyer.buyerName || '-'}</div>
                               <div className="small text-muted">{buyer.buyerMaterialNumber || '-'} · {buyer.buyerProductName || '-'}</div>
                             </Grid.Col>
@@ -221,7 +266,7 @@ function AccreditationVerificationContent() {
               </Card>
 
               <Card className="border shadow-sm mb-3">
-                <Card.Header>{translate(LANGUAGE_KEYS.materialDemand.accredit)}</Card.Header>
+                <Card.Header>{consultantAccreditationTitle}</Card.Header>
                 <Card.Body>
                   {model.consultantDemands.length === 0 ? (
                     <div className="text-center text-muted py-4">{translate(LANGUAGE_KEYS.common.noData)}</div>
@@ -242,19 +287,31 @@ function AccreditationVerificationContent() {
                         <tbody>
                           {model.consultantDemands.map((demand) => {
                             const status = String(demand.demandStatus);
-                            const isBusy = agreeingDemandId === demand.id;
+                            const isBusy = processingDemandId === demand.id;
+                            const canSellerAgree = status === '1';
+                            const canAccredit = status === '2';
                             return (
                               <tr key={demand.id}>
-                                <td>{demand.consultantName || '-'}</td>
+                                <td>{demand.consultantName || demand.consultantId || '-'}</td>
                                 <td>{translate(statusLanguageKey(status))}</td>
-                                <td>{String(demand.demandType) === '1' ? translate(LANGUAGE_KEYS.materialDemand.guidanceDemand) : translate(LANGUAGE_KEYS.materialDemand.accreditationDemand)}</td>
+                                <td>{translate(LANGUAGE_KEYS.materialDemand.accreditationDemand)}</td>
                                 <td className="text-end">{demand.demandPrice ?? '-'}</td>
                                 <td className="text-end">{demand.consultantResponsePrice ?? '-'}</td>
                                 <td>{demand.isUrgent === true || demand.isUrgent === 1 || String(demand.isUrgent).toLowerCase() === 'true' ? translate(LANGUAGE_KEYS.materialDemand.urgent) : translate(LANGUAGE_KEYS.materialDemand.normal)}</td>
                                 <td>
-                                  <Btn type="button" color="primary" size="sm" outline disabled={status !== '1' || isBusy} loading={isBusy} onClick={() => void sellerAgree(demand.id)}>
-                                    {translate(LANGUAGE_KEYS.materialDemand.sellerAgree)}
-                                  </Btn>
+                                  {(canSellerAgree || canAccredit) && (
+                                    <Btn
+                                      type="button"
+                                      color="primary"
+                                      size="sm"
+                                      outline
+                                      disabled={isBusy}
+                                      loading={isBusy}
+                                      onClick={() => void (canAccredit ? accredit(demand.id) : sellerAgree(demand.id))}
+                                    >
+                                      {translate(canAccredit ? LANGUAGE_KEYS.materialDemand.accredit : LANGUAGE_KEYS.materialDemand.sellerAgree)}
+                                    </Btn>
+                                  )}
                                 </td>
                               </tr>
                             );
@@ -267,13 +324,7 @@ function AccreditationVerificationContent() {
               </Card>
 
               <Grid.Row className="g-3">
-                <Grid.Col md={6}>
-                  <Card className="border shadow-sm h-100">
-                    <Card.Header>{translate(LANGUAGE_KEYS.buyerAccreditation.consultantApprovalCount)}</Card.Header>
-                    <Card.Body><span className="fw-semibold">-</span></Card.Body>
-                  </Card>
-                </Grid.Col>
-                <Grid.Col md={6}>
+                <Grid.Col md={12}>
                   <Card className="border shadow-sm h-100">
                     <Card.Header>{translate(LANGUAGE_KEYS.buyerAccreditation.totalScore)}</Card.Header>
                     <Card.Body><span className="fw-semibold">-</span></Card.Body>

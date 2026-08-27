@@ -14,7 +14,7 @@ export default function AuthLayout({
     return (
       <div className="auth-bg" aria-busy="true">
         <div className="auth-card auth-loading-card" role="status" aria-label={translate(LANGUAGE_KEYS.common.loading) || undefined}>
-          <img src="/images/logo-vert.png" alt="aHOP Logo" className="auth-logo" />
+          <img src="/images/logo-vert.png" alt={translate(LANGUAGE_KEYS.common.supplierPlatform)} className="auth-logo" />
           <span className="spinner-border text-primary" aria-hidden="true" />
         </div>
       </div>
@@ -24,7 +24,7 @@ export default function AuthLayout({
   return (
     <div className="auth-bg">
       <div className="auth-card">
-        <img src="/images/logo-vert.png" alt="aHOP Logo" className="auth-logo" />
+        <img src="/images/logo-vert.png" alt={translate(LANGUAGE_KEYS.common.supplierPlatform)} className="auth-logo" />
         {children}
       </div>
     </div>

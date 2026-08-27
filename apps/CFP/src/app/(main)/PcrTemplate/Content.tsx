@@ -13,6 +13,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
 import { FormContentProps } from '@/components/common/formTypes';
 import { PcrTemplateCategory, PcrTemplateChildFormData } from '@/types/pcrTemplate';
+import { PCR_TEMPLATE_CATEGORY_OPTIONS } from '@/lib/pcrTemplateCategories';
 
 export interface PcrTemplateFormData {
   id?: string | number;
@@ -29,13 +30,6 @@ export const DEFAULT_PCR_FORM: PcrTemplateFormData = {
   status: 1,
   childList: [],
 };
-
-const CATEGORY_OPTIONS = [
-  { value: PcrTemplateCategory.Material, label: LANGUAGE_KEYS.pcrTemplate.material, fallback: '原料' },
-  { value: PcrTemplateCategory.Process, label: LANGUAGE_KEYS.pcrTemplate.process, fallback: '製程' },
-  { value: PcrTemplateCategory.Transport, label: LANGUAGE_KEYS.pcrTemplate.transport, fallback: '運輸' },
-  { value: PcrTemplateCategory.Waste, label: LANGUAGE_KEYS.pcrTemplate.waste, fallback: '廢棄' },
-];
 
 export default function PcrTemplateContent({
   title,
@@ -93,8 +87,8 @@ export default function PcrTemplateContent({
                     name="category"
                     value={formData.category}
                     onChange={onChange}
-                    options={CATEGORY_OPTIONS.map(option => ({
-                      label: translate(option.label),
+                    options={PCR_TEMPLATE_CATEGORY_OPTIONS.map(option => ({
+                      label: translate(option.languageKey),
                       value: option.value,
                     }))}
                   />

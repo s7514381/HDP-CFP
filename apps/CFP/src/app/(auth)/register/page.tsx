@@ -91,7 +91,7 @@ export default function Register() {
             label={translate(LANGUAGE_KEYS.auth.email)}
             name="email"
             type="email"
-            placeholder="example@mail.com"
+            placeholder={translate(LANGUAGE_KEYS.common.emailPlaceholder)}
             value={formData.email}
             onChange={handleChange}
             required

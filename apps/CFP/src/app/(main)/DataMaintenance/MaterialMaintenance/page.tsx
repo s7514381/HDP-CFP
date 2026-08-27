@@ -29,13 +29,15 @@ export default function MaterialMaintenancePage() {
 }
 
 function MaterialMaintenanceLoading() {
+  const { translate } = useLanguage();
+
   return (
     <>
       <ActionBar title={LANGUAGE_KEYS.rawMaterialMaintenance.title} />
       <WrapContent className="p-3">
         <Container fluid>
           <div className="d-flex justify-content-center py-5">
-            <span className="spinner-border text-primary" role="status" aria-label="Loading" />
+            <span className="spinner-border text-primary" role="status" aria-label={translate(LANGUAGE_KEYS.common.loading)} />
           </div>
         </Container>
       </WrapContent>

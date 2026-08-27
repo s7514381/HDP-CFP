@@ -14,19 +14,7 @@ import { LANGUAGE_KEYS } from '@/config/languageKeys';
 import { FormContentProps } from '@/components/common/formTypes';
 import { PcrPatternFormData } from '@/types/pcrPattern';
 import { PcrTemplateCategory } from '@/types/pcrTemplate';
-
-interface CategoryOption {
-  value: PcrTemplateCategory;
-  label: string;
-  fallback: string;
-}
-
-const CATEGORY_OPTIONS: CategoryOption[] = [
-  { value: PcrTemplateCategory.Material, label: LANGUAGE_KEYS.pcrTemplate.material, fallback: '原料' },
-  { value: PcrTemplateCategory.Process, label: LANGUAGE_KEYS.pcrTemplate.process, fallback: '製程' },
-  { value: PcrTemplateCategory.Transport, label: LANGUAGE_KEYS.pcrTemplate.transport, fallback: '運輸' },
-  { value: PcrTemplateCategory.Waste, label: LANGUAGE_KEYS.pcrTemplate.waste, fallback: '廢棄' },
-];
+import { PCR_TEMPLATE_CATEGORY_OPTIONS } from '@/lib/pcrTemplateCategories';
 
 export const DEFAULT_PCR_PATTERN_FORM: PcrPatternFormData = {
   productSubcategoryId: '',
@@ -103,8 +91,8 @@ export default function PcrPatternContent({
                     name="category"
                     value={formData.category}
                     onChange={onChange}
-                    options={CATEGORY_OPTIONS.map(option => ({
-                      label: translate(option.label),
+                    options={PCR_TEMPLATE_CATEGORY_OPTIONS.map(option => ({
+                      label: translate(option.languageKey),
                       value: option.value,
                     }))}
                   />

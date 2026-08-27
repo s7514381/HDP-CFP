@@ -25,13 +25,7 @@ import {
 } from '@/types/pcrTemplate';
 import { PcrPatternRow, PCR_PATTERN_CATEGORY_STORAGE_KEY } from '@/types/pcrPattern';
 import { downloadFile } from '@packages/lib/downloadFlie';
-
-const CATEGORY_OPTIONS = [
-  { value: PcrTemplateCategory.Material, label: LANGUAGE_KEYS.pcrTemplate.material, fallback: '原料' },
-  { value: PcrTemplateCategory.Process, label: LANGUAGE_KEYS.pcrTemplate.process, fallback: '製程' },
-  { value: PcrTemplateCategory.Transport, label: LANGUAGE_KEYS.pcrTemplate.transport, fallback: '運輸' },
-  { value: PcrTemplateCategory.Waste, label: LANGUAGE_KEYS.pcrTemplate.waste, fallback: '廢棄' },
-];
+import { PCR_TEMPLATE_CATEGORY_OPTIONS } from '@/lib/pcrTemplateCategories';
 
 type PageLoadState = {
   id: string | null;
@@ -63,6 +57,13 @@ function readProductSubcategoryName(data: unknown): string | null {
 
   const normalizedName = name.trim();
   return normalizedName || null;
+}
+
+function formatTranslation(template: string, values: unknown[]): string {
+  return values.reduce<string>(
+    (result, value, index) => result.replaceAll(`{${index}}`, String(value)),
+    template,
+  );
 }
 
 function ProductSubcategoryPcrPatternPageContent() {
@@ -282,7 +283,7 @@ function ProductSubcategoryPcrPatternPageContent() {
       return;
     }
 
-    danger({ message: <span>下載 PCR 範本失敗。</span> });
+    danger({ message: <span>{translate(LANGUAGE_KEYS.pcrPattern.downloadTemplateFailed)}</span> });
   };
 
   const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -306,18 +307,18 @@ function ProductSubcategoryPcrPatternPageContent() {
       if (response.success && summary) {
         if (summary.failureCount > 0 || summary.errors.length > 0) {
           setImportErrors(summary.errors);
-          danger({ message: <span>匯入失敗，既有 PCR 模板未變更。</span> });
+          danger({ message: <span>{translate(LANGUAGE_KEYS.pcrPattern.importFailedUnchanged)}</span> });
         } else {
-          success({ message: <span>已成功匯入 {summary.successCount} 筆 PCR 項目。</span> });
+          success({ message: <span>{formatTranslation(translate(LANGUAGE_KEYS.pcrPattern.importSucceeded), [summary.successCount])}</span> });
           tableRef.current?.reload();
         }
         return;
       }
 
-      danger({ message: <span>{response.message || '匯入 PCR 範本失敗。'}</span> });
+      danger({ message: <span>{response.message || translate(LANGUAGE_KEYS.pcrPattern.importFailed)}</span> });
     } catch (error) {
       console.error('PCR pattern import failed', error);
-      danger({ message: <span>匯入 PCR 範本失敗。</span> });
+      danger({ message: <span>{translate(LANGUAGE_KEYS.pcrPattern.importFailed)}</span> });
     } finally {
       setImporting(false);
       event.target.value = '';
@@ -394,7 +395,7 @@ function ProductSubcategoryPcrPatternPageContent() {
         )}
         <div className="border-bottom mb-3">
           <div className="nav nav-tabs" role="tablist" aria-label={translate(LANGUAGE_KEYS.pcrTemplate.title)}>
-            {CATEGORY_OPTIONS.map(option => {
+            {PCR_TEMPLATE_CATEGORY_OPTIONS.map(option => {
               const isActive = category !== null && category === option.value;
               return (
                 <div className="nav-item flex-fill" key={option.value}>
@@ -405,7 +406,7 @@ function ProductSubcategoryPcrPatternPageContent() {
                     className={`nav-link w-100 ${isActive ? 'active fw-semibold' : 'text-secondary'}`}
                     onClick={() => selectCategory(option.value)}
                   >
-                    {translate(option.label)}
+                    {translate(option.languageKey)}
                   </button>
                 </div>
               );
@@ -443,12 +444,12 @@ function ProductSubcategoryPcrPatternPageContent() {
             {!isSharedView && hasPermission('Create') && (
               <>
                 <Btn color="secondary" outline onClick={() => void handleDownloadTemplate()}>
-                  {translate(LANGUAGE_KEYS.pcrPattern.importTemplate) || '下載 PCR 範本'}
+                  {translate(LANGUAGE_KEYS.pcrPattern.importTemplate)}
                 </Btn>
                 <FileBtn
                   label={importing
-                    ? (translate(LANGUAGE_KEYS.common.importing) || '匯入中...')
-                    : (translate(LANGUAGE_KEYS.pcrPattern.import) || '匯入 PCR 範本')}
+                    ? translate(LANGUAGE_KEYS.common.importing)
+                    : translate(LANGUAGE_KEYS.pcrPattern.import)}
                   accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                   onChange={handleImport}
                   btnProps={{ color: 'primary', disabled: importing }}
@@ -463,7 +464,7 @@ function ProductSubcategoryPcrPatternPageContent() {
         {importErrors.length > 0 && (
           <Container fluid className="mb-3">
             <div className="alert alert-danger mb-0" role="alert">
-              <div className="fw-semibold mb-2">匯入失敗，請修正以下列號後重新匯入：</div>
+              <div className="fw-semibold mb-2">{translate(LANGUAGE_KEYS.pcrPattern.importErrorsTitle)}</div>
               <ul className="mb-0 ps-3">
                 {importErrors.map((error, index) => (
                   <li key={`${error}-${index}`}>{error}</li>
