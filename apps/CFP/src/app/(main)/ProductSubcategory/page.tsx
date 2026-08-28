@@ -24,14 +24,22 @@ import PcrPatternOwnerModal from './PcrPatternOwnerModal';
 export default function ProductSubcategoryPage() {
   const router = useRouter();
   const { formPost } = useAppApi();
-  const { translate } = useLanguage();
+  const { languageCode, translate } = useLanguage();
   const { hasPermission } = usePagePermissions();
   const { success, danger } = useToast();
   const { confirm } = useConfirm();
   const { Row, Col } = Grid;
   const tableRef = React.useRef<CommonTableHandle<ProductSubcategoryRow>>(null);
+  const previousLanguageCode = React.useRef(languageCode);
   const [name, setName] = useState('');
   const [ownerModalProduct, setOwnerModalProduct] = useState<ProductSubcategoryRow | null>(null);
+
+  React.useEffect(() => {
+    if (previousLanguageCode.current === languageCode) return;
+
+    previousLanguageCode.current = languageCode;
+    tableRef.current?.reload();
+  }, [languageCode]);
 
   const handleSearch = () => {
     tableRef.current?.search({ Name: name.trim() });

@@ -1,5 +1,8 @@
 export interface ProductSubcategoryRow {
   id: string | number;
+  nameLRID?: string;
+  developerLRID?: string;
+  applicableScopeLRID?: string;
   name?: string;
   developer?: string;
   applicableScope?: string;
@@ -8,6 +11,9 @@ export interface ProductSubcategoryRow {
 
 export interface ProductSubcategoryFormData {
   id?: string | number;
+  nameLRID?: string;
+  developerLRID?: string;
+  applicableScopeLRID?: string;
   name: string;
   developer: string;
   applicableScope: string;
