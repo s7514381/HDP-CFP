@@ -18,6 +18,7 @@ import { usePagePermissions } from '@/hooks/usePagePermissions';
 import { useLanguage } from '@/contexts/LanguageContext';
 import SupplierDeleteConfirm from '@/components/common/SupplierDeleteConfirm';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
+import { useSearchPersistence } from '@/hooks/useSearchPersistence';
 
 interface SupplierRow {
   id: string | number;
@@ -26,7 +27,53 @@ interface SupplierRow {
   contactName?: string;
 }
 
+interface SupplierSearchCriteria {
+  name: string;
+  taxId: string;
+}
+
+const DEFAULT_SEARCH_CRITERIA: SupplierSearchCriteria = {
+  name: '',
+  taxId: '',
+};
+
+function isSupplierSearchCriteria(value: unknown): value is SupplierSearchCriteria {
+  if (typeof value !== 'object' || value === null) return false;
+
+  const criteria = value as Record<string, unknown>;
+  return typeof criteria.name === 'string' && typeof criteria.taxId === 'string';
+}
+
+interface SupplierContentProps {
+  initialCriteria: SupplierSearchCriteria;
+  saveSearchCriteria: (criteria: SupplierSearchCriteria) => void;
+  clearSearchCriteria: () => void;
+}
+
 export default function SupplierPage() {
+  const {
+    restoredValue,
+    isReady: isSearchPersistenceReady,
+    save: saveSearchCriteria,
+    clear: clearSearchCriteria,
+  } = useSearchPersistence(DEFAULT_SEARCH_CRITERIA, isSupplierSearchCriteria);
+
+  if (!isSearchPersistenceReady) return null;
+
+  return (
+    <SupplierContent
+      initialCriteria={restoredValue}
+      saveSearchCriteria={saveSearchCriteria}
+      clearSearchCriteria={clearSearchCriteria}
+    />
+  );
+}
+
+function SupplierContent({
+  initialCriteria,
+  saveSearchCriteria,
+  clearSearchCriteria,
+}: SupplierContentProps) {
   const router = useRouter();
   const api = useAppApi();
   const { success, danger } = useToast();
@@ -35,11 +82,12 @@ export default function SupplierPage() {
   const { Row, Col } = Grid;
 
   const tableRef = React.useRef<CommonTableHandle<SupplierRow>>(null);
-  const [searchName, setSearchName] = useState('');
-  const [searchTaxID, setSearchTaxID] = useState('');
+  const [searchName, setSearchName] = useState(initialCriteria.name);
+  const [searchTaxID, setSearchTaxID] = useState(initialCriteria.taxId);
   const [pendingDeleteId, setPendingDeleteId] = useState<number | string | null>(null);
 
   const handleSearch = () => {
+    saveSearchCriteria({ name: searchName, taxId: searchTaxID });
     tableRef.current?.search({
       Name: searchName,
       MaterialTaxID: searchTaxID
@@ -47,8 +95,9 @@ export default function SupplierPage() {
   };
 
   const handleClear = () => {
-    setSearchName('');
-    setSearchTaxID('');
+    setSearchName(DEFAULT_SEARCH_CRITERIA.name);
+    setSearchTaxID(DEFAULT_SEARCH_CRITERIA.taxId);
+    clearSearchCriteria();
     tableRef.current?.search({});
   };
 
@@ -149,6 +198,10 @@ export default function SupplierPage() {
               ref={tableRef}
               columns={columns}
               apiUrl={API_MAP.SUPPLIER_GET_LIST}
+              searchParams={{
+                Name: initialCriteria.name,
+                MaterialTaxID: initialCriteria.taxId,
+              }}
               pageSize={10}
             />
         </Container>

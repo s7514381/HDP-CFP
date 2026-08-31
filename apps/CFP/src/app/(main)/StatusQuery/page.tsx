@@ -7,17 +7,36 @@ import { SearchBlock } from "@/components/layouts/SearchBlock";
 import { Input, Radio } from "@packages/components/bootstrap5/Input";
 import { Btn } from "@packages/components/bootstrap5/Btn";
 import { CommonTable, Column, CommonTableHandle } from "@/components/common/CommonTable";
+import type { TableSearchParams } from '@/components/common/tableUtils';
 import Container from "@packages/components/bootstrap5/Container";
 import Grid from "@packages/components/bootstrap5/Grid";
 import { API_URL } from '@/lib/apiRoutes';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
+import { useSearchPersistence } from '@/hooks/useSearchPersistence';
 
-interface StatusSearchForm {
+interface StatusSearchForm extends TableSearchParams {
   updateDateFrom: string;
   updateDateTo: string;
   isSend: boolean | null;
   isUpdate: boolean | null;
+}
+
+const DEFAULT_SEARCH_FORM: StatusSearchForm = {
+  updateDateFrom: '',
+  updateDateTo: '',
+  isSend: null,
+  isUpdate: null,
+};
+
+function isStatusSearchForm(value: unknown): value is StatusSearchForm {
+  if (typeof value !== 'object' || value === null) return false;
+
+  const criteria = value as Record<string, unknown>;
+  return typeof criteria.updateDateFrom === 'string'
+    && typeof criteria.updateDateTo === 'string'
+    && (typeof criteria.isSend === 'boolean' || criteria.isSend === null)
+    && (typeof criteria.isUpdate === 'boolean' || criteria.isUpdate === null);
 }
 
 interface StatusRow {
@@ -31,19 +50,43 @@ interface StatusRow {
   supplierName?: string;
 }
 
+interface StatusQueryContentProps {
+  initialCriteria: StatusSearchForm;
+  saveSearchCriteria: (criteria: StatusSearchForm) => void;
+  clearSearchCriteria: () => void;
+}
+
 export default function MaterialNotifyPage() {
+  const {
+    restoredValue,
+    isReady: isSearchPersistenceReady,
+    save: saveSearchCriteria,
+    clear: clearSearchCriteria,
+  } = useSearchPersistence(DEFAULT_SEARCH_FORM, isStatusSearchForm);
+
+  if (!isSearchPersistenceReady) return null;
+
+  return (
+    <StatusQueryContent
+      initialCriteria={restoredValue}
+      saveSearchCriteria={saveSearchCriteria}
+      clearSearchCriteria={clearSearchCriteria}
+    />
+  );
+}
+
+function StatusQueryContent({
+  initialCriteria,
+  saveSearchCriteria,
+  clearSearchCriteria,
+}: StatusQueryContentProps) {
   const { Row, Col } = Grid;
   const { translate } = useLanguage();
 
   const tableRef = useRef<CommonTableHandle<StatusRow>>(null);
 
   // 搜尋表單狀態
-  const [searchForm, setSearchForm] = useState<StatusSearchForm>({
-    updateDateFrom: '',
-    updateDateTo: '',
-    isSend: null as boolean | null,
-    isUpdate: null as boolean | null
-  });
+  const [searchForm, setSearchForm] = useState<StatusSearchForm>(initialCriteria);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -65,18 +108,15 @@ export default function MaterialNotifyPage() {
   };
 
   const handleSearch = () => {
+    saveSearchCriteria(searchForm);
     tableRef.current?.search({
       ...searchForm
     });
   };
 
   const handleClear = () => {
-    setSearchForm({
-      updateDateFrom: '',
-      updateDateTo: '',
-      isSend: null,
-      isUpdate: null
-    });
+    setSearchForm(DEFAULT_SEARCH_FORM);
+    clearSearchCriteria();
     tableRef.current?.search({});
   };
 
@@ -195,6 +235,7 @@ export default function MaterialNotifyPage() {
               ref={tableRef}
               columns={columns}
               apiUrl={`${API_URL}/StatusQuery/GetList`}
+              searchParams={initialCriteria}
               pageSize={10}
             />
         </Container>

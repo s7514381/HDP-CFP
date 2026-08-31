@@ -19,9 +19,55 @@ import { useToast } from '@packages/contexts/ToastContext';
 import { useConfirm } from '@packages/hooks/useConfirm';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
 import { PcrPatternOwnerRow, ProductSubcategoryRow } from '@/types/productSubcategory';
+import { useSearchPersistence } from '@/hooks/useSearchPersistence';
 import PcrPatternOwnerModal from './PcrPatternOwnerModal';
 
+interface ProductSubcategorySearchCriteria {
+  name: string;
+}
+
+const DEFAULT_SEARCH_CRITERIA: ProductSubcategorySearchCriteria = { name: '' };
+
+function isProductSubcategorySearchCriteria(value: unknown): value is ProductSubcategorySearchCriteria {
+  if (typeof value !== 'object' || value === null) return false;
+
+  return typeof (value as Record<string, unknown>).name === 'string';
+}
+
 export default function ProductSubcategoryPage() {
+  const {
+    restoredValue,
+    isReady: isSearchPersistenceReady,
+    save: saveSearchCriteria,
+    clear: clearSearchCriteria,
+  } = useSearchPersistence(DEFAULT_SEARCH_CRITERIA, isProductSubcategorySearchCriteria);
+
+  if (!isSearchPersistenceReady) return null;
+
+  return (
+    <ProductSubcategoryContent
+      initialCriteria={restoredValue}
+      saveSearchCriteria={saveSearchCriteria}
+      clearSearchCriteria={clearSearchCriteria}
+    />
+  );
+}
+
+interface ProductSubcategoryContentProps {
+  initialCriteria: ProductSubcategorySearchCriteria;
+  saveSearchCriteria: ProductSubcategorySaveSearchCriteria;
+  clearSearchCriteria: () => void;
+}
+
+type ProductSubcategorySaveSearchCriteria = ReturnType<
+  typeof useSearchPersistence<ProductSubcategorySearchCriteria>
+>['save'];
+
+function ProductSubcategoryContent({
+  initialCriteria,
+  saveSearchCriteria,
+  clearSearchCriteria,
+}: ProductSubcategoryContentProps) {
   const router = useRouter();
   const { formPost } = useAppApi();
   const { languageCode, translate } = useLanguage();
@@ -31,7 +77,7 @@ export default function ProductSubcategoryPage() {
   const { Row, Col } = Grid;
   const tableRef = React.useRef<CommonTableHandle<ProductSubcategoryRow>>(null);
   const previousLanguageCode = React.useRef(languageCode);
-  const [name, setName] = useState('');
+  const [name, setName] = useState(initialCriteria.name);
   const [ownerModalProduct, setOwnerModalProduct] = useState<ProductSubcategoryRow | null>(null);
 
   React.useEffect(() => {
@@ -42,11 +88,13 @@ export default function ProductSubcategoryPage() {
   }, [languageCode]);
 
   const handleSearch = () => {
+    saveSearchCriteria({ name });
     tableRef.current?.search({ Name: name.trim() });
   };
 
   const handleClear = () => {
     setName('');
+    clearSearchCriteria();
     tableRef.current?.search({});
   };
 
@@ -181,6 +229,7 @@ export default function ProductSubcategoryPage() {
             ref={tableRef}
             columns={columns}
             apiUrl={API_MAP.PRODUCT_SUBCATEGORY_GET_LIST}
+            searchParams={{ Name: initialCriteria.name.trim() }}
             pageSize={10}
           />
         </Container>

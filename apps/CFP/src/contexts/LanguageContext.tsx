@@ -7,7 +7,7 @@ import { appStorage, sessionStorageKeys, useStoredValue } from '@/lib/appStorage
 
 const DEFAULT_LANGUAGE_CODE = 'zh-TW';
 // Increment when adding language resources so existing browser caches refresh.
-const TRANSLATION_CACHE_VERSION = 35;
+const TRANSLATION_CACHE_VERSION = 37;
 const INITIAL_LANGUAGE_RETRY_DELAY_MS = 2000;
 const translationStorageKey = (languageCode: string) => `languageTranslations:${languageCode}`;
 

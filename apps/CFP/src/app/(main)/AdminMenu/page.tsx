@@ -18,6 +18,7 @@ import { usePagePermissions } from '@/hooks/usePagePermissions';
 import { useAppApi } from '@/hooks/useAppApi';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
+import { useSearchPersistence } from '@/hooks/useSearchPersistence';
 
 interface AdminMenuRow {
   id: string | number;
@@ -26,7 +27,51 @@ interface AdminMenuRow {
   status?: string | number;
 }
 
+interface AdminMenuSearchCriteria {
+  title: string;
+}
+
+const DEFAULT_SEARCH_CRITERIA: AdminMenuSearchCriteria = {
+  title: '',
+};
+
+function isAdminMenuSearchCriteria(value: unknown): value is AdminMenuSearchCriteria {
+  if (typeof value !== 'object' || value === null) return false;
+
+  const criteria = value as Record<string, unknown>;
+  return typeof criteria.title === 'string';
+}
+
+interface AdminMenuContentProps {
+  initialCriteria: AdminMenuSearchCriteria;
+  saveSearchCriteria: (criteria: AdminMenuSearchCriteria) => void;
+  clearSearchCriteria: () => void;
+}
+
 export default function AdminMenuPage() {
+  const {
+    restoredValue,
+    isReady: isSearchPersistenceReady,
+    save: saveSearchCriteria,
+    clear: clearSearchCriteria,
+  } = useSearchPersistence(DEFAULT_SEARCH_CRITERIA, isAdminMenuSearchCriteria);
+
+  if (!isSearchPersistenceReady) return null;
+
+  return (
+    <AdminMenuContent
+      initialCriteria={restoredValue}
+      saveSearchCriteria={saveSearchCriteria}
+      clearSearchCriteria={clearSearchCriteria}
+    />
+  );
+}
+
+function AdminMenuContent({
+  initialCriteria,
+  saveSearchCriteria,
+  clearSearchCriteria,
+}: AdminMenuContentProps) {
   const router = useRouter();
   const { success, danger } = useToast();
   const { confirm } = useConfirm();
@@ -36,16 +81,18 @@ export default function AdminMenuPage() {
   const { translate } = useLanguage();
 
   const tableRef = React.useRef<CommonTableHandle<AdminMenuRow>>(null);
-  const [searchTitle, setSearchTitle] = useState('');
+  const [searchTitle, setSearchTitle] = useState(initialCriteria.title);
 
   const handleSearch = () => {
+    saveSearchCriteria({ title: searchTitle });
     tableRef.current?.search({
       Title: searchTitle
     });
   };
 
   const handleClear = () => {
-    setSearchTitle('');
+    setSearchTitle(DEFAULT_SEARCH_CRITERIA.title);
+    clearSearchCriteria();
     tableRef.current?.search({});
   };
 
@@ -138,6 +185,7 @@ export default function AdminMenuPage() {
               ref={tableRef}
               columns={columns}
               apiUrl={API_MAP.ADMIN_MENU_GET_LIST}
+              searchParams={{ Title: initialCriteria.title }}
               pageSize={10}
             />
         </Container>

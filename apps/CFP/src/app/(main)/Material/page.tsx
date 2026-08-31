@@ -20,6 +20,7 @@ import { usePagePermissions } from '@/hooks/usePagePermissions';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
 import { ImportListConfig, useImportList } from '@/hooks/useImportList';
+import { useSearchPersistence } from '@/hooks/useSearchPersistence';
 
 interface MaterialRow {
   id: string | number;
@@ -37,14 +38,56 @@ interface MaterialSearch extends TableSearchParams {
   SupplierName: string;
 }
 
+const DEFAULT_SEARCH_CRITERIA: MaterialSearch = {
+  MaterialNumber: '',
+  SupplierName: '',
+};
+
+function isMaterialSearchCriteria(value: unknown): value is MaterialSearch {
+  if (typeof value !== 'object' || value === null) return false;
+
+  const criteria = value as Record<string, unknown>;
+  return typeof criteria.MaterialNumber === 'string'
+    && typeof criteria.SupplierName === 'string';
+}
+
 const MATERIAL_IMPORT_CONFIG: ImportListConfig<MaterialSearch> = {
   importUrl: API_MAP.MATERIAL_IMPORT,
   templateUrl: API_MAP.MATERIAL_IMPORT_TEMPLATE,
   templateFileName: 'MaterialImportTemplate.xlsx',
-  initialSearch: { MaterialNumber: '', SupplierName: '' },
+  initialSearch: DEFAULT_SEARCH_CRITERIA,
 };
 
 export default function MaterialPage() {
+  const {
+    restoredValue,
+    isReady: isSearchPersistenceReady,
+    save: saveSearchCriteria,
+    clear: clearSearchCriteria,
+  } = useSearchPersistence(DEFAULT_SEARCH_CRITERIA, isMaterialSearchCriteria);
+
+  if (!isSearchPersistenceReady) return null;
+
+  return (
+    <MaterialContent
+      initialCriteria={restoredValue}
+      saveSearchCriteria={saveSearchCriteria}
+      clearSearchCriteria={clearSearchCriteria}
+    />
+  );
+}
+
+interface MaterialContentProps {
+  initialCriteria: MaterialSearch;
+  saveSearchCriteria: (criteria: MaterialSearch) => void;
+  clearSearchCriteria: () => void;
+}
+
+function MaterialContent({
+  initialCriteria,
+  saveSearchCriteria,
+  clearSearchCriteria,
+}: MaterialContentProps) {
   const router = useRouter();
   const api = useAppApi();
   const { success, danger } = useToast();
@@ -54,14 +97,21 @@ export default function MaterialPage() {
 
   const tableRef = React.useRef<CommonTableHandle<MaterialRow>>(null);
   const { translate } = useLanguage();
-  const importList = useImportList<MaterialRow, MaterialSearch>(tableRef, MATERIAL_IMPORT_CONFIG);
+  const importList = useImportList<MaterialRow, MaterialSearch>(tableRef, {
+    ...MATERIAL_IMPORT_CONFIG,
+    initialSearch: initialCriteria,
+  });
 
   const handleSearch = () => {
+    saveSearchCriteria(importList.searchValues);
     importList.search();
   };
 
   const handleClear = () => {
+    clearSearchCriteria();
     importList.clearSearch();
+    importList.updateSearchValue('MaterialNumber', DEFAULT_SEARCH_CRITERIA.MaterialNumber);
+    importList.updateSearchValue('SupplierName', DEFAULT_SEARCH_CRITERIA.SupplierName);
   };
 
   const handleDelete = async (id: number | string) => {
@@ -185,6 +235,7 @@ export default function MaterialPage() {
               ref={tableRef}
               columns={columns}
               apiUrl={API_MAP.MATERIAL_GET_LIST}
+              searchParams={initialCriteria}
               pageSize={10}
             />
         </Container>

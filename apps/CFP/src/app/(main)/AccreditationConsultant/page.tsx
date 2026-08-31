@@ -22,17 +22,70 @@ import {
   renderConsultantCount,
   renderConsultantRating,
 } from '@/components/common/consultantTableUtils';
+import { useSearchPersistence } from '@/hooks/useSearchPersistence';
+
+interface AccreditationConsultantSearchCriteria {
+  name: string;
+  certificationMode: string;
+  accreditationFilter: string;
+}
+
+const DEFAULT_SEARCH_CRITERIA: AccreditationConsultantSearchCriteria = {
+  name: '',
+  certificationMode: '',
+  accreditationFilter: '',
+};
+
+function isAccreditationConsultantSearchCriteria(
+  value: unknown,
+): value is AccreditationConsultantSearchCriteria {
+  if (typeof value !== 'object' || value === null) return false;
+
+  const criteria = value as Record<string, unknown>;
+  return typeof criteria.name === 'string'
+    && typeof criteria.certificationMode === 'string'
+    && typeof criteria.accreditationFilter === 'string';
+}
+
+interface AccreditationConsultantContentProps {
+  initialCriteria: AccreditationConsultantSearchCriteria;
+  saveSearchCriteria: (criteria: AccreditationConsultantSearchCriteria) => void;
+  clearSearchCriteria: () => void;
+}
 
 export default function AccreditationConsultantPage() {
+  const {
+    restoredValue,
+    isReady: isSearchPersistenceReady,
+    save: saveSearchCriteria,
+    clear: clearSearchCriteria,
+  } = useSearchPersistence(DEFAULT_SEARCH_CRITERIA, isAccreditationConsultantSearchCriteria);
+
+  if (!isSearchPersistenceReady) return null;
+
+  return (
+    <AccreditationConsultantContent
+      initialCriteria={restoredValue}
+      saveSearchCriteria={saveSearchCriteria}
+      clearSearchCriteria={clearSearchCriteria}
+    />
+  );
+}
+
+function AccreditationConsultantContent({
+  initialCriteria,
+  saveSearchCriteria,
+  clearSearchCriteria,
+}: AccreditationConsultantContentProps) {
   const router = useRouter();
   const { formPost } = useAppApi();
   const { translate } = useLanguage();
   const { hasPermission, isReady } = usePagePermissions('/AccreditationConsultant');
   const { success, danger } = useToast();
   const tableRef = React.useRef<CommonTableHandle<ConsultantRow>>(null);
-  const [name, setName] = useState('');
-  const [certificationMode, setCertificationMode] = useState('');
-  const [accreditationFilter, setAccreditationFilter] = useState('');
+  const [name, setName] = useState(initialCriteria.name);
+  const [certificationMode, setCertificationMode] = useState(initialCriteria.certificationMode);
+  const [accreditationFilter, setAccreditationFilter] = useState(initialCriteria.accreditationFilter);
   const [reservingId, setReservingId] = useState<string | null>(null);
 
   const canAccess = hasPermission('Consultant:ReserveAccreditation');
@@ -42,6 +95,7 @@ export default function AccreditationConsultantPage() {
   }, [canAccess, isReady, router]);
 
   const search = () => {
+    saveSearchCriteria({ name, certificationMode, accreditationFilter });
     tableRef.current?.search({
       Name: name.trim() || undefined,
       CertificationMode: certificationMode.trim() || undefined,
@@ -50,11 +104,18 @@ export default function AccreditationConsultantPage() {
   };
 
   const clear = () => {
-    setName('');
-    setCertificationMode('');
-    setAccreditationFilter('');
+    setName(DEFAULT_SEARCH_CRITERIA.name);
+    setCertificationMode(DEFAULT_SEARCH_CRITERIA.certificationMode);
+    setAccreditationFilter(DEFAULT_SEARCH_CRITERIA.accreditationFilter);
+    clearSearchCriteria();
     tableRef.current?.search({});
   };
+
+  const toTableSearchParams = (criteria: AccreditationConsultantSearchCriteria) => ({
+    Name: criteria.name.trim() || undefined,
+    CertificationMode: criteria.certificationMode.trim() || undefined,
+    IsAccredited: criteria.accreditationFilter === '' ? undefined : criteria.accreditationFilter === 'true',
+  });
 
   const reserveAccreditation = async (id: string) => {
     if (reservingId) return;
@@ -184,6 +245,7 @@ export default function AccreditationConsultantPage() {
           ref={tableRef}
           columns={columns}
           apiUrl={API_MAP.CONSULTANT_GET_LIST}
+          searchParams={toTableSearchParams(initialCriteria)}
           pageSize={10}
         />
       </WrapContent>

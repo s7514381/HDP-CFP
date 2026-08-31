@@ -12,15 +12,43 @@ import Grid from "@packages/components/bootstrap5/Grid";
 import { useAppApi } from '@/hooks/useAppApi';
 import { useToast } from '@packages/contexts/ToastContext';
 import { API_URL } from '@/lib/apiRoutes';
+import { TableSearchParams } from '@/components/common/tableUtils';
 import { downloadFile } from '@packages/lib/downloadFlie';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
+import { useSearchPersistence } from '@/hooks/useSearchPersistence';
 
 interface NotifyStatusReportItem {
   strDate: string;
   supplierName: string;
   sentCount: string | number;
   updateCount: string | number;
+}
+
+interface NotifyStatusReportSearchCriteria extends TableSearchParams {
+  createDateFrom: string;
+  createDateTo: string;
+  supplierName: string;
+}
+
+const INITIAL_SEARCH: NotifyStatusReportSearchCriteria = {
+  createDateFrom: '',
+  createDateTo: '',
+  supplierName: '',
+};
+
+function isNotifyStatusReportSearchCriteria(value: unknown): value is NotifyStatusReportSearchCriteria {
+  if (typeof value !== 'object' || value === null) return false;
+  const criteria = value as Record<string, unknown>;
+  return typeof criteria.createDateFrom === 'string'
+    && typeof criteria.createDateTo === 'string'
+    && typeof criteria.supplierName === 'string';
+}
+
+interface NotifyStatusReportContentProps {
+  initialCriteria: NotifyStatusReportSearchCriteria;
+  saveSearchCriteria: (criteria: NotifyStatusReportSearchCriteria) => void;
+  clearSearchCriteria: () => void;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -50,7 +78,30 @@ function toCsv(items: NotifyStatusReportItem[], headers: string[]) {
   return ['\uFEFF' + headerText, ...rows].join('\n');
 }
 
-export default function MaterialNotifyPage() {
+export default function NotifyStatusReportPage() {
+  const {
+    restoredValue,
+    isReady: isSearchPersistenceReady,
+    save: saveSearchCriteria,
+    clear: clearSearchCriteria,
+  } = useSearchPersistence(INITIAL_SEARCH, isNotifyStatusReportSearchCriteria);
+
+  if (!isSearchPersistenceReady) return null;
+
+  return (
+    <NotifyStatusReportContent
+      initialCriteria={restoredValue}
+      saveSearchCriteria={saveSearchCriteria}
+      clearSearchCriteria={clearSearchCriteria}
+    />
+  );
+}
+
+function NotifyStatusReportContent({
+  initialCriteria,
+  saveSearchCriteria,
+  clearSearchCriteria,
+}: NotifyStatusReportContentProps) {
   const api = useAppApi();
   const { danger } = useToast();
   const { Row, Col } = Grid;
@@ -65,11 +116,7 @@ export default function MaterialNotifyPage() {
   const tableRef = useRef<CommonTableHandle<NotifyStatusReportItem>>(null);
 
   // 搜尋表單狀態
-  const [searchForm, setSearchForm] = useState({
-    createDateFrom: '',
-    createDateTo: '',
-    supplierName: ''
-  });
+  const [searchForm, setSearchForm] = useState(initialCriteria);
   const [exporting, setExporting] = useState(false);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -82,17 +129,13 @@ export default function MaterialNotifyPage() {
   };
 
   const handleSearch = () => {
-    tableRef.current?.search({
-      ...searchForm
-    });
+    saveSearchCriteria(searchForm);
+    tableRef.current?.search(searchForm);
   };
 
   const handleClear = () => {
-    setSearchForm({
-      createDateFrom: '',
-      createDateTo: '',
-      supplierName: ''
-    });
+    setSearchForm(INITIAL_SEARCH);
+    clearSearchCriteria();
     tableRef.current?.search({});
   };
 
@@ -201,6 +244,7 @@ export default function MaterialNotifyPage() {
             ref={tableRef}
             columns={tableColumns}
             apiUrl={`${API_URL}/NotifyStatusReport/GetList`}
+            searchParams={initialCriteria}
             pageSize={10}
           />
         </Container>

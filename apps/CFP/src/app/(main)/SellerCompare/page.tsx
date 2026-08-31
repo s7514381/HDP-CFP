@@ -17,6 +17,7 @@ import { usePagePermissions } from '@/hooks/usePagePermissions';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
 import { ImportListConfig, useImportList } from '@/hooks/useImportList';
+import { useSearchPersistence } from '@/hooks/useSearchPersistence';
 
 interface SellerCompareRow {
   id: string | number;
@@ -32,28 +33,76 @@ interface SellerCompareSearch extends TableSearchParams {
   SupplierName: string;
 }
 
+const DEFAULT_SEARCH: SellerCompareSearch = {
+  MaterialNumber: '',
+  SupplierName: '',
+};
+
 const SELLER_IMPORT_CONFIG: ImportListConfig<SellerCompareSearch> = {
   importUrl: API_MAP.SELLER_IMPORT,
   templateUrl: API_MAP.SELLER_IMPORT_TEMPLATE,
   templateFileName: 'SellerCompareImportTemplate.xlsx',
-  initialSearch: { MaterialNumber: '', SupplierName: '' },
+  initialSearch: DEFAULT_SEARCH,
 };
 
-export default function MaterialPage() {
+function isSellerCompareSearchCriteria(value: unknown): value is SellerCompareSearch {
+  if (typeof value !== 'object' || value === null) return false;
+  const criteria = value as Record<string, unknown>;
+  return typeof criteria.MaterialNumber === 'string'
+    && typeof criteria.SupplierName === 'string';
+}
+
+interface SellerCompareContentProps {
+  initialCriteria: SellerCompareSearch;
+  saveSearchCriteria: (criteria: SellerCompareSearch) => void;
+  clearSearchCriteria: () => void;
+}
+
+export default function SellerComparePage() {
+  const {
+    restoredValue,
+    isReady: isSearchPersistenceReady,
+    save: saveSearchCriteria,
+    clear: clearSearchCriteria,
+  } = useSearchPersistence(DEFAULT_SEARCH, isSellerCompareSearchCriteria);
+
+  if (!isSearchPersistenceReady) return null;
+
+  return (
+    <SellerCompareContent
+      initialCriteria={restoredValue}
+      saveSearchCriteria={saveSearchCriteria}
+      clearSearchCriteria={clearSearchCriteria}
+    />
+  );
+}
+
+function SellerCompareContent({
+  initialCriteria,
+  saveSearchCriteria,
+  clearSearchCriteria,
+}: SellerCompareContentProps) {
   const router = useRouter();
   const { hasPermission } = usePagePermissions();
   const { Row, Col } = Grid;
 
   const tableRef = React.useRef<CommonTableHandle<SellerCompareRow>>(null);
   const { translate } = useLanguage();
-  const importList = useImportList<SellerCompareRow, SellerCompareSearch>(tableRef, SELLER_IMPORT_CONFIG);
+  const importList = useImportList<SellerCompareRow, SellerCompareSearch>(
+    tableRef,
+    { ...SELLER_IMPORT_CONFIG, initialSearch: initialCriteria },
+  );
 
   const handleSearch = () => {
+    saveSearchCriteria(importList.searchValues);
     importList.search();
   };
 
   const handleClear = () => {
+    clearSearchCriteria();
     importList.clearSearch();
+    importList.updateSearchValue('MaterialNumber', DEFAULT_SEARCH.MaterialNumber);
+    importList.updateSearchValue('SupplierName', DEFAULT_SEARCH.SupplierName);
   };
 
   const columns: Column<SellerCompareRow>[] = [
@@ -144,6 +193,7 @@ export default function MaterialPage() {
               ref={tableRef}
               columns={columns}
               apiUrl={`${API_URL}/SellerCompare/GetList`}
+              searchParams={initialCriteria}
               pageSize={10}
             />
         </Container>

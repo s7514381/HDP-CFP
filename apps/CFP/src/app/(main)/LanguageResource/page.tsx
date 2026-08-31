@@ -20,6 +20,8 @@ import LanguageCreateModal from '@/components/layouts/LanguageCreateModal';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
 import { usePagePermissions } from '@/hooks/usePagePermissions';
+import type { TableSearchParams } from '@/components/common/tableUtils';
+import { useSearchPersistence } from '@/hooks/useSearchPersistence';
 
 interface LanguageItem {
   id: string;
@@ -47,7 +49,57 @@ const COMMON_MENU_FILTER_VALUE = '__COMMON__';
 const COMMON_MENU_CODE = '__COMMON_MENU__';
 const UNCONFIGURED_MENU_CODE = '__UNCONFIGURED_MENU__';
 
+interface LanguageResourceSearchCriteria {
+  baseText: string;
+  serialNumber: string;
+  menuId: string;
+}
+
+const DEFAULT_SEARCH_CRITERIA: LanguageResourceSearchCriteria = {
+  baseText: '',
+  serialNumber: '',
+  menuId: '',
+};
+
+function isLanguageResourceSearchCriteria(value: unknown): value is LanguageResourceSearchCriteria {
+  if (typeof value !== 'object' || value === null) return false;
+
+  const criteria = value as Record<string, unknown>;
+  return typeof criteria.baseText === 'string'
+    && typeof criteria.serialNumber === 'string'
+    && typeof criteria.menuId === 'string';
+}
+
+interface LanguageResourceContentProps {
+  initialCriteria: LanguageResourceSearchCriteria;
+  saveSearchCriteria: (criteria: LanguageResourceSearchCriteria) => void;
+  clearSearchCriteria: () => void;
+}
+
 export default function LanguageResourcePage() {
+  const {
+    restoredValue,
+    isReady: isSearchPersistenceReady,
+    save: saveSearchCriteria,
+    clear: clearSearchCriteria,
+  } = useSearchPersistence(DEFAULT_SEARCH_CRITERIA, isLanguageResourceSearchCriteria);
+
+  if (!isSearchPersistenceReady) return null;
+
+  return (
+    <LanguageResourceContent
+      initialCriteria={restoredValue}
+      saveSearchCriteria={saveSearchCriteria}
+      clearSearchCriteria={clearSearchCriteria}
+    />
+  );
+}
+
+function LanguageResourceContent({
+  initialCriteria,
+  saveSearchCriteria,
+  clearSearchCriteria,
+}: LanguageResourceContentProps) {
   const router = useRouter();
   const { success, danger } = useToast();
   const { confirm } = useConfirm();
@@ -55,15 +107,15 @@ export default function LanguageResourcePage() {
   const { formPost } = useAppApi();
   const { hasPermission } = usePagePermissions();
   const tableRef = React.useRef<CommonTableHandle>(null);
-  const [searchBaseText, setSearchBaseText] = useState('');
-  const [searchSerialNumber, setSearchSerialNumber] = useState('');
-  const [searchMenuId, setSearchMenuId] = useState('');
   const [languages, setLanguages] = useState<LanguageItem[]>([]);
   const [menus, setMenus] = useState<AdminMenuData[]>([]);
   const [showLanguageCreateModal, setShowLanguageCreateModal] = useState(false);
   const { languageCode, translate } = useLanguage();
   const canAddLanguage = hasPermission('Language:Create');
   const canAddTranslation = hasPermission('LanguageResource:Create');
+  const [searchBaseText, setSearchBaseText] = useState(initialCriteria.baseText);
+  const [searchSerialNumber, setSearchSerialNumber] = useState(initialCriteria.serialNumber);
+  const [searchMenuId, setSearchMenuId] = useState(initialCriteria.menuId);
 
   const loadLanguages = useCallback(async () => {
     const result = await formPost(API_MAP.LANGUAGE_RESOURCE_GET_ACTIVE_LANGUAGES, {});
@@ -112,21 +164,30 @@ export default function LanguageResourcePage() {
     return options;
   }, [languageCode, menus, translate]);
 
-  const getSearchParams = () => ({
-    BaseText: searchBaseText,
-    SerialNumber: searchSerialNumber,
-    AdminMenuId: searchMenuId === COMMON_MENU_FILTER_VALUE ? undefined : searchMenuId,
-    IsCommon: searchMenuId === COMMON_MENU_FILTER_VALUE ? 'true' : undefined,
+  const getSearchCriteria = (): LanguageResourceSearchCriteria => ({
+    baseText: searchBaseText,
+    serialNumber: searchSerialNumber,
+    menuId: searchMenuId,
+  });
+
+  const toTableSearchParams = (criteria: LanguageResourceSearchCriteria): TableSearchParams => ({
+    BaseText: criteria.baseText,
+    SerialNumber: criteria.serialNumber,
+    AdminMenuId: criteria.menuId === COMMON_MENU_FILTER_VALUE ? undefined : criteria.menuId,
+    IsCommon: criteria.menuId === COMMON_MENU_FILTER_VALUE ? 'true' : undefined,
   });
 
   const handleSearch = () => {
-    tableRef.current?.search(getSearchParams());
+    const criteria = getSearchCriteria();
+    saveSearchCriteria(criteria);
+    tableRef.current?.search(toTableSearchParams(criteria));
   };
 
   const handleClear = () => {
-    setSearchBaseText('');
-    setSearchSerialNumber('');
-    setSearchMenuId('');
+    setSearchBaseText(DEFAULT_SEARCH_CRITERIA.baseText);
+    setSearchSerialNumber(DEFAULT_SEARCH_CRITERIA.serialNumber);
+    setSearchMenuId(DEFAULT_SEARCH_CRITERIA.menuId);
+    clearSearchCriteria();
     tableRef.current?.search({});
   };
 
@@ -168,7 +229,7 @@ export default function LanguageResourcePage() {
 
   const columns: Column<unknown>[] = [
     { header: translate(LANGUAGE_KEYS.common.rowNumber), className: 'text-center', style: { width: '70px' }, render: (_, index) => index + 1 },
-    { header: translate(LANGUAGE_KEYS.common.resourceCode), key: 'serialNumber' },
+    { header: translate(LANGUAGE_KEYS.common.serialNumber), key: 'serialNumber' },
     {
       header: translate(LANGUAGE_KEYS.languageResource.menuCode),
       render: item => {
@@ -204,7 +265,7 @@ export default function LanguageResourcePage() {
       <WrapContent className="p-3">
         <SearchBlock title="" icon="" className="mb-3">
           <Row align="center" gutter={3}>
-            <Col md={3}><Input label={translate(LANGUAGE_KEYS.common.resourceCode)} value={searchSerialNumber} onChange={event => setSearchSerialNumber(event.target.value)} /></Col>
+            <Col md={3}><Input label={translate(LANGUAGE_KEYS.common.serialNumber)} value={searchSerialNumber} onChange={event => setSearchSerialNumber(event.target.value)} /></Col>
             <Col md={3}><Select label={translate(LANGUAGE_KEYS.common.functionName)} options={menuOptions} value={searchMenuId} onChange={event => setSearchMenuId(event.target.value)} /></Col>
             <Col md={3}><Input label={translate(LANGUAGE_KEYS.common.baseLanguageContent)} value={searchBaseText} onChange={event => setSearchBaseText(event.target.value)} /></Col>
             <Col md={3} className="d-flex justify-content-end gap-2 align-items-end">
@@ -229,7 +290,13 @@ export default function LanguageResourcePage() {
           </div>
         </Container>
         <Container fluid>
-          <CommonTable ref={tableRef} columns={columns} apiUrl={API_MAP.LANGUAGE_RESOURCE_GET_LIST} pageSize={10} />
+          <CommonTable
+            ref={tableRef}
+            columns={columns}
+            apiUrl={API_MAP.LANGUAGE_RESOURCE_GET_LIST}
+            searchParams={toTableSearchParams(initialCriteria)}
+            pageSize={10}
+          />
         </Container>
       </WrapContent>
       <LanguageCreateModal

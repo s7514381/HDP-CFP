@@ -18,8 +18,55 @@ import { usePagePermissions } from '@/hooks/usePagePermissions';
 import { useAppApi } from '@/hooks/useAppApi';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
+import { useSearchPersistence } from '@/hooks/useSearchPersistence';
+
+interface AdminFunctionSearchCriteria {
+  name: string;
+  code: string;
+}
+
+const DEFAULT_SEARCH_CRITERIA: AdminFunctionSearchCriteria = {
+  name: '',
+  code: '',
+};
+
+function isAdminFunctionSearchCriteria(value: unknown): value is AdminFunctionSearchCriteria {
+  if (typeof value !== 'object' || value === null) return false;
+
+  const criteria = value as Record<string, unknown>;
+  return typeof criteria.name === 'string' && typeof criteria.code === 'string';
+}
+
+interface AdminFunctionContentProps {
+  initialCriteria: AdminFunctionSearchCriteria;
+  saveSearchCriteria: (criteria: AdminFunctionSearchCriteria) => void;
+  clearSearchCriteria: () => void;
+}
 
 export default function AdminFunctionPage() {
+  const {
+    restoredValue,
+    isReady: isSearchPersistenceReady,
+    save: saveSearchCriteria,
+    clear: clearSearchCriteria,
+  } = useSearchPersistence(DEFAULT_SEARCH_CRITERIA, isAdminFunctionSearchCriteria);
+
+  if (!isSearchPersistenceReady) return null;
+
+  return (
+    <AdminFunctionContent
+      initialCriteria={restoredValue}
+      saveSearchCriteria={saveSearchCriteria}
+      clearSearchCriteria={clearSearchCriteria}
+    />
+  );
+}
+
+function AdminFunctionContent({
+  initialCriteria,
+  saveSearchCriteria,
+  clearSearchCriteria,
+}: AdminFunctionContentProps) {
   const router = useRouter();
   const { success, danger } = useToast();
   const { confirm } = useConfirm();
@@ -29,10 +76,11 @@ export default function AdminFunctionPage() {
   const { translate } = useLanguage();
 
   const tableRef = React.useRef<CommonTableHandle<{ id: string | number; title?: string; status?: string | number }>>(null);
-  const [searchName, setSearchName] = useState('');
-  const [searchCode, setSearchCode] = useState('');
+  const [searchName, setSearchName] = useState(initialCriteria.name);
+  const [searchCode, setSearchCode] = useState(initialCriteria.code);
 
   const handleSearch = () => {
+    saveSearchCriteria({ name: searchName, code: searchCode });
     tableRef.current?.search({
       Name: searchName,
       Code: searchCode
@@ -40,8 +88,9 @@ export default function AdminFunctionPage() {
   };
 
   const handleClear = () => {
-    setSearchName('');
-    setSearchCode('');
+    setSearchName(DEFAULT_SEARCH_CRITERIA.name);
+    setSearchCode(DEFAULT_SEARCH_CRITERIA.code);
+    clearSearchCriteria();
     tableRef.current?.search({});
   };
 
@@ -133,6 +182,10 @@ export default function AdminFunctionPage() {
               ref={tableRef}
               columns={columns}
               apiUrl={API_MAP.ADMIN_FUNCTION_GET_LIST}
+              searchParams={{
+                Name: initialCriteria.name,
+                Code: initialCriteria.code,
+              }}
               pageSize={10}
             />
         </Container>

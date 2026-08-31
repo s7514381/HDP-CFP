@@ -18,6 +18,7 @@ import { LANGUAGE_KEYS } from '@/config/languageKeys';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAppApi } from '@/hooks/useAppApi';
 import { usePagePermissions } from '@/hooks/usePagePermissions';
+import { useSearchPersistence } from '@/hooks/useSearchPersistence';
 
 interface MaterialPlantRow {
   id: string | number;
@@ -62,14 +63,52 @@ const INITIAL_SEARCH: MaterialPlantSearch = {
   HasThirdPartyCertification: '',
 };
 
+function isMaterialPlantSearchCriteria(value: unknown): value is MaterialPlantSearch {
+  if (typeof value !== 'object' || value === null) return false;
+  const criteria = value as Record<string, unknown>;
+  return typeof criteria.MaterialNumber === 'string'
+    && typeof criteria.ProductName === 'string'
+    && typeof criteria.Year === 'string'
+    && typeof criteria.HasThirdPartyCertification === 'string';
+}
+
+interface DataQualityMaterialListContentProps {
+  initialCriteria: MaterialPlantSearch;
+  saveSearchCriteria: (criteria: MaterialPlantSearch) => void;
+  clearSearchCriteria: () => void;
+}
+
 export default function DataQualityMaterialListPage() {
+  const {
+    restoredValue,
+    isReady: isSearchPersistenceReady,
+    save: saveSearchCriteria,
+    clear: clearSearchCriteria,
+  } = useSearchPersistence(INITIAL_SEARCH, isMaterialPlantSearchCriteria);
+
+  if (!isSearchPersistenceReady) return null;
+
+  return (
+    <DataQualityMaterialListContent
+      initialCriteria={restoredValue}
+      saveSearchCriteria={saveSearchCriteria}
+      clearSearchCriteria={clearSearchCriteria}
+    />
+  );
+}
+
+function DataQualityMaterialListContent({
+  initialCriteria,
+  saveSearchCriteria,
+  clearSearchCriteria,
+}: DataQualityMaterialListContentProps) {
   const router = useRouter();
   const { Row, Col } = Grid;
   const { languageCode, translate } = useLanguage();
   const { formPost } = useAppApi();
   const { hasPermission, isReady } = usePagePermissions();
   const tableRef = React.useRef<CommonTableHandle<MaterialPlantRow>>(null);
-  const [searchValues, setSearchValues] = React.useState(INITIAL_SEARCH);
+  const [searchValues, setSearchValues] = React.useState(initialCriteria);
   const [pendingOpinions, setPendingOpinions] = React.useState<PendingSourceOpinionPageModel | null>(null);
   const [pendingOpinionsLoading, setPendingOpinionsLoading] = React.useState(false);
   const [pendingOpinionsError, setPendingOpinionsError] = React.useState<string | null>(null);
@@ -122,11 +161,13 @@ export default function DataQualityMaterialListPage() {
   };
 
   const handleSearch = () => {
+    saveSearchCriteria(searchValues);
     tableRef.current?.search(searchValues);
   };
 
   const handleClear = () => {
     setSearchValues(INITIAL_SEARCH);
+    clearSearchCriteria();
     tableRef.current?.search(INITIAL_SEARCH);
   };
 
@@ -307,7 +348,7 @@ export default function DataQualityMaterialListPage() {
                 ref={tableRef}
                 columns={columns}
                 apiUrl={API_MAP.CARBON_FACTOR_MAINTENANCE_PLANT_GET_LIST}
-                searchParams={INITIAL_SEARCH}
+                searchParams={initialCriteria}
                 pageSize={10}
               />
             </div>

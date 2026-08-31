@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { TableSearchParams } from '@/components/common/tableUtils';
 import ActionBar from "@/components/layouts/ActionBar";
 import WrapContent from "@/components/layouts/WrapContent";
 import { SearchBlock } from "@/components/layouts/SearchBlock";
@@ -15,6 +16,7 @@ import { API_URL } from '@/lib/apiRoutes';
 import { usePagePermissions } from '@/hooks/usePagePermissions';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
+import { useSearchPersistence } from '@/hooks/useSearchPersistence';
 
 interface BuyerCompareRow {
   id: string | number;
@@ -26,26 +28,75 @@ interface BuyerCompareRow {
   notCompareCount?: string | number;
 }
 
-export default function MaterialPage() {
+interface BuyerCompareSearchCriteria extends TableSearchParams {
+  MaterialNumber: string;
+  SupplierName: string;
+}
+
+const INITIAL_SEARCH: BuyerCompareSearchCriteria = {
+  MaterialNumber: '',
+  SupplierName: '',
+};
+
+function isBuyerCompareSearchCriteria(value: unknown): value is BuyerCompareSearchCriteria {
+  if (typeof value !== 'object' || value === null) return false;
+  const criteria = value as Record<string, unknown>;
+  return typeof criteria.MaterialNumber === 'string'
+    && typeof criteria.SupplierName === 'string';
+}
+
+interface BuyerCompareContentProps {
+  initialCriteria: BuyerCompareSearchCriteria;
+  saveSearchCriteria: (criteria: BuyerCompareSearchCriteria) => void;
+  clearSearchCriteria: () => void;
+}
+
+export default function BuyerComparePage() {
+  const {
+    restoredValue,
+    isReady: isSearchPersistenceReady,
+    save: saveSearchCriteria,
+    clear: clearSearchCriteria,
+  } = useSearchPersistence(INITIAL_SEARCH, isBuyerCompareSearchCriteria);
+
+  if (!isSearchPersistenceReady) return null;
+
+  return (
+    <BuyerCompareContent
+      initialCriteria={restoredValue}
+      saveSearchCriteria={saveSearchCriteria}
+      clearSearchCriteria={clearSearchCriteria}
+    />
+  );
+}
+
+function BuyerCompareContent({
+  initialCriteria,
+  saveSearchCriteria,
+  clearSearchCriteria,
+}: BuyerCompareContentProps) {
   const router = useRouter();
   const { hasPermission } = usePagePermissions();
   const { Row, Col } = Grid;
   const { translate } = useLanguage();
 
   const tableRef = React.useRef<CommonTableHandle<BuyerCompareRow>>(null);
-  const [searchMaterialNumber, setSearchMaterialNumber] = useState('');
-  const [searchSupplierName, setSearchSupplierName] = useState('');
+  const [searchMaterialNumber, setSearchMaterialNumber] = useState(initialCriteria.MaterialNumber);
+  const [searchSupplierName, setSearchSupplierName] = useState(initialCriteria.SupplierName);
 
   const handleSearch = () => {
-    tableRef.current?.search({
+    const criteria = {
       MaterialNumber: searchMaterialNumber,
-      SupplierName: searchSupplierName
-    });
+      SupplierName: searchSupplierName,
+    };
+    saveSearchCriteria(criteria);
+    tableRef.current?.search(criteria);
   };
 
   const handleClear = () => {
     setSearchMaterialNumber('');
     setSearchSupplierName('');
+    clearSearchCriteria();
     tableRef.current?.search({});
   };
 
@@ -129,6 +180,7 @@ export default function MaterialPage() {
               ref={tableRef}
               columns={columns}
               apiUrl={`${API_URL}/BuyerCompare/GetList`}
+              searchParams={initialCriteria}
               pageSize={10}
             />
         </Container>

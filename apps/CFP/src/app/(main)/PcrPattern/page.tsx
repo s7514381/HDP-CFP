@@ -19,6 +19,7 @@ import { useToast } from '@packages/contexts/ToastContext';
 import { useConfirm } from '@packages/hooks/useConfirm';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
 import { appStorage, useStoredValue } from '@/lib/appStorage';
+import { useSearchPersistence } from '@/hooks/useSearchPersistence';
 import { PCR_TEMPLATE_CATEGORY_OPTIONS } from '@/lib/pcrTemplateCategories';
 import {
   isPcrTemplateCategory,
@@ -26,7 +27,70 @@ import {
 } from '@/types/pcrTemplate';
 import { PcrPatternRow, PCR_PATTERN_CATEGORY_STORAGE_KEY } from '@/types/pcrPattern';
 
+interface PcrPatternSearchCriteria {
+  category: PcrTemplateCategory;
+  item: string;
+}
+
+const DEFAULT_SEARCH_CRITERIA: PcrPatternSearchCriteria = {
+  category: PcrTemplateCategory.Material,
+  item: '',
+};
+
+function isPcrPatternSearchCriteria(value: unknown): value is PcrPatternSearchCriteria {
+  if (typeof value !== 'object' || value === null) return false;
+
+  const record = value as Record<string, unknown>;
+  return isPcrTemplateCategory(record.category)
+    && typeof record.item === 'string';
+}
+
 export default function PcrPatternPage() {
+  const storedCategory = useStoredValue<PcrTemplateCategory | null>(PCR_PATTERN_CATEGORY_STORAGE_KEY, null);
+  const [categoryReady, setCategoryReady] = useState(false);
+  const defaultCriteria = React.useMemo<PcrPatternSearchCriteria>(() => ({
+    category: isPcrTemplateCategory(storedCategory)
+      ? storedCategory
+      : DEFAULT_SEARCH_CRITERIA.category,
+    item: DEFAULT_SEARCH_CRITERIA.item,
+  }), [storedCategory]);
+  const {
+    restoredValue,
+    isReady: isSearchPersistenceReady,
+    save: saveSearchCriteria,
+    clear: clearSearchCriteria,
+  } = useSearchPersistence(defaultCriteria, isPcrPatternSearchCriteria);
+
+  React.useEffect(() => {
+    setCategoryReady(true);
+  }, []);
+
+  if (!isSearchPersistenceReady || !categoryReady) return null;
+
+  return (
+    <PcrPatternContent
+      initialCriteria={restoredValue}
+      saveSearchCriteria={saveSearchCriteria}
+      clearSearchCriteria={clearSearchCriteria}
+    />
+  );
+}
+
+interface PcrPatternContentProps {
+  initialCriteria: PcrPatternSearchCriteria;
+  saveSearchCriteria: PcrPatternSaveSearchCriteria;
+  clearSearchCriteria: () => void;
+}
+
+type PcrPatternSaveSearchCriteria = ReturnType<
+  typeof useSearchPersistence<PcrPatternSearchCriteria>
+>['save'];
+
+function PcrPatternContent({
+  initialCriteria,
+  saveSearchCriteria,
+  clearSearchCriteria,
+}: PcrPatternContentProps) {
   const router = useRouter();
   const { formPost } = useAppApi();
   const { languageCode, translate } = useLanguage();
@@ -36,20 +100,8 @@ export default function PcrPatternPage() {
   const { Row, Col } = Grid;
   const tableRef = React.useRef<CommonTableHandle<PcrPatternRow>>(null);
   const previousLanguageCode = React.useRef<string | null>(null);
-  const previousStoredCategory = React.useRef<PcrTemplateCategory | null | undefined>(undefined);
-  const storedCategory = useStoredValue<PcrTemplateCategory | null>(PCR_PATTERN_CATEGORY_STORAGE_KEY, null);
-  const [categoryReady, setCategoryReady] = useState(false);
-  const category = !categoryReady
-    ? null
-    : isPcrTemplateCategory(storedCategory)
-      ? storedCategory
-      : PcrTemplateCategory.Material;
-  const effectiveCategory = category ?? PcrTemplateCategory.Material;
-  const [searchItem, setSearchItem] = useState('');
-
-  React.useEffect(() => {
-    setCategoryReady(true);
-  }, []);
+  const [category, setCategory] = useState(initialCriteria.category);
+  const [searchItem, setSearchItem] = useState(initialCriteria.item);
 
   React.useEffect(() => {
     if (previousLanguageCode.current === null) {
@@ -62,37 +114,33 @@ export default function PcrPatternPage() {
     tableRef.current?.reload();
   }, [languageCode]);
 
-  React.useEffect(() => {
-    if (!categoryReady) return;
-
-    if (previousStoredCategory.current === undefined) {
-      previousStoredCategory.current = storedCategory;
-      return;
-    }
-
-    if (previousStoredCategory.current === storedCategory) return;
-    previousStoredCategory.current = storedCategory;
-    tableRef.current?.search({
-      Category: effectiveCategory,
-      Item: searchItem.trim(),
-    });
-  }, [categoryReady, effectiveCategory, searchItem, storedCategory]);
-
   const handleSearch = () => {
+    saveSearchCriteria({ category, item: searchItem });
     tableRef.current?.search({
-      Category: effectiveCategory,
+      Category: category,
       Item: searchItem.trim(),
     });
   };
 
   const selectCategory = (value: PcrTemplateCategory) => {
+    setCategory(value);
     appStorage.set(PCR_PATTERN_CATEGORY_STORAGE_KEY, value);
+    saveSearchCriteria({ category: value, item: searchItem });
+    tableRef.current?.search({
+      Category: value,
+      Item: searchItem.trim(),
+    });
   };
 
   const handleClear = () => {
+    setCategory(PcrTemplateCategory.Material);
     appStorage.set(PCR_PATTERN_CATEGORY_STORAGE_KEY, PcrTemplateCategory.Material);
     setSearchItem('');
-    tableRef.current?.search({ Category: PcrTemplateCategory.Material });
+    clearSearchCriteria();
+    tableRef.current?.search({
+      Category: PcrTemplateCategory.Material,
+      Item: '',
+    });
   };
 
   const handleDelete = async (id: string | number) => {
@@ -150,7 +198,7 @@ export default function PcrPatternPage() {
         <div className="border-bottom mb-3">
           <div className="nav nav-tabs" role="tablist" aria-label={translate(LANGUAGE_KEYS.pcrPattern.title)}>
             {PCR_TEMPLATE_CATEGORY_OPTIONS.map(option => {
-              const isActive = category !== null && category === option.value;
+              const isActive = category === option.value;
               return (
                 <div className="nav-item flex-fill" key={option.value}>
                   <button
@@ -206,19 +254,16 @@ export default function PcrPatternPage() {
         </Container>
 
         <Container fluid>
-          {category === null ? (
-            <div className="text-center py-4">
-              <span className="spinner-border text-primary" role="status" />
-            </div>
-          ) : (
-            <CommonTable
-              ref={tableRef}
-              columns={columns}
-              apiUrl={API_MAP.PCR_PATTERN_GET_LIST}
-              searchParams={{ Category: category }}
-              pageSize={10}
-            />
-          )}
+          <CommonTable
+            ref={tableRef}
+            columns={columns}
+            apiUrl={API_MAP.PCR_PATTERN_GET_LIST}
+            searchParams={{
+              Category: initialCriteria.category,
+              Item: initialCriteria.item.trim(),
+            }}
+            pageSize={10}
+          />
         </Container>
       </WrapContent>
     </>

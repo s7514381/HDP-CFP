@@ -13,11 +13,68 @@ import { useAppApi } from '@/hooks/useAppApi';
 import { usePagePermissions } from '@/hooks/usePagePermissions';
 import { useToast } from '@packages/contexts/ToastContext';
 import { API_MAP } from '@/lib/apiRoutes';
+import { TableSearchParams } from '@/components/common/tableUtils';
 import { MaterialNotifyItem } from '@/types/materialNotify';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
+import { useSearchPersistence } from '@/hooks/useSearchPersistence';
+
+interface MaterialNotifySearchCriteria extends TableSearchParams {
+  updateDateFrom: string;
+  updateDateTo: string;
+  materialGroupName: string;
+  productModel: string;
+  supplierName: string;
+}
+
+const INITIAL_SEARCH: MaterialNotifySearchCriteria = {
+  updateDateFrom: '',
+  updateDateTo: '',
+  materialGroupName: '',
+  productModel: '',
+  supplierName: '',
+};
+
+function isMaterialNotifySearchCriteria(value: unknown): value is MaterialNotifySearchCriteria {
+  if (typeof value !== 'object' || value === null) return false;
+  const criteria = value as Record<string, unknown>;
+  return typeof criteria.updateDateFrom === 'string'
+    && typeof criteria.updateDateTo === 'string'
+    && typeof criteria.materialGroupName === 'string'
+    && typeof criteria.productModel === 'string'
+    && typeof criteria.supplierName === 'string';
+}
+
+interface MaterialNotifyContentProps {
+  initialCriteria: MaterialNotifySearchCriteria;
+  saveSearchCriteria: (criteria: MaterialNotifySearchCriteria) => void;
+  clearSearchCriteria: () => void;
+}
 
 export default function MaterialNotifyPage() {
+  const {
+    restoredValue,
+    isReady: isSearchPersistenceReady,
+    save: saveSearchCriteria,
+    clear: clearSearchCriteria,
+  } = useSearchPersistence(INITIAL_SEARCH, isMaterialNotifySearchCriteria);
+
+  if (!isSearchPersistenceReady) return null;
+
+  return (
+    <MaterialNotifyContent
+      initialCriteria={restoredValue}
+      saveSearchCriteria={saveSearchCriteria}
+      clearSearchCriteria={clearSearchCriteria}
+    />
+  );
+}
+
+function MaterialNotifyContent({
+  initialCriteria,
+  saveSearchCriteria,
+  clearSearchCriteria,
+}: MaterialNotifyContentProps) {
   const api = useAppApi();
   const { success, danger } = useToast();
   const { Row, Col } = Grid;
@@ -27,13 +84,7 @@ export default function MaterialNotifyPage() {
   const tableRef = useRef<CommonTableHandle<MaterialNotifyItem>>(null);
 
   // 搜尋表單狀態
-  const [searchForm, setSearchForm] = useState({
-    updateDateFrom: '',
-    updateDateTo: '',
-    materialGroupName: '',
-    productModel: '',
-    supplierName: ''
-  });
+  const [searchForm, setSearchForm] = useState(initialCriteria);
 
   // 選取的項目狀態
   const [selectedIds, setSelectedIds] = useState<Set<string | number>>(new Set());
@@ -44,19 +95,13 @@ export default function MaterialNotifyPage() {
   };
 
   const handleSearch = () => {
-    tableRef.current?.search({
-      ...searchForm
-    });
+    saveSearchCriteria(searchForm);
+    tableRef.current?.search(searchForm);
   };
 
   const handleClear = () => {
-    setSearchForm({
-      updateDateFrom: '',
-      updateDateTo: '',
-      materialGroupName: '',
-      productModel: '',
-      supplierName: ''
-    });
+    setSearchForm(INITIAL_SEARCH);
+    clearSearchCriteria();
     tableRef.current?.search({});
   };
 
@@ -91,7 +136,7 @@ export default function MaterialNotifyPage() {
       } else {
         danger({ message: <span>{translate(LANGUAGE_KEYS.common.saveFailed)}</span> });
       }
-    } catch (error) {
+    } catch {
       danger({ message: <span>{translate(LANGUAGE_KEYS.common.saveFailed)}</span> });
     }
   };
@@ -204,6 +249,7 @@ export default function MaterialNotifyPage() {
               ref={tableRef}
               columns={columns}
               apiUrl={API_MAP.MATERIAL_NOTIFY_GET_LIST}
+              searchParams={initialCriteria}
               pageSize={10}
             />
         </Container>

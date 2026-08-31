@@ -16,16 +16,37 @@ import { usePagePermissions } from '@/hooks/usePagePermissions';
 import { useAppApi } from '@/hooks/useAppApi';
 import { useToast } from '@packages/contexts/ToastContext';
 import { MaterialDemandRow } from '@/types/materialDemand';
+import { useSearchPersistence } from '@/hooks/useSearchPersistence';
 import MaterialDemandNegotiationModal from './MaterialDemandNegotiationModal';
 
-interface MaterialDemandSearch extends TableSearchParams {
+interface MaterialDemandSearchCriteria extends TableSearchParams {
   DemandType: string;
   IsUrgent: string;
   DemandStatus: string;
   Year: string;
 }
 
-const INITIAL_SEARCH: MaterialDemandSearch = { DemandType: '0', IsUrgent: '', DemandStatus: '', Year: '' };
+const INITIAL_SEARCH: MaterialDemandSearchCriteria = { DemandType: '0', IsUrgent: '', DemandStatus: '', Year: '' };
+
+function isMaterialDemandSearchCriteria(value: unknown): value is MaterialDemandSearchCriteria {
+  if (typeof value !== 'object' || value === null) return false;
+
+  const record = value as Record<string, unknown>;
+  return typeof record.DemandType === 'string'
+    && typeof record.IsUrgent === 'string'
+    && typeof record.DemandStatus === 'string'
+    && typeof record.Year === 'string';
+}
+
+interface MaterialDemandContentProps {
+  initialCriteria: MaterialDemandSearchCriteria;
+  saveSearchCriteria: MaterialDemandSaveSearchCriteria;
+  clearSearchCriteria: () => void;
+}
+
+type MaterialDemandSaveSearchCriteria = ReturnType<
+  typeof useSearchPersistence<MaterialDemandSearchCriteria>
+>['save'];
 
 function asBoolean(value: MaterialDemandRow['isUrgent']): boolean {
   return value === true || value === 1 || String(value).toLowerCase() === 'true';
@@ -36,6 +57,29 @@ function normalizeStatus(value: MaterialDemandRow['demandStatus']): string {
 }
 
 export default function MaterialDemandPage() {
+  const {
+    restoredValue,
+    isReady: isSearchPersistenceReady,
+    save: saveSearchCriteria,
+    clear: clearSearchCriteria,
+  } = useSearchPersistence(INITIAL_SEARCH, isMaterialDemandSearchCriteria);
+
+  if (!isSearchPersistenceReady) return null;
+
+  return (
+    <MaterialDemandContent
+      initialCriteria={restoredValue}
+      saveSearchCriteria={saveSearchCriteria}
+      clearSearchCriteria={clearSearchCriteria}
+    />
+  );
+}
+
+function MaterialDemandContent({
+  initialCriteria,
+  saveSearchCriteria,
+  clearSearchCriteria,
+}: MaterialDemandContentProps) {
   const router = useRouter();
   const { Row, Col } = Grid;
   const { translate } = useLanguage();
@@ -43,10 +87,10 @@ export default function MaterialDemandPage() {
   const { success, danger } = useToast();
   const { hasPermission, isReady } = usePagePermissions('/MaterialDemand');
   const tableRef = React.useRef<CommonTableHandle<MaterialDemandRow>>(null);
-  const [demandType, setDemandType] = useState('0');
-  const [isUrgent, setIsUrgent] = useState('');
-  const [demandStatus, setDemandStatus] = useState('');
-  const [year, setYear] = useState('');
+  const [demandType, setDemandType] = useState(initialCriteria.DemandType);
+  const [isUrgent, setIsUrgent] = useState(initialCriteria.IsUrgent);
+  const [demandStatus, setDemandStatus] = useState(initialCriteria.DemandStatus);
+  const [year, setYear] = useState(initialCriteria.Year);
   const [negotiationDemandId, setNegotiationDemandId] = useState<string | null>(null);
   const [accreditingId, setAccreditingId] = useState<string | null>(null);
 
@@ -56,7 +100,7 @@ export default function MaterialDemandPage() {
     if (isReady && !canAccess) router.replace('/');
   }, [canAccess, isReady, router]);
 
-  const getSearchParams = (nextDemandType = demandType): MaterialDemandSearch => ({
+  const getSearchCriteria = (nextDemandType = demandType): MaterialDemandSearchCriteria => ({
     DemandType: nextDemandType,
     IsUrgent: isUrgent,
     DemandStatus: demandStatus,
@@ -115,16 +159,24 @@ export default function MaterialDemandPage() {
     },
   ];
 
-  const handleSearch = () => tableRef.current?.search(getSearchParams());
+  const handleSearch = () => {
+    const criteria = getSearchCriteria();
+    saveSearchCriteria(criteria);
+    tableRef.current?.search(criteria);
+  };
   const handleClear = () => {
+    setDemandType(INITIAL_SEARCH.DemandType);
     setIsUrgent('');
     setDemandStatus('');
     setYear('');
-    tableRef.current?.search({ DemandType: demandType, IsUrgent: '', DemandStatus: '', Year: '' });
+    clearSearchCriteria();
+    tableRef.current?.search(INITIAL_SEARCH);
   };
   const selectDemandType = (nextDemandType: string) => {
     setDemandType(nextDemandType);
-    tableRef.current?.search(getSearchParams(nextDemandType));
+    const criteria = getSearchCriteria(nextDemandType);
+    saveSearchCriteria(criteria);
+    tableRef.current?.search(criteria);
   };
 
   const viewData = (row: MaterialDemandRow) => {
@@ -157,7 +209,7 @@ export default function MaterialDemandPage() {
           </Row>
         )}
       >
-        {isReady && !canAccess ? <div className="alert alert-warning" role="alert">{translate(LANGUAGE_KEYS.apiError.forbidden)}</div> : <div className="table-responsive"><CommonTable ref={tableRef} columns={columns} apiUrl={API_MAP.MATERIAL_DEMAND_GET_LIST} searchParams={INITIAL_SEARCH} pageSize={10} /></div>}
+        {isReady && !canAccess ? <div className="alert alert-warning" role="alert">{translate(LANGUAGE_KEYS.apiError.forbidden)}</div> : <div className="table-responsive"><CommonTable ref={tableRef} columns={columns} apiUrl={API_MAP.MATERIAL_DEMAND_GET_LIST} searchParams={initialCriteria} pageSize={10} /></div>}
       </ListPageLayout>
       {negotiationDemandId && <MaterialDemandNegotiationModal show demandId={negotiationDemandId} onClose={() => setNegotiationDemandId(null)} onSuccess={() => tableRef.current?.reload()} />}
     </>

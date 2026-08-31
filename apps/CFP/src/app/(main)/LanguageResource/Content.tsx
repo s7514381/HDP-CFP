@@ -143,7 +143,7 @@ export default function Content({ title, formData, onChange, updateForm, onSubmi
             <form id="language-resource-form" onSubmit={onSubmit}>
               <Grid.Row className="g-3">
                 <Grid.Col md={6}>
-                  <Input label={translate(LANGUAGE_KEYS.common.resourceCode)} value={formData?.serialNumber || translate(LANGUAGE_KEYS.common.loadingData)} disabled />
+                  <Input label={translate(LANGUAGE_KEYS.common.serialNumber)} value={formData?.serialNumber || translate(LANGUAGE_KEYS.common.loadingData)} disabled />
                 </Grid.Col>
                 <Grid.Col md={6}>
                   <Select

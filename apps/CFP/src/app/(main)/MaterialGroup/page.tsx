@@ -18,13 +18,58 @@ import { API_URL, API_MAP } from '@/lib/apiRoutes';
 import { usePagePermissions } from '@/hooks/usePagePermissions';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
+import { useSearchPersistence } from '@/hooks/useSearchPersistence';
 
 interface MaterialGroupRow {
   id: string | number;
   name?: string;
 }
 
+interface MaterialGroupSearchCriteria {
+  name: string;
+}
+
+const DEFAULT_SEARCH_CRITERIA: MaterialGroupSearchCriteria = {
+  name: '',
+};
+
+function isMaterialGroupSearchCriteria(value: unknown): value is MaterialGroupSearchCriteria {
+  if (typeof value !== 'object' || value === null) return false;
+
+  const criteria = value as Record<string, unknown>;
+  return typeof criteria.name === 'string';
+}
+
+interface MaterialGroupContentProps {
+  initialCriteria: MaterialGroupSearchCriteria;
+  saveSearchCriteria: (criteria: MaterialGroupSearchCriteria) => void;
+  clearSearchCriteria: () => void;
+}
+
 export default function MaterialGroupPage() {
+  const {
+    restoredValue,
+    isReady: isSearchPersistenceReady,
+    save: saveSearchCriteria,
+    clear: clearSearchCriteria,
+  } = useSearchPersistence(DEFAULT_SEARCH_CRITERIA, isMaterialGroupSearchCriteria);
+
+  if (!isSearchPersistenceReady) return null;
+
+  return (
+    <MaterialGroupContent
+      initialCriteria={restoredValue}
+      saveSearchCriteria={saveSearchCriteria}
+      clearSearchCriteria={clearSearchCriteria}
+    />
+  );
+}
+
+function MaterialGroupContent({
+  initialCriteria,
+  saveSearchCriteria,
+  clearSearchCriteria,
+}: MaterialGroupContentProps) {
   const router = useRouter();
   const api = useAppApi();
   const { success, danger } = useToast();
@@ -34,16 +79,18 @@ export default function MaterialGroupPage() {
   const { translate } = useLanguage();
 
   const tableRef = React.useRef<CommonTableHandle<MaterialGroupRow>>(null);
-  const [searchName, setSearchName] = useState('');
+  const [searchName, setSearchName] = useState(initialCriteria.name);
 
   const handleSearch = () => {
+    saveSearchCriteria({ name: searchName });
     tableRef.current?.search({
       Name: searchName
     });
   };
 
   const handleClear = () => {
-    setSearchName('');
+    setSearchName(DEFAULT_SEARCH_CRITERIA.name);
+    clearSearchCriteria();
     tableRef.current?.search({});
   };
 
@@ -130,6 +177,7 @@ export default function MaterialGroupPage() {
               ref={tableRef}
               columns={columns}
               apiUrl={API_MAP.MATERIAL_GROUP_GET_LIST}
+              searchParams={{ Name: initialCriteria.name }}
               pageSize={10}
             />
         </Container>

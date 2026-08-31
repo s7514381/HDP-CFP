@@ -26,6 +26,7 @@ import {
 import { PcrPatternRow, PCR_PATTERN_CATEGORY_STORAGE_KEY } from '@/types/pcrPattern';
 import { downloadFile } from '@packages/lib/downloadFlie';
 import { PCR_TEMPLATE_CATEGORY_OPTIONS } from '@/lib/pcrTemplateCategories';
+import { useSearchPersistence } from '@/hooks/useSearchPersistence';
 
 type PageLoadState = {
   id: string | null;
@@ -38,6 +39,26 @@ interface PcrPatternImportResult {
   successCount: number;
   failureCount: number;
   errors: string[];
+}
+
+interface ProductSubcategoryPcrPatternSearchCriteria {
+  category: PcrTemplateCategory;
+  item: string;
+}
+
+const DEFAULT_SEARCH_CRITERIA: ProductSubcategoryPcrPatternSearchCriteria = {
+  category: PcrTemplateCategory.Material,
+  item: '',
+};
+
+function isProductSubcategoryPcrPatternSearchCriteria(
+  value: unknown,
+): value is ProductSubcategoryPcrPatternSearchCriteria {
+  if (typeof value !== 'object' || value === null) return false;
+
+  const record = value as Record<string, unknown>;
+  return isPcrTemplateCategory(record.category)
+    && typeof record.item === 'string';
 }
 
 async function isValidXlsxBlob(blob: Blob): Promise<boolean> {
@@ -66,7 +87,21 @@ function formatTranslation(template: string, values: unknown[]): string {
   );
 }
 
-function ProductSubcategoryPcrPatternPageContent() {
+interface ProductSubcategoryPcrPatternPageContentProps {
+  initialCriteria: ProductSubcategoryPcrPatternSearchCriteria;
+  saveSearchCriteria: ProductSubcategoryPcrPatternSaveSearchCriteria;
+  clearSearchCriteria: () => void;
+}
+
+type ProductSubcategoryPcrPatternSaveSearchCriteria = ReturnType<
+  typeof useSearchPersistence<ProductSubcategoryPcrPatternSearchCriteria>
+>['save'];
+
+function ProductSubcategoryPcrPatternPageContent({
+  initialCriteria,
+  saveSearchCriteria,
+  clearSearchCriteria,
+}: ProductSubcategoryPcrPatternPageContentProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const productSubcategoryId = searchParams.get('id');
@@ -79,21 +114,13 @@ function ProductSubcategoryPcrPatternPageContent() {
   const { confirm } = useConfirm();
   const { Row, Col } = Grid;
   const tableRef = React.useRef<CommonTableHandle<PcrPatternRow>>(null);
-  const previousCategory = React.useRef<PcrTemplateCategory | null>(null);
-  const storedCategory = useStoredValue<PcrTemplateCategory | null>(PCR_PATTERN_CATEGORY_STORAGE_KEY, null);
-  const [categoryReady, setCategoryReady] = useState(false);
-  const [searchItem, setSearchItem] = useState('');
+  const [category, setCategory] = useState(initialCriteria.category);
+  const [searchItem, setSearchItem] = useState(initialCriteria.item);
   const [productSubcategoryName, setProductSubcategoryName] = useState<string | null>(null);
   const [productSubcategoryNameError, setProductSubcategoryNameError] = useState<string | null>(null);
   const [pageLoad, setPageLoad] = useState<PageLoadState>({ id: null, status: 'loading' });
   const [importing, setImporting] = useState(false);
   const [importErrors, setImportErrors] = useState<string[]>([]);
-  const category = !categoryReady
-    ? null
-    : isPcrTemplateCategory(storedCategory)
-      ? storedCategory
-      : PcrTemplateCategory.Material;
-  const effectiveCategory = category ?? PcrTemplateCategory.Material;
   const pageReady = productSubcategoryId !== null
     && pageLoad.id === productSubcategoryId
     && pageLoad.status === 'ready'
@@ -106,22 +133,17 @@ function ProductSubcategoryPcrPatternPageContent() {
   const initialSearchParams = React.useMemo(
     () => ({
       ProductSubcategoryId: productSubcategoryId,
-      Category: effectiveCategory,
+      Category: category,
       Item: searchItem.trim(),
       ...(isSharedView ? { SourceManagerId: sourceManagerId } : {}),
     }),
-    [effectiveCategory, isSharedView, productSubcategoryId, searchItem, sourceManagerId],
+    [category, isSharedView, productSubcategoryId, searchItem, sourceManagerId],
   );
-
-  React.useEffect(() => {
-    setCategoryReady(true);
-  }, []);
 
   React.useEffect(() => {
     if (!productSubcategoryId) return;
 
     let cancelled = false;
-    previousCategory.current = null;
     setPageLoad({ id: productSubcategoryId, status: 'loading' });
     setProductSubcategoryName(null);
     setProductSubcategoryNameError(null);
@@ -199,42 +221,39 @@ function ProductSubcategoryPcrPatternPageContent() {
     };
   }, [formPost, isSharedView, productSubcategoryId, translate]);
 
-  React.useEffect(() => {
-    if (!pageReady || category === null) return;
-    if (previousCategory.current === null) {
-      previousCategory.current = category;
-      return;
-    }
-    if (previousCategory.current === category) return;
-
-    previousCategory.current = category;
-    tableRef.current?.search(initialSearchParams);
-  }, [category, initialSearchParams, pageReady]);
-
   const handleSearch = () => {
+    saveSearchCriteria({ category, item: searchItem });
     tableRef.current?.search(initialSearchParams);
   };
 
   const selectCategory = (value: PcrTemplateCategory) => {
+    setCategory(value);
     appStorage.set(PCR_PATTERN_CATEGORY_STORAGE_KEY, value);
+    saveSearchCriteria({ category: value, item: searchItem });
+    tableRef.current?.search({
+      ProductSubcategoryId: productSubcategoryId,
+      Category: value,
+      Item: searchItem.trim(),
+      ...(isSharedView ? { SourceManagerId: sourceManagerId } : {}),
+    });
   };
 
   const handleClear = () => {
+    setCategory(PcrTemplateCategory.Material);
     appStorage.set(PCR_PATTERN_CATEGORY_STORAGE_KEY, PcrTemplateCategory.Material);
     setSearchItem('');
-    if (category === PcrTemplateCategory.Material) {
-      tableRef.current?.search({
-        ProductSubcategoryId: productSubcategoryId,
-        Category: PcrTemplateCategory.Material,
-        Item: '',
-        ...(isSharedView ? { SourceManagerId: sourceManagerId } : {}),
-      });
-    }
+    clearSearchCriteria();
+    tableRef.current?.search({
+      ProductSubcategoryId: productSubcategoryId,
+      Category: PcrTemplateCategory.Material,
+      Item: '',
+      ...(isSharedView ? { SourceManagerId: sourceManagerId } : {}),
+    });
   };
 
   const handleAdd = () => {
     if (isSharedView) return;
-    router.push(`/ProductSubcategory/PcrPattern/Create/?productSubcategoryId=${productSubcategoryId}&category=${effectiveCategory}`);
+    router.push(`/ProductSubcategory/PcrPattern/Create/?productSubcategoryId=${productSubcategoryId}&category=${category}`);
   };
 
   const handleDelete = async (id: string | number) => {
@@ -498,9 +517,34 @@ function ProductSubcategoryPcrPatternPageContent() {
 }
 
 export default function ProductSubcategoryPcrPatternPage() {
+  const storedCategory = useStoredValue<PcrTemplateCategory | null>(PCR_PATTERN_CATEGORY_STORAGE_KEY, null);
+  const [categoryReady, setCategoryReady] = useState(false);
+  const defaultCriteria = React.useMemo<ProductSubcategoryPcrPatternSearchCriteria>(() => ({
+    category: isPcrTemplateCategory(storedCategory)
+      ? storedCategory
+      : DEFAULT_SEARCH_CRITERIA.category,
+    item: DEFAULT_SEARCH_CRITERIA.item,
+  }), [storedCategory]);
+  const {
+    restoredValue,
+    isReady: isSearchPersistenceReady,
+    save: saveSearchCriteria,
+    clear: clearSearchCriteria,
+  } = useSearchPersistence(defaultCriteria, isProductSubcategoryPcrPatternSearchCriteria);
+
+  React.useEffect(() => {
+    setCategoryReady(true);
+  }, []);
+
   return (
     <Suspense fallback={<div className="p-5 text-center"><span className="spinner-border text-primary" role="status" /></div>}>
-      <ProductSubcategoryPcrPatternPageContent />
+      {!isSearchPersistenceReady || !categoryReady ? null : (
+        <ProductSubcategoryPcrPatternPageContent
+          initialCriteria={restoredValue}
+          saveSearchCriteria={saveSearchCriteria}
+          clearSearchCriteria={clearSearchCriteria}
+        />
+      )}
     </Suspense>
   );
 }

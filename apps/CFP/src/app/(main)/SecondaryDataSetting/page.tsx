@@ -18,8 +18,71 @@ import { useToast } from '@packages/contexts/ToastContext';
 import { useConfirm } from '@packages/hooks/useConfirm';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
 import { SecondaryDataSettingRow } from '@/types/secondaryDataSetting';
+import { TableSearchParams } from '@/components/common/tableUtils';
+import { useSearchPersistence } from '@/hooks/useSearchPersistence';
+
+interface SecondaryDataSettingSearchCriteria extends TableSearchParams {
+  name: string;
+  unit: string;
+  departmentName: string;
+  announcementYear: string;
+}
+
+const INITIAL_SEARCH: SecondaryDataSettingSearchCriteria = {
+  name: '',
+  unit: '',
+  departmentName: '',
+  announcementYear: '',
+};
+
+function isSecondaryDataSettingSearchCriteria(value: unknown): value is SecondaryDataSettingSearchCriteria {
+  if (typeof value !== 'object' || value === null) return false;
+  const criteria = value as Record<string, unknown>;
+  return typeof criteria.name === 'string'
+    && typeof criteria.unit === 'string'
+    && typeof criteria.departmentName === 'string'
+    && typeof criteria.announcementYear === 'string';
+}
+
+function toTableSearchParams(criteria: SecondaryDataSettingSearchCriteria) {
+  return {
+    Name: criteria.name.trim() || undefined,
+    Unit: criteria.unit.trim() || undefined,
+    DepartmentName: criteria.departmentName.trim() || undefined,
+    AnnouncementYear: criteria.announcementYear ? Number(criteria.announcementYear) : undefined,
+  };
+}
+
+interface SecondaryDataSettingContentProps {
+  initialCriteria: SecondaryDataSettingSearchCriteria;
+  saveSearchCriteria: (criteria: SecondaryDataSettingSearchCriteria) => void;
+  clearSearchCriteria: () => void;
+}
 
 export default function SecondaryDataSettingPage() {
+  const {
+    restoredValue,
+    isReady: isSearchPersistenceReady,
+    save: saveSearchCriteria,
+    clear: clearSearchCriteria,
+  } = useSearchPersistence(INITIAL_SEARCH, isSecondaryDataSettingSearchCriteria);
+
+  if (!isSearchPersistenceReady) return null;
+
+  return (
+    <SecondaryDataSettingContent
+      initialCriteria={restoredValue}
+      saveSearchCriteria={saveSearchCriteria}
+      clearSearchCriteria={clearSearchCriteria}
+    />
+  );
+}
+
+function SecondaryDataSettingContent({
+  initialCriteria,
+  saveSearchCriteria,
+  clearSearchCriteria,
+}: SecondaryDataSettingContentProps) {
   const router = useRouter();
   const { formPost } = useAppApi();
   const { translate } = useLanguage();
@@ -27,19 +90,16 @@ export default function SecondaryDataSettingPage() {
   const { success, danger } = useToast();
   const { confirm } = useConfirm();
   const tableRef = React.useRef<CommonTableHandle<SecondaryDataSettingRow>>(null);
-  const [name, setName] = useState('');
-  const [unit, setUnit] = useState('');
-  const [departmentName, setDepartmentName] = useState('');
-  const [announcementYear, setAnnouncementYear] = useState('');
+  const [name, setName] = useState(initialCriteria.name);
+  const [unit, setUnit] = useState(initialCriteria.unit);
+  const [departmentName, setDepartmentName] = useState(initialCriteria.departmentName);
+  const [announcementYear, setAnnouncementYear] = useState(initialCriteria.announcementYear);
   const [syncing, setSyncing] = useState(false);
 
   const search = () => {
-    tableRef.current?.search({
-      Name: name.trim() || undefined,
-      Unit: unit.trim() || undefined,
-      DepartmentName: departmentName.trim() || undefined,
-      AnnouncementYear: announcementYear ? Number(announcementYear) : undefined,
-    });
+    const criteria = { name, unit, departmentName, announcementYear };
+    saveSearchCriteria(criteria);
+    tableRef.current?.search(toTableSearchParams(criteria));
   };
 
   const clear = () => {
@@ -47,6 +107,7 @@ export default function SecondaryDataSettingPage() {
     setUnit('');
     setDepartmentName('');
     setAnnouncementYear('');
+    clearSearchCriteria();
     tableRef.current?.search({});
   };
 
@@ -169,6 +230,7 @@ export default function SecondaryDataSettingPage() {
           ref={tableRef}
           columns={columns}
           apiUrl={API_MAP.SECONDARY_DATA_SETTING_GET_LIST}
+          searchParams={toTableSearchParams(initialCriteria)}
           pageSize={10}
         />
       </WrapContent>

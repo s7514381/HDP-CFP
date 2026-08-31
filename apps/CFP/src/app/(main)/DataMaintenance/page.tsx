@@ -19,6 +19,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
 import { TableSearchParams } from '@/components/common/tableUtils';
 import { usePagePermissions } from '@/hooks/usePagePermissions';
+import { useSearchPersistence } from '@/hooks/useSearchPersistence';
 
 interface DataMaintenanceRow {
   id: string | number;
@@ -48,7 +49,45 @@ const INITIAL_SEARCH: DataMaintenanceSearch = {
   IsPendingBuild: '',
 };
 
+function isDataMaintenanceSearchCriteria(value: unknown): value is DataMaintenanceSearch {
+  if (typeof value !== 'object' || value === null) return false;
+  const criteria = value as Record<string, unknown>;
+  return typeof criteria.MaterialNumber === 'string'
+    && typeof criteria.ProductName === 'string'
+    && typeof criteria.SupplierName === 'string'
+    && typeof criteria.IsPendingBuild === 'string';
+}
+
+interface DataMaintenanceContentProps {
+  initialCriteria: DataMaintenanceSearch;
+  saveSearchCriteria: (criteria: DataMaintenanceSearch) => void;
+  clearSearchCriteria: () => void;
+}
+
 export default function DataMaintenancePage() {
+  const {
+    restoredValue,
+    isReady: isSearchPersistenceReady,
+    save: saveSearchCriteria,
+    clear: clearSearchCriteria,
+  } = useSearchPersistence(INITIAL_SEARCH, isDataMaintenanceSearchCriteria);
+
+  if (!isSearchPersistenceReady) return null;
+
+  return (
+    <DataMaintenanceContent
+      initialCriteria={restoredValue}
+      saveSearchCriteria={saveSearchCriteria}
+      clearSearchCriteria={clearSearchCriteria}
+    />
+  );
+}
+
+function DataMaintenanceContent({
+  initialCriteria,
+  saveSearchCriteria,
+  clearSearchCriteria,
+}: DataMaintenanceContentProps) {
   const router = useRouter();
   const { translate } = useLanguage();
   const { Row, Col } = Grid;
@@ -56,7 +95,7 @@ export default function DataMaintenancePage() {
   const { hasPermission, isReady } = usePagePermissions('/DataMaintenance');
   const { success, danger } = useToast();
   const tableRef = React.useRef<CommonTableHandle<DataMaintenanceRow>>(null);
-  const [searchValues, setSearchValues] = React.useState(INITIAL_SEARCH);
+  const [searchValues, setSearchValues] = React.useState(initialCriteria);
   const [bindingMaterial, setBindingMaterial] = React.useState<DataMaintenanceRow | null>(null);
   const canBindPcr = hasPermission('DataMaintenance:BindPcr');
   const canMaintainRawMaterial = hasPermission('MaterialMaintenance:GetModel');
@@ -69,11 +108,13 @@ export default function DataMaintenancePage() {
   };
 
   const handleSearch = () => {
+    saveSearchCriteria(searchValues);
     tableRef.current?.search(searchValues);
   };
 
   const handleClear = () => {
     setSearchValues(INITIAL_SEARCH);
+    clearSearchCriteria();
     tableRef.current?.search(INITIAL_SEARCH);
   };
 
@@ -258,7 +299,7 @@ export default function DataMaintenancePage() {
               ref={tableRef}
               columns={columns}
               apiUrl={API_MAP.DATA_MAINTENANCE_GET_LIST}
-              searchParams={INITIAL_SEARCH}
+              searchParams={initialCriteria}
               pageSize={10}
             />
           )}
