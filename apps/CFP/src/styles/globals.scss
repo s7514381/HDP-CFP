@@ -140,6 +140,131 @@ $badgeInfoBg: #429898ad;
   }
 }
 
+.cfp-settings-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin-right: .5rem;
+  padding: .55rem !important;
+  border: 1px solid rgba($darkBlue, .14) !important;
+  border-radius: 50%;
+  color: #334155 !important;
+  background-color: rgba($white, .88);
+  box-shadow: 0 3px 10px rgba($darkBlue, .08);
+  line-height: 1.2;
+  transition: border-color .15s ease, background-color .15s ease, box-shadow .15s ease, color .15s ease;
+
+  &:hover {
+    border-color: rgba(#075b9f, .3) !important;
+    color: #075b9f !important;
+    background-color: $white;
+    box-shadow: 0 5px 14px rgba($darkBlue, .12);
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba(#0d6efd, .2);
+    outline-offset: 2px;
+  }
+
+  &[aria-expanded="true"] {
+    border-color: rgba(#075b9f, .35) !important;
+    color: #075b9f !important;
+    background-color: #eef6fc;
+    box-shadow: 0 5px 14px rgba($darkBlue, .12);
+  }
+
+  .fa-gear {
+    color: #075b9f;
+    font-size: 1.15rem;
+    transition: transform .2s ease;
+  }
+
+  &[aria-expanded="true"] .fa-gear {
+    transform: rotate(45deg);
+  }
+}
+
+.cfp-settings-modal {
+  display: flex;
+  min-height: 430px;
+  overflow: hidden;
+}
+
+.cfp-settings-sidebar {
+  flex: 0 0 190px;
+  padding: 1.25rem .85rem;
+  color: $white;
+  background: $darkBlue;
+
+  nav {
+    display: grid;
+    gap: .35rem;
+  }
+}
+
+.cfp-settings-nav-item {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  width: 100%;
+  padding: .7rem .75rem;
+  border: 0;
+  border-radius: 9px;
+  color: rgba($white, .82);
+  background: transparent;
+  text-align: left;
+  transition: background-color .15s ease, color .15s ease;
+
+  &:hover,
+  &:focus-visible,
+  &.active {
+    color: $white;
+    background-color: rgba($white, .14);
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(#8dc5ee, .8);
+    outline-offset: 2px;
+  }
+
+  .fa-language {
+    color: #8dc5ee;
+  }
+}
+
+.cfp-settings-panel {
+  flex: 1 1 auto;
+  min-width: 0;
+
+  .modal-header {
+    padding: 1.25rem 1.4rem;
+    font-weight: 700;
+  }
+}
+
+.cfp-settings-panel-body {
+  height: calc(100% - 76px);
+  padding: 1.4rem;
+  overflow-y: auto;
+}
+
+@media (max-width: 575.98px) {
+  .cfp-settings-modal {
+    display: block;
+    min-height: 0;
+  }
+
+  .cfp-settings-sidebar {
+    padding: .85rem;
+  }
+
+  .cfp-settings-panel-body {
+    height: auto;
+  }
+}
+
 @keyframes cfp-modal-slide-up {
   from {
     opacity: 1;

@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import Modal from '@packages/components/bootstrap5/Modal';
+import FontAwesome from '@packages/components/FontAwsome';
 import { API_MAP } from '@/lib/apiRoutes';
 import { useAppApi } from '@/hooks/useAppApi';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -18,6 +19,7 @@ interface LanguageItem {
 interface LanguageSelectorModalProps {
   show: boolean;
   onClose: () => void;
+  variant?: 'default' | 'settings';
 }
 
 const DEFAULT_LANGUAGES: LanguageItem[] = [
@@ -25,12 +27,13 @@ const DEFAULT_LANGUAGES: LanguageItem[] = [
   { id: 'en-US', name: LANGUAGE_KEYS.common.english, code: 'en-US', isBaseLanguage: false },
 ];
 
-export default function LanguageSelectorModal({ show, onClose }: LanguageSelectorModalProps) {
+export default function LanguageSelectorModal({ show, onClose, variant = 'default' }: LanguageSelectorModalProps) {
   const { formPost } = useAppApi();
   const { languageCode, setLanguage, translate } = useLanguage();
   const [languages, setLanguages] = useState<LanguageItem[]>([]);
   const [loading, setLoading] = useState(show);
   const [changingLanguage, setChangingLanguage] = useState(false);
+  const isSettingsVariant = variant === 'settings';
 
   const handleClose = useCallback(() => {
     onClose();
@@ -72,31 +75,55 @@ export default function LanguageSelectorModal({ show, onClose }: LanguageSelecto
     if (changed) handleClose();
   };
 
+  const languageOptions = loading ? (
+    <div className="text-muted" role="status">{translate(LANGUAGE_KEYS.common.loadingLanguages)}</div>
+  ) : (
+    <div className="list-group" role="radiogroup" aria-label={translate(LANGUAGE_KEYS.common.languageSelection)}>
+      {languages.map(language => (
+        <button
+          type="button"
+          className={`list-group-item list-group-item-action d-flex justify-content-between align-items-center ${languageCode === language.code ? 'active' : ''}`}
+          key={language.id}
+          aria-pressed={languageCode === language.code}
+          disabled={changingLanguage}
+          onClick={() => handleLanguageSelect(language.code)}
+        >
+          <span>{getNativeLanguageName(language.code, language.name)} ({language.code})</span>
+          {languageCode === language.code && <span aria-hidden="true">✓</span>}
+        </button>
+      ))}
+    </div>
+  );
+
   return (
-    <Modal show={show} size="sm" onClose={handleClose}>
-      <Modal.Title onClose={handleClose}>{translate(LANGUAGE_KEYS.common.language)}</Modal.Title>
-      <Modal.Body>
-        <div className="mb-3 text-muted">{translate(LANGUAGE_KEYS.common.selectLanguage)}</div>
-        {loading ? (
-          <div className="text-muted" role="status">{translate(LANGUAGE_KEYS.common.loadingLanguages)}</div>
-        ) : (
-          <div className="list-group" role="radiogroup" aria-label={translate(LANGUAGE_KEYS.common.languageSelection)}>
-            {languages.map(language => (
-              <button
-                type="button"
-                className={`list-group-item list-group-item-action d-flex justify-content-between align-items-center ${languageCode === language.code ? 'active' : ''}`}
-                key={language.id}
-                aria-pressed={languageCode === language.code}
-                disabled={changingLanguage}
-                onClick={() => handleLanguageSelect(language.code)}
-              >
-                <span>{getNativeLanguageName(language.code, language.name)} ({language.code})</span>
-                {languageCode === language.code && <span aria-hidden="true">✓</span>}
+    <Modal show={show} size={isSettingsVariant ? 'lg' : 'sm'} onClose={handleClose}>
+      {isSettingsVariant ? (
+        <div className="cfp-settings-modal">
+          <aside className="cfp-settings-sidebar" aria-label={translate(LANGUAGE_KEYS.common.language)}>
+            <nav>
+              <button type="button" className="cfp-settings-nav-item active" aria-current="page">
+                <FontAwesome icon="fa-solid fa-language" />
+                <span>{translate(LANGUAGE_KEYS.common.language)}</span>
               </button>
-            ))}
-          </div>
-        )}
-      </Modal.Body>
+            </nav>
+          </aside>
+          <section className="cfp-settings-panel">
+            <Modal.Title onClose={handleClose}>{translate(LANGUAGE_KEYS.common.language)}</Modal.Title>
+            <Modal.Body className="cfp-settings-panel-body">
+              <div className="mb-3 text-muted">{translate(LANGUAGE_KEYS.common.selectLanguage)}</div>
+              {languageOptions}
+            </Modal.Body>
+          </section>
+        </div>
+      ) : (
+        <>
+          <Modal.Title onClose={handleClose}>{translate(LANGUAGE_KEYS.common.language)}</Modal.Title>
+          <Modal.Body>
+            <div className="mb-3 text-muted">{translate(LANGUAGE_KEYS.common.selectLanguage)}</div>
+            {languageOptions}
+          </Modal.Body>
+        </>
+      )}
     </Modal>
   );
 }
