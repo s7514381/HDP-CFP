@@ -6,6 +6,7 @@
 |------|-----|
 | 前端應用 | `apps/CFP`（Next.js 16） |
 | 前端啟動 | `npm run dev -w cfp` |
+| 前端建置 | `npm run build -w cfp` |
 | 前端網址 | http://localhost:3001 |
 | 後端路徑 | `C:\Users\s7514\source\repos\HOP-CFP-Backend\HOP-CFP-Backend` |
 | 後端啟動 | `dotnet run --project HOP-CFP-Backend.csproj --launch-profile https` |

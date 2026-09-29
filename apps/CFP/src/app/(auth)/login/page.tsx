@@ -46,7 +46,7 @@ export default function Login() {
   const { setUser } = useUser();
   const { setMenus } = useMenu();
   const { danger } = useToast();
-  const { languageCode, translate } = useLanguage();
+  const { languageCode, loading: languageLoading, syncLanguage, translate } = useLanguage();
   const [showLanguageSelector, setShowLanguageSelector] = useState(false);
 
   const mapAdminMenuToMenuItem = (menu: AdminMenuResponse): MenuItem => {
@@ -92,9 +92,12 @@ export default function Login() {
     if (res.status === 200 && res.data) {
       const { token, name, adminMenus } = res.data;
 
-      if (token) {
-        setLocalStorage("token", token);
+      if (!token) {
+        danger({ message: <span>{translate(LANGUAGE_KEYS.common.loadFailed)}</span> });
+        return;
       }
+
+      setLocalStorage("token", token);
 
       setUser({ username: name || account });
 
@@ -103,7 +106,14 @@ export default function Login() {
         setMenus(mappedMenus);
       }
 
-      // 登入成功後導向首頁 (main)
+      const languageSynchronized = await syncLanguage();
+      if (!languageSynchronized) {
+        setMenus([]);
+        setUser(null);
+        danger({ message: <span>{translate(LANGUAGE_KEYS.common.loadFailed)}</span> });
+        return;
+      }
+
       router.push("/");
     }else{
       danger({ message: <span>{res.message}</span> });
@@ -142,7 +152,7 @@ export default function Login() {
           />
         </div>
         <div className="d-grid gap-2">
-          <Btn type="submit" color="primary" outline={false} size="lg" loading={loading === 'loading'}>
+          <Btn type="submit" color="primary" outline={false} size="lg" loading={loading === 'loading' || languageLoading}>
             {translate(LANGUAGE_KEYS.auth.login)}
           </Btn>
         </div>

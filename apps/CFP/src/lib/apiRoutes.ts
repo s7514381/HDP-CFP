@@ -48,6 +48,7 @@ export const API_MAP: Record<string, string> = {
 
   // ===== 多語言設定 =====
   LANGUAGE_CREATE: `${API_URL}/Language/Create`,
+  LANGUAGE_DELETE: `${API_URL}/Language/Delete`,
   LANGUAGE_GET_ACTIVE: `${API_URL}/Language/GetActiveLanguages`,
   LANGUAGE_RESOURCE_CREATE: `${API_URL}/LanguageResource/Create`,
   LANGUAGE_RESOURCE_EDIT: `${API_URL}/LanguageResource/Edit`,
@@ -55,6 +56,7 @@ export const API_MAP: Record<string, string> = {
   LANGUAGE_RESOURCE_GET_LIST: `${API_URL}/LanguageResource/GetList`,
   LANGUAGE_RESOURCE_GET_ACTIVE_LANGUAGES: `${API_URL}/LanguageResource/GetActiveLanguages`,
   LANGUAGE_RESOURCE_GET_TRANSLATIONS: `${API_URL}/LanguageResource/GetTranslations`,
+  LANGUAGE_RESOURCE_GET_TRANSLATIONS_LAST_UPDATED: `${API_URL}/LanguageResource/GetTranslationsLastUpdated`,
   LANGUAGE_RESOURCE_MST: `${API_URL}/LanguageResource`,
 
   // ===== 管理員管理 =====

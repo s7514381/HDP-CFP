@@ -62,6 +62,7 @@ export default function Content({ title, formData, onChange, updateForm, onSubmi
   const [languages, setLanguages] = useState<LanguageData[]>([]);
   const [menus, setMenus] = useState<AdminMenuData[]>([]);
   const { languageCode, translate } = useLanguage();
+  const isEditing = Boolean(formData?.id);
 
   useEffect(() => {
     const loadOptions = async () => {
@@ -143,7 +144,15 @@ export default function Content({ title, formData, onChange, updateForm, onSubmi
             <form id="language-resource-form" onSubmit={onSubmit}>
               <Grid.Row className="g-3">
                 <Grid.Col md={6}>
-                  <Input label={translate(LANGUAGE_KEYS.common.serialNumber)} value={formData?.serialNumber || translate(LANGUAGE_KEYS.common.loadingData)} disabled />
+                  <Input
+                    label={translate(LANGUAGE_KEYS.common.serialNumber)}
+                    name="serialNumber"
+                    value={formData?.serialNumber || ''}
+                    onChange={event => updateForm({ serialNumber: event.target.value.toUpperCase() })}
+                    maxLength={6}
+                    pattern="[A-Z]{2}[0-9]{4}"
+                    disabled={isEditing}
+                  />
                 </Grid.Col>
                 <Grid.Col md={6}>
                   <Select

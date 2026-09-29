@@ -17,18 +17,12 @@ import { useConfirm } from '@packages/hooks/useConfirm';
 import { API_MAP } from '@/lib/apiRoutes';
 import { useAppApi } from '@/hooks/useAppApi';
 import LanguageCreateModal from '@/components/layouts/LanguageCreateModal';
+import LanguageManagementModal, { LanguageItem } from '@/components/layouts/LanguageManagementModal';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LANGUAGE_KEYS } from '@/config/languageKeys';
 import { usePagePermissions } from '@/hooks/usePagePermissions';
 import type { TableSearchParams } from '@/components/common/tableUtils';
 import { useSearchPersistence } from '@/hooks/useSearchPersistence';
-
-interface LanguageItem {
-  id: string;
-  name: string;
-  code: string;
-  isBaseLanguage: boolean;
-}
 
 interface LanguageResourceListItem {
   id: string;
@@ -110,8 +104,11 @@ function LanguageResourceContent({
   const [languages, setLanguages] = useState<LanguageItem[]>([]);
   const [menus, setMenus] = useState<AdminMenuData[]>([]);
   const [showLanguageCreateModal, setShowLanguageCreateModal] = useState(false);
+  const [showLanguageManagementModal, setShowLanguageManagementModal] = useState(false);
   const { languageCode, translate } = useLanguage();
   const canAddLanguage = hasPermission('Language:Create');
+  const canDeleteLanguage = hasPermission('Language:Delete')
+    || hasPermission('LanguageResource:Delete');
   const canAddTranslation = hasPermission('LanguageResource:Create');
   const [searchBaseText, setSearchBaseText] = useState(initialCriteria.baseText);
   const [searchSerialNumber, setSearchSerialNumber] = useState(initialCriteria.serialNumber);
@@ -277,9 +274,9 @@ function LanguageResourceContent({
 
         <Container fluid className="mb-3">
           <div className="d-flex justify-content-end gap-2">
-            {canAddLanguage && (
-              <Btn type="button" color="primary" icon="add" onClick={() => setShowLanguageCreateModal(true)}>
-                {translate(LANGUAGE_KEYS.languageResource.addLanguage)}
+            {(canAddLanguage || canDeleteLanguage) && (
+              <Btn type="button" color="secondary" onClick={() => setShowLanguageManagementModal(true)}>
+                {translate(LANGUAGE_KEYS.common.multilingualSettings)}
               </Btn>
             )}
             {canAddTranslation && (
@@ -303,6 +300,18 @@ function LanguageResourceContent({
         show={showLanguageCreateModal}
         onClose={() => setShowLanguageCreateModal(false)}
         onSubmit={handleAddLanguage}
+      />
+      <LanguageManagementModal
+        show={showLanguageManagementModal}
+        languages={languages}
+        canAdd={canAddLanguage}
+        canDelete={canDeleteLanguage}
+        onClose={() => setShowLanguageManagementModal(false)}
+        onAddLanguage={() => {
+          setShowLanguageManagementModal(false);
+          setShowLanguageCreateModal(true);
+        }}
+        onLanguagesChanged={setLanguages}
       />
     </>
   );
